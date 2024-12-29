@@ -1,0 +1,28 @@
+{
+  "name": "lmf-app",
+  "version": "0.0.1",
+  "description": "proyecto IA de musica",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start:angular": "npm --prefix ./lmf-web-angular start",
+    "start:nest": "npm --prefix ./lmf-server-nest start",
+    "start:all": "concurrently \"npm run start:lmf-web-angular\" \"npm run start:lmf-server-nest\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Listen-My-Feelings-PG/lmf-web.git"
+  },
+  "keywords": [
+    "nestjs",
+    "angular"
+  ],
+  "author": "Pench",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Listen-My-Feelings-PG/lmf-web/issues"
+  },
+  "homepage": "https://github.com/Listen-My-Feelings-PG/lmf-web#readme",
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}
