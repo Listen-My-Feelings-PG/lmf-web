@@ -1,41 +1,35 @@
-<div class="grid">
-  <div class="col-4">
-      <div class="text-center p-3 border-round-sm bg-primary font-bold ">4</div>
-  </div>
-  <div class="col">
-      <div class="text-center p-3 border-round-sm bg-primary font-bold ">1</div>
-  </div>
-  <div class="col">
-      <div class="text-center p-3 border-round-sm bg-primary font-bold ">1</div>
-  </div>
-  <div class="col">
-      <div class="text-center p-3 border-round-sm bg-primary font-bold ">1</div>
-  </div>
-  <div class="col">
-      <div class="text-center p-3 border-round-sm bg-primary font-bold ">1</div>
-  </div>
-  <div class="col">
-      <div class="text-center p-3 border-round-sm bg-primary font-bold ">1</div>
-  </div>
-  <div class="col">
-      <div class="text-center p-3 border-round-sm bg-primary font-bold ">1</div>
-  </div>
-  <div class="col">
-      <div class="text-center p-3 border-round-sm bg-primary font-bold ">1</div>
-  </div>
-  <div class="col">
-      <div class="text-center p-3 border-round-sm bg-primary font-bold ">1</div>
-  </div>
-</div>
-
-<div class="grid">
-  <div class="col-2">
-      <div class="text-center p-3 border-round-sm bg-primary font-bold ">2</div>
-  </div>
-  <div class="col-6">
-      <div class="text-center p-3 border-round-sm bg-primary font-bold ">6</div>
-  </div>
-  <div class="col-4">
-      <div class="text-center p-3 border-round-sm bg-primary font-bold ">4</div>
-  </div>
+<div class="p-4 flex justify-content-center">
+	<div class="w-full md:w-8 lg:w-7 xl:w-7">
+		<h1>Prueba 1</h1>
+		<form [formGroup]="song"
+			(ngSubmit)="onSubmit()">
+			<div class="formgrid grid">
+				<div class="field col">
+					<label for="firstname2">Cargar canción</label>
+					<p-fileUpload mode="basic"
+						chooseLabel="Choose"
+						chooseIcon="pi pi-upload"
+						name="file"
+						url="https://www.primefaces.org/cdn/api/upload.php"
+						accept="audio/mpeg,audio/mpg,audio/mpeg3,audio/mp3,"
+						maxFileSize="10000000"
+						(onUpload)="catchFile($event)"
+						[auto]="true" />
+				</div>
+				<div class="field col"
+					style="display: flex; align-items: center;">
+					<ng-container *ngFor="let star of stars; let i = index">
+						<i class="pi"
+							[ngClass]="i < currentRating ? 'pi-star-fill' : 'pi-star'"
+							(click)="rate(i + 1)"
+							style="font-size: 24px; cursor: pointer; margin-right: 8px; color: #FFD700;"></i>
+					</ng-container>
+				</div>
+			</div>
+			<button pButton
+				type="submit"
+				icon="pi pi-check"
+				label="Enviar"></button>
+		</form>
+	</div>
 </div>
