@@ -38,6 +38,22 @@ export class HttpService {
       );
   }
 
+  post(url: string, body: Object, toastBlocked?: boolean, blockedItem?: boolean): Observable<any> {
+    this.busy = true;
+    if (blockedItem !== undefined)
+      blockedItem = true;
+    console.log('body', body);
+    return this.http.post(this.baseUrl + url, body)
+      .pipe(
+        finalize(() => {
+          this.busy = false;
+          if (blockedItem)
+            blockedItem = false;
+        }),
+        catchError((err) => this.handleError(err, toastBlocked))
+      );
+  }
+
   setToast(
     severity: 'success' | 'info' | 'warn' | 'error',
     summary: string,

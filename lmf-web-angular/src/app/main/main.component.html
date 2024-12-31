@@ -1,35 +1,64 @@
-<div class="p-4 flex justify-content-center">
-	<div class="w-full md:w-8 lg:w-7 xl:w-7">
-		<h1>Prueba 1</h1>
-		<form [formGroup]="song"
-			(ngSubmit)="onSubmit()">
-			<div class="formgrid grid">
-				<div class="field col">
-					<label for="firstname2">Cargar canción</label>
-					<p-fileUpload mode="basic"
-						chooseLabel="Choose"
-						chooseIcon="pi pi-upload"
-						name="file"
-						url="https://www.primefaces.org/cdn/api/upload.php"
-						accept="audio/mpeg,audio/mpg,audio/mpeg3,audio/mp3,"
-						maxFileSize="10000000"
-						(onUpload)="catchFile($event)"
-						[auto]="true" />
-				</div>
-				<div class="field col"
-					style="display: flex; align-items: center;">
-					<ng-container *ngFor="let star of stars; let i = index">
-						<i class="pi"
-							[ngClass]="i < currentRating ? 'pi-star-fill' : 'pi-star'"
-							(click)="rate(i + 1)"
-							style="font-size: 24px; cursor: pointer; margin-right: 8px; color: #FFD700;"></i>
-					</ng-container>
+<div class="container">
+	<h1>Prueba 1</h1>
+	<div class="row">
+		<div class="col">
+			<table class="table">
+				<thead>
+					<tr>
+						<th scope="col">#</th>
+						<th scope="col">Nombre</th>
+						<th scope="col">Puntuación</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr *ngFor="let item of songs.list; let i=index">
+						<td>{{i+1}}</td>
+						<td>{{item.name}}</td>
+						<td>
+							<ng-container *ngFor="let star of stars; let ist = index">
+								<i class="pi"
+									[ngClass]="ist < item.score ? 'pi-star-fill' : 'pi-star'"
+									(click)="rate(i,ist + 1)"
+									style="font-size: 24px; cursor: pointer; margin-right: 8px; color: #FFD700;"></i>
+							</ng-container>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+			<button pButton
+				pRipple
+				label="Enviar lista"
+				icon="pi pi-upload"
+				class="p-button-success"
+				[disabled]="!songs.list.length"
+				(click)="submitList()">
+			</button>
+		</div>
+		<div class="col">
+			<div class="mb-3">
+				<label for="file">Cargar canción</label>
+				<p-fileUpload mode="advanced"
+					chooseLabel="Choose"
+					chooseIcon="pi pi-upload"
+					name="file"
+					url="https://www.primefaces.org/cdn/api/upload.php"
+					accept="audio/mpeg,audio/mpg,audio/mpeg3,audio/mp3,"
+					maxFileSize="10000000"
+					(onUpload)="onUpload($event)"
+					[auto]="true"
+					[multiple]="true" />
+				<div *ngIf="progressVisible"
+					class="progress mt-2">
+					<div class="progress-bar progress-bar-striped progress-bar-animated"
+						role="progressbar"
+						[style.width.%]="uploadProgress"
+						[attr.aria-valuenow]="uploadProgress"
+						aria-valuemin="0"
+						aria-valuemax="100">
+						{{uploadProgress}}%
+					</div>
 				</div>
 			</div>
-			<button pButton
-				type="submit"
-				icon="pi pi-check"
-				label="Enviar"></button>
-		</form>
+		</div>
 	</div>
 </div>

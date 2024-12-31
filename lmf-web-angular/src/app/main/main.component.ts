@@ -1,13 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { HttpService } from '../_services/http.service';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { FileUploadModule } from 'primeng/fileupload';
+import { FileUploadModule, UploadEvent } from 'primeng/fileupload';
 import { ButtonModule } from 'primeng/button';
 import { CommonModule } from '@angular/common';
+import { Song } from '../_models/song.model';
 @Component({
   selector: 'app-main',
   imports: [
-    ReactiveFormsModule,
     FileUploadModule,
     ButtonModule,
     CommonModule
@@ -16,33 +16,47 @@ import { CommonModule } from '@angular/common';
   styleUrl: './main.component.scss'
 })
 export class MainComponent implements OnInit {
-  song: FormGroup;
+  songs: {
+    form: Song,
+    list: Array<Song>
+  }
   stars = [0, 1, 2]; // Arreglo para las 3 estrellas
-  currentRating = 0; // Inicialmente sin calificación
+  uploadProgress: number = 0;
+  progressVisible: boolean = false;
+
   constructor(private http: HttpService, private fb: FormBuilder) {
-    this.song = fb.group({
-      file: ['', Validators.required],
-      score: [0, Validators.required]
+    this.songs = {
+      form: new Song('', 'file', null, 0),
+      list: []
+    }
+  }
+
+  ngOnInit() { }
+
+  onBeforeUpload(event: any): void {
+    this.progressVisible = true;
+    this.uploadProgress = 0; // Reinicia la barra de progreso antes de una nueva carga.
+  }
+
+  onProgress(event: any): void {
+    const loaded = event.progress.loaded;
+    const total = event.progress.total;
+    this.uploadProgress = Math.round((loaded / total) * 100); // Calcula el porcentaje de progreso.
+  }
+
+  onUpload(evt: any): void {
+    this.songs.list.push(...evt.files.map((obj: any) => { return new Song(obj.name, 'file', obj, 0) }));
+    this.progressVisible = false;
+  }
+
+  rate(indexSong: number, rating: number): void {
+    this.songs.list[indexSong].score = rating;
+  }
+
+  submitList() {
+    this.http.post('upload', { mode: 'evaluated', list: this.songs.list }).subscribe((data) => {
+      console.log('data', data);
     });
-  }
-
-  ngOnInit() {
-    //this.http.setToast('success', 'Funciona!!!', 'La prueba del despliegue del toast funciona!!')
-  }
-
-  catchFile(evt: any): void {
-    console.log('evt', evt);
-    this.song.patchValue({ file: evt.files[0] });
-  }
-
-  rate(rating: number): void {
-    this.currentRating = rating;
-    this.song.patchValue({ score: this.currentRating })
-    // Aquí puedes agregar la lógica adicional, como emitir eventos o guardar la puntuación
-  }
-
-  onSubmit() {
-    console.log('this.song', this.song.value);
   }
 
 }
