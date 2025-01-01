@@ -26,7 +26,7 @@ export class MainComponent implements OnInit {
 
   constructor(private http: HttpService, private fb: FormBuilder) {
     this.songs = {
-      form: new Song('', 'file', null, 0),
+      form: new Song('', 'file', null, '', 0),
       list: []
     }
   }
@@ -45,7 +45,7 @@ export class MainComponent implements OnInit {
   }
 
   onUpload(evt: any): void {
-    this.songs.list.push(...evt.files.map((obj: any) => { return new Song(obj.name, 'file', obj, 0) }));
+    this.songs.list.push(...evt.files.map((obj: any) => { return new Song(obj.name, 'file', obj, '', 0) }));
     this.progressVisible = false;
   }
 

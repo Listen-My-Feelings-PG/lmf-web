@@ -1,17 +1,24 @@
 import { HttpInterceptorFn } from '@angular/common/http';
+export interface RequestBodyModel {
+  mode: 'evaluated',
+  form: FormData,
+  [key: string]: File | 'evaluated' | FormData;
+}
 
 export const httpRequestInterceptor: HttpInterceptorFn = (req, next) => {
   if (req.url.includes('www.primefaces.org'))
     return next(req);
   const body: any = req.body;
-  const formData = new FormData();
-  formData.set('mode', body.mode);
+  const reqBody: FormData = new FormData();
+  const data: any = {};
   body.list.forEach((item: any, index: any) => {
-    formData.set(`file_${index}_file`, item.file);
-    formData.set(`file_${index}_score`, item.score);
+    if (item.type == 'file') {
+      data['song_' + index] = { score: item.score };
+      reqBody.set('song_' + index, item.file);
+    }
   });
-  const content = { body: formData };
-  const newReq = req.clone(content);
-  console.log('newReq', newReq);
+  reqBody.set('data', JSON.stringify(data));
+  const content = { body: reqBody };
+  const newReq = req.clone(content)
   return next(newReq);
 };
