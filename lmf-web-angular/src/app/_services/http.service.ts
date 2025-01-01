@@ -42,7 +42,6 @@ export class HttpService {
     this.busy = true;
     if (blockedItem !== undefined)
       blockedItem = true;
-    console.log('body', body);
     return this.http.post(this.baseUrl + url, body)
       .pipe(
         finalize(() => {
