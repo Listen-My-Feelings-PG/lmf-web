@@ -8,18 +8,9 @@ async function bootstrap() {
   app.enableCors({
     origin: 'http://localhost:4200',
     methods: 'GET,POST,PUT,DELETE,PATCH,OPTIONS',
-    allowedHeaders: 'Content-Type,Authorization',
+    allowedHeaders: 'Content-Type,Authorization,Accept',
   });
 
-  app.use(
-    fileUpload({
-      limits: { fileSize: 100 * 1024 * 1024 }, // 100 MB
-      useTempFiles: true,
-      tempFileDir: '/tmp/',
-    })
-  );
-
-  
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();

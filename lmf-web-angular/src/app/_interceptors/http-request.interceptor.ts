@@ -6,20 +6,20 @@ export interface RequestBodyModel {
 }
 
 export const httpRequestInterceptor: HttpInterceptorFn = (req, next) => {
-  if (req.url.includes('www.primefaces.org'))
-    return next(req);
+  if (req.url.includes('www.primefaces.org')) return next(req);
   const body: any = req.body;
-  let reqBody: FormData = new FormData();
-  let data: any = {};
+  const reqBody: any = new FormData();
+  const data: any = {};
   body.list.forEach((item: any, index: any) => {
-    console.log('item', item);
-    if (item.type == 'file') {
+    if (item.type === 'file') {
       data['song_' + index] = { score: item.score };
       reqBody.append('song_' + index, item.file);
     }
   });
-  reqBody.append('data', JSON.stringify(data));
-  const content = { body: reqBody };
-  const newReq = req.clone(content)
+  //reqBody.append('data', JSON.stringify(data));
+  for (let pair of reqBody as any) {
+    console.log(pair[0], pair[1]);
+  }
+  const newReq = req.clone({ body: reqBody });
   return next(newReq);
 };

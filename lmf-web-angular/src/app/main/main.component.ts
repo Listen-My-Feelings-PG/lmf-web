@@ -26,7 +26,6 @@ export class MainComponent implements OnInit {
 
   constructor(
     private http: HttpService,
-    //private tsService: TensorflowService
   ) {
     this.songs = {
       form: new Song('', 'file', null, '', 0),
