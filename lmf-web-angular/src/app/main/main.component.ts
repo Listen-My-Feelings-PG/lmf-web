@@ -58,7 +58,10 @@ export class MainComponent implements OnInit {
   submitList() {
     console.log('this.songs', this.songs);
     this.http.post('upload', { mode: 'evaluated', list: this.songs.list }).subscribe((data) => {
-      console.log('data', data);
+      const jsonString = JSON.stringify(data); // Convertir a JSON
+      const sizeInBytes = new TextEncoder().encode(jsonString).length; // Obtener tamaño en bytes
+      ;
+      console.log('data', sizeInBytes / (1024 * 1024));
     });
   }
 

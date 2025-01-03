@@ -31,7 +31,7 @@ export class UploadController {
     console.log('files', files);
     console.log('data', body);
     const features = await this.tsFeatureExtractor.extractFeature('../uploads/' + files[0].filename);
-    console.log('features', features.length);
+    console.log('features', features);
     return {
       message: 'hold on...',
       features
