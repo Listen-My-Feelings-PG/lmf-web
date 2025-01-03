@@ -18,6 +18,7 @@
     "@angular/platform-browser": "^19.0.5",
     "@angular/platform-browser-dynamic": "^19.0.5",
     "@angular/router": "^19.0.5",
+    "@tensorflow/tfjs": "^4.22.0",
     "bootstrap": "^5.3.3",
     "primeicons": "^7.0.0",
     "primeng": "^17.18.15",

@@ -1,10 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { HttpService } from '../_services/http.service';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { FileUploadModule, UploadEvent } from 'primeng/fileupload';
 import { ButtonModule } from 'primeng/button';
 import { CommonModule } from '@angular/common';
 import { Song } from '../_models/song.model';
+
 @Component({
   selector: 'app-main',
   imports: [
@@ -24,7 +24,10 @@ export class MainComponent implements OnInit {
   uploadProgress: number = 0;
   progressVisible: boolean = false;
 
-  constructor(private http: HttpService, private fb: FormBuilder) {
+  constructor(
+    private http: HttpService,
+    //private tsService: TensorflowService
+  ) {
     this.songs = {
       form: new Song('', 'file', null, '', 0),
       list: []
@@ -54,6 +57,7 @@ export class MainComponent implements OnInit {
   }
 
   submitList() {
+    console.log('this.songs', this.songs);
     this.http.post('upload', { mode: 'evaluated', list: this.songs.list }).subscribe((data) => {
       console.log('data', data);
     });

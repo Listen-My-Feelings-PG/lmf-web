@@ -9,15 +9,16 @@ export const httpRequestInterceptor: HttpInterceptorFn = (req, next) => {
   if (req.url.includes('www.primefaces.org'))
     return next(req);
   const body: any = req.body;
-  const reqBody: FormData = new FormData();
-  const data: any = {};
+  let reqBody: FormData = new FormData();
+  let data: any = {};
   body.list.forEach((item: any, index: any) => {
+    console.log('item', item);
     if (item.type == 'file') {
       data['song_' + index] = { score: item.score };
-      reqBody.set('song_' + index, item.file);
+      reqBody.append('song_' + index, item.file);
     }
   });
-  reqBody.set('data', JSON.stringify(data));
+  reqBody.append('data', JSON.stringify(data));
   const content = { body: reqBody };
   const newReq = req.clone(content)
   return next(newReq);
