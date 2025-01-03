@@ -16,7 +16,7 @@ export const httpRequestInterceptor: HttpInterceptorFn = (req, next) => {
       reqBody.append('song_' + index, item.file);
     }
   });
-  //reqBody.append('data', JSON.stringify(data));
+  reqBody.append('data', JSON.stringify(data));
   for (let pair of reqBody as any) {
     console.log(pair[0], pair[1]);
   }

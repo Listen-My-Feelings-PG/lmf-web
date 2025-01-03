@@ -5,8 +5,7 @@ import { exec } from 'child_process';
 export class TsFeatureExtractorService {
   async extractFeature(filePath: string): Promise<any> {
     return new Promise((resolve, reject) => {
-      console.log('__dirname', __dirname);
-      exec(`python3 feature_extractor.py ${filePath}`, (error, stdout) => {
+      exec(`python ../feature_extractor.py ${filePath}`, (error, stdout) => {
         if (error) {
           console.error('Error al extraer características:', error);
           return reject(new Error('Error al ejecutar el script de extracción de características.'));
