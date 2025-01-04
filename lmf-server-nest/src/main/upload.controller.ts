@@ -1,14 +1,15 @@
-import { Body, Controller, Post, UploadedFiles, UseInterceptors } from '@nestjs/common';
-import { AnyFilesInterceptor } from '@nestjs/platform-express';
+import { Body, Controller, HttpException, HttpStatus, Post, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { InjectRepository } from '@nestjs/typeorm';
-import { writeFile } from 'fs/promises';
 import { diskStorage } from 'multer';
-import * as path from 'path';
-import * as zlib from 'zlib';
 import { SongEntity } from 'src/_entities/song.entity';
-import { TsFeatureExtractorService } from 'src/_services/ts-feature-extractor/ts-feature-extractor.service';
+import { TsFeatureExtractorService } from 'src/_services/ts-feature-extractor.service';
 import { Repository } from 'typeorm';
-import { GzipConverterService } from 'src/_services/gzip-converter/gzip-converter.service';
+import { GzipConverterService } from 'src/_services/gzip-converter.service';
+import { Mp3ValidationPipe } from 'src/_pipes/mp3-validation.pipe';
+import * as fs from 'fs';
+import * as path from 'path';
+
 
 @Controller('upload')
 export class UploadController {
@@ -19,34 +20,49 @@ export class UploadController {
     private readonly songRepository: Repository<SongEntity>
   ) { }
 
-  @Post()
-  @UseInterceptors(AnyFilesInterceptor({
-    storage: diskStorage({
-      destination: '../uploads',
-      filename: ((req, file, cb) => {
-        const uniqueSuffix = new Date().getTime();
-        cb(null, `${uniqueSuffix}-${file.originalname}`);
+  @Post('file')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: '../uploads',
+        filename: ((req, file, cb) => {
+          const uniqueSuffix = new Date().getTime();
+          cb(null, `${uniqueSuffix}_${file.originalname}`);
+        })
       })
     })
-  }))
+  )
   async uploadHandler(
-    @UploadedFiles() files: Express.Multer.File[],
-    @Body() body: string
+    @UploadedFile(new Mp3ValidationPipe()) file: Express.Multer.File,
+    @Body() body: any,
+    @Res() res: Response
   ) {
-    console.log('files', files);
-    console.log('data', body);
-    try {
-      const features = await this.tsFeatureExtractor.extractFeature('../uploads/' + files[0].filename);
-      const compressedFile = await this.gzipConverter.compressFile(features, files[0].filename);
-      await writeFile(compressedFile.filePath, compressedFile.data);
-      console.log('guardado exitoso');
-      return {
-        message: 'hold on...',
-        features
-      };
-    } catch (error) {
-      console.error('Error processing file:', error);
-      throw new Error('Feature extraction failed');
+    console.log('body', body);
+    console.log('file', file);
+
+    const existingSong = await this.songRepository.findOne({
+      where: {
+        name: file.originalname,
+        fileSize: file.size
+      }
+    });
+
+    if (existingSong) {
+      const filePath = path.resolve('../uploads', file.filename);
+      if (fs.existsSync(filePath))
+        await fs.unlinkSync(filePath);
+      throw new HttpException('Duplicated song', HttpStatus.FORBIDDEN)
+    } else {
+      const name = body.name;
+      await this.songRepository.save(this.songRepository.create({
+        name: name.substring(0, name.lastIndexOf('.')),
+        fileSize: file.size,
+        fileName: file.filename
+      }));
+    }
+
+    return {
+      message: 'uploaded successful'
     }
   }
 

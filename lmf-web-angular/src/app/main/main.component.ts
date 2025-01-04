@@ -17,52 +17,80 @@ import { Song } from '../_models/song.model';
 })
 export class MainComponent implements OnInit {
   songs: {
-    form: Song,
-    list: Array<Song>
+    list: Array<Song>,
+    pool: Array<Song>,
+    poolBusy: boolean,
+    poolCounter: number,
+    iterator: any
   }
+
   stars = [0, 1, 2]; // Arreglo para las 3 estrellas
-  uploadProgress: number = 0;
-  progressVisible: boolean = false;
 
   constructor(
     private http: HttpService,
   ) {
     this.songs = {
-      form: new Song('', 'file', null, '', 0),
-      list: []
+      list: [],
+      pool: [],
+      poolBusy: false,
+      poolCounter: 0,
+      iterator: null
     }
+    this.songs.iterator = this.songs.pool[Symbol.iterator]();
   }
 
   ngOnInit() { }
 
-  onBeforeUpload(event: any): void {
-    this.progressVisible = true;
-    this.uploadProgress = 0; // Reinicia la barra de progreso antes de una nueva carga.
+  private triggerRequest() {
+    let item = this.songs.iterator.next();
+    if (item.done)
+      return this.checkPool(item);
+    this.songs.poolCounter++;
+    this.http.post('upload/file', item.value).subscribe((data) => {
+      console.log('data', data);
+      item.value.uploadSuccess = true;
+      this.songs.list.push(item.value);
+      this.checkPool(item);
+    }, (error) => {
+      console.error('error en http request:', error);
+      this.songs.list.push(item.value);
+      this.checkPool(item);
+    });
   }
 
-  onProgress(event: any): void {
-    const loaded = event.progress.loaded;
-    const total = event.progress.total;
-    this.uploadProgress = Math.round((loaded / total) * 100); // Calcula el porcentaje de progreso.
+  private checkPool(item: any) {
+    if (!item.done)
+      this.triggerRequest();
+    else {
+      this.songs.pool = [];
+      this.songs.poolCounter = 0;
+      this.songs.poolBusy = false;
+    }
   }
 
-  onUpload(evt: any): void {
-    this.songs.list.push(...evt.files.map((obj: any) => { return new Song(obj.name, 'file', obj, '', 0) }));
-    this.progressVisible = false;
+  onFilesSelected(evt: any) {
+    evt.currentFiles.forEach((item: any) => this.songs.pool.push({
+      name: item.name,
+      type: 'file',
+      file: item,
+      link: '',
+      userScore: 0,
+      status: 'evaluated',
+      uploadSuccess: false
+    }));
+
+    if (!this.songs.poolBusy) {
+      this.songs.iterator = this.songs.pool[Symbol.iterator]();
+      this.songs.poolBusy = true;
+      this.triggerRequest();
+    }
+
   }
 
   rate(indexSong: number, rating: number): void {
-    this.songs.list[indexSong].score = rating;
+    this.songs.list[indexSong].userScore = rating;
   }
 
-  submitList() {
-    console.log('this.songs', this.songs);
-    this.http.post('upload', { mode: 'evaluated', list: this.songs.list }).subscribe((data) => {
-      const jsonString = JSON.stringify(data); // Convertir a JSON
-      const sizeInBytes = new TextEncoder().encode(jsonString).length; // Obtener tamaño en bytes
-      ;
-      console.log('data', sizeInBytes / (1024 * 1024));
-    });
-  }
+
 
 }

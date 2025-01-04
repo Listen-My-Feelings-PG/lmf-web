@@ -72,7 +72,8 @@ export class HttpService {
     if (error.status == 422) {
       sessionStorage.removeItem('currentUser');
       window.location.reload();
-    } else if (!toastBlocked)
+    } else if (!toastBlocked) {
+
       this.toastEvent.next({
         key: 'default',
         severity: 'error',
@@ -80,6 +81,8 @@ export class HttpService {
         detail: 'Ocurrió un error en el servidor. Inténtelo mas tarde',
         life: 5000
       });
+    }
+
     return throwError(error);
   }
 

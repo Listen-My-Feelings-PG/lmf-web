@@ -4,6 +4,8 @@ export class Song {
     public type: 'file' | 'link',
     public file: File | null,
     public link: string,
-    public score: number
+    public userScore: number,
+    public status: 'evaluated' | 'predict',
+    public uploadSuccess: boolean
   ) { }
 }
