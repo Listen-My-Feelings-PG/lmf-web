@@ -45,7 +45,6 @@ export class UploadController {
         fileSize: file.size
       }
     });
-    console.log('existingSong', existingSong);
     if (existingSong) {
       const filePath = path.resolve('../uploads', file.filename);
       if (fs.existsSync(filePath))
