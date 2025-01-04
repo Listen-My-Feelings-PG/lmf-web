@@ -1,4 +1,4 @@
-import { Body, Controller, HttpException, HttpStatus, Post, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, HttpException, HttpStatus, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { InjectRepository } from '@nestjs/typeorm';
 import { diskStorage } from 'multer';
@@ -34,11 +34,10 @@ export class UploadController {
   )
   async uploadHandler(
     @UploadedFile(new Mp3ValidationPipe()) file: Express.Multer.File,
-    @Body() body: any,
-    @Res() res: Response
+    @Body() body: any
   ) {
-    console.log('body', body);
-    console.log('file', file);
+    //console.log('body', body);
+    console.log('file', file.originalname);
 
     const existingSong = await this.songRepository.findOne({
       where: {
@@ -46,23 +45,24 @@ export class UploadController {
         fileSize: file.size
       }
     });
-
+    console.log('existingSong', existingSong);
     if (existingSong) {
       const filePath = path.resolve('../uploads', file.filename);
       if (fs.existsSync(filePath))
         await fs.unlinkSync(filePath);
+      console.error('Canción duplicada:', file.filename);
       throw new HttpException('Duplicated song', HttpStatus.FORBIDDEN)
     } else {
       const name = body.name;
-      await this.songRepository.save(this.songRepository.create({
-        name: name.substring(0, name.lastIndexOf('.')),
+      const row = await this.songRepository.save(this.songRepository.create({
+        name: name,
         fileSize: file.size,
         fileName: file.filename
       }));
-    }
-
-    return {
-      message: 'uploaded successful'
+      return {
+        message: 'uploaded successful',
+        row
+      }
     }
   }
 

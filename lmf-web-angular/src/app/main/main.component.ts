@@ -15,7 +15,7 @@ import { Song } from '../_models/song.model';
   templateUrl: './main.component.html',
   styleUrl: './main.component.scss'
 })
-export class MainComponent implements OnInit {
+export class MainComponent {
   songs: {
     list: Array<Song>,
     pool: Array<Song>,
@@ -39,22 +39,27 @@ export class MainComponent implements OnInit {
     this.songs.iterator = this.songs.pool[Symbol.iterator]();
   }
 
-  ngOnInit() { }
-
   private triggerRequest() {
     let item = this.songs.iterator.next();
     if (item.done)
       return this.checkPool(item);
+    console.log('triggering request...');
     this.songs.poolCounter++;
-    this.http.post('upload/file', item.value).subscribe((data) => {
-      console.log('data', data);
-      item.value.uploadSuccess = true;
-      this.songs.list.push(item.value);
-      this.checkPool(item);
-    }, (error) => {
-      console.error('error en http request:', error);
-      this.songs.list.push(item.value);
-      this.checkPool(item);
+    this.http.post('upload/file', item.value, true).subscribe({
+      next: (data: any) => {
+        console.log('data', data);
+        let listSong = this.songs.list[item.value.listIndex];
+        listSong.uploadSuccess = true;
+        listSong.id = data.row.id;
+        this.checkPool(item);
+      },
+      error: (error) => {
+        let listSong = this.songs.list[item.value.listIndex];
+        console.error('error en http request:', error);
+        listSong.uploadSuccess = false;
+        listSong.errReason = 'duplicated';
+        this.checkPool(item);
+      }
     });
   }
 
@@ -69,15 +74,18 @@ export class MainComponent implements OnInit {
   }
 
   onFilesSelected(evt: any) {
-    evt.currentFiles.forEach((item: any) => this.songs.pool.push({
-      name: item.name,
-      type: 'file',
-      file: item,
-      link: '',
-      userScore: 0,
-      status: 'evaluated',
-      uploadSuccess: false
-    }));
+    evt.currentFiles.forEach((item: any) => {
+      const song: Song = {
+        name: item.name,
+        type: 'file',
+        file: item,
+        link: '',
+        userScore: 0,
+        status: 'evaluated'
+      }
+      this.songs.list.push(song);
+      this.songs.pool.push({ ...song, listIndex: this.songs.list.length - 1 });
+    });
 
     if (!this.songs.poolBusy) {
       this.songs.iterator = this.songs.pool[Symbol.iterator]();

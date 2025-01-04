@@ -6,6 +6,9 @@ export class Song {
     public link: string,
     public userScore: number,
     public status: 'evaluated' | 'predict',
-    public uploadSuccess: boolean
+    public listIndex?: number,
+    public uploadSuccess?: boolean,
+    public errReason?: 'duplicated' | 'other',
+    public id?: number
   ) { }
 }
