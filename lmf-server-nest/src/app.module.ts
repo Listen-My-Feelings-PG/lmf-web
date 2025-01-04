@@ -5,6 +5,7 @@ import { UploadController } from './main/upload.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SongEntity } from './_entities/song.entity';
 import { TsFeatureExtractorService } from './_services/ts-feature-extractor/ts-feature-extractor.service';
+import { GzipConverterService } from './_services/gzip-converter/gzip-converter.service';
 
 @Module({
   imports: [
@@ -24,6 +25,10 @@ import { TsFeatureExtractorService } from './_services/ts-feature-extractor/ts-f
     AppController,
     UploadController
   ],
-  providers: [AppService, TsFeatureExtractorService],
+  providers: [
+    AppService,
+    TsFeatureExtractorService,
+    GzipConverterService
+  ],
 })
 export class AppModule { }

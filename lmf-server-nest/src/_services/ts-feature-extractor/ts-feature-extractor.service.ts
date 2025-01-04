@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { exec, spawn } from 'child_process';
+import { spawn } from 'child_process';
 
 @Injectable()
 export class TsFeatureExtractorService {
