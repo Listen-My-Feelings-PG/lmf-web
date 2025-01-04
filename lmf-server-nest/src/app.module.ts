@@ -8,6 +8,7 @@ import { TsFeatureExtractorService } from './_services/ts-feature-extractor.serv
 import { GzipConverterService } from './_services/gzip-converter.service';
 import { UploadExampleController } from './main/upload-example.controller';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { RateController } from './main/rate.controller';
 
 @Module({
   imports: [
@@ -35,7 +36,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
   controllers: [
     AppController,
     UploadController,
-    UploadExampleController
+    UploadExampleController,
+    RateController
   ],
   providers: [
     AppService,

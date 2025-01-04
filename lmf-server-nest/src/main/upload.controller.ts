@@ -37,7 +37,7 @@ export class UploadController {
     @Body() body: any
   ) {
     //console.log('body', body);
-    console.log('file', file.originalname);
+    //console.log('file', file.originalname);
 
     const existingSong = await this.songRepository.findOne({
       where: {
@@ -45,13 +45,13 @@ export class UploadController {
         fileSize: file.size
       }
     });
-    if (existingSong) {
+    /*if (existingSong) {
       const filePath = path.resolve('../uploads', file.filename);
       if (fs.existsSync(filePath))
         await fs.unlinkSync(filePath);
       console.error('Canción duplicada:', file.filename);
       throw new HttpException('Duplicated song', HttpStatus.FORBIDDEN)
-    } else {
+    } else {*/
       const name = body.name;
       const row = await this.songRepository.save(this.songRepository.create({
         name: name,
@@ -62,7 +62,7 @@ export class UploadController {
         message: 'uploaded successful',
         row
       }
-    }
+    //}
   }
 
 }

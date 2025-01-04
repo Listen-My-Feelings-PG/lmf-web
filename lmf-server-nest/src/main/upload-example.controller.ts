@@ -35,7 +35,6 @@ export class UploadExampleController {
       const features = await this.tsFeatureExtractor.extractFeature('../uploads/' + files[0].filename);
       const compressedFile = await this.gzipConverter.compressFile(features, files[0].filename);
       await writeFile(compressedFile.filePath, compressedFile.data);
-      console.log('guardado exitoso');
       return {
         message: 'hold on...',
         features

@@ -17,7 +17,7 @@
 						<td>{{item.name}}</td>
 						<td>
 							<div *ngIf="item.uploadSuccess; else scoreDisabled">
-								<ng-container *ngFor="let star of stars; let ist = index">
+								<ng-container *ngFor="let star of rating.stars; let ist = index">
 									<i class="pi"
 										[ngClass]="ist < item.userScore ? 'pi-star-fill' : 'pi-star'"
 										(click)="rate(i,ist + 1)"

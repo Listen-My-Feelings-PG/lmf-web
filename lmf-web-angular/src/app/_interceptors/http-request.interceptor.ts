@@ -7,6 +7,5 @@ export const httpRequestInterceptor: HttpInterceptorFn = (req, next) => {
   for (let key in body) {
     formData.set(key, (body as any)[key]);
   }
-
   return next(req.clone({ body: formData }));
 };

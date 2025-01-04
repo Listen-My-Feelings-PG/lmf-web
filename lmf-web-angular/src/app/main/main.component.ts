@@ -24,7 +24,10 @@ export class MainComponent {
     iterator: any
   }
 
-  stars = [0, 1, 2]; // Arreglo para las 3 estrellas
+  rating: {
+    stars: Array<number>,
+    blocked: boolean
+  }
 
   constructor(
     private http: HttpService,
@@ -36,6 +39,12 @@ export class MainComponent {
       poolCounter: 0,
       iterator: null
     }
+
+    this.rating = {
+      stars: [0, 1, 2],
+      blocked: false
+    }
+
     this.songs.iterator = this.songs.pool[Symbol.iterator]();
   }
 
@@ -43,11 +52,9 @@ export class MainComponent {
     let item = this.songs.iterator.next();
     if (item.done)
       return this.checkPool(item);
-    console.log('triggering request...');
     this.songs.poolCounter++;
     this.http.post('upload/file', item.value, true).subscribe({
       next: (data: any) => {
-        console.log('data', data);
         let listSong = this.songs.list[item.value.listIndex];
         listSong.uploadSuccess = true;
         listSong.id = data.row.id;
@@ -55,7 +62,6 @@ export class MainComponent {
       },
       error: (error) => {
         let listSong = this.songs.list[item.value.listIndex];
-        console.error('error en http request:', error);
         listSong.uploadSuccess = false;
         listSong.errReason = 'duplicated';
         this.checkPool(item);
@@ -92,13 +98,16 @@ export class MainComponent {
       this.songs.poolBusy = true;
       this.triggerRequest();
     }
-
   }
 
-  rate(indexSong: number, rating: number): void {
-    this.songs.list[indexSong].userScore = rating;
+  rate(indexSong: number, rate: number): void {
+    if (!this.rating.blocked) {
+      const id = this.songs.list[indexSong].id
+      this.http.post('rate/song', { id, score: rate }, false, this.rating.blocked).subscribe({
+        next: (data) => {
+          this.songs.list[indexSong].userScore = data.score;
+        }
+      });
+    }
   }
-
-
-
 }
