@@ -101,11 +101,11 @@ export class MainComponent {
   }
 
   rate(indexSong: number, rate: number): void {
-    if (!this.rating.blocked) {
-      const id = this.songs.list[indexSong].id
-      this.http.post('rate/song', { id, score: rate }, false, this.rating.blocked).subscribe({
+    let song = this.songs.list[indexSong];
+    if (!this.rating.blocked || song.userScore != rate) {
+      this.http.post('rate/song', { id: song.id, score: rate }, false, this.rating.blocked).subscribe({
         next: (data) => {
-          this.songs.list[indexSong].userScore = data.score;
+          song.userScore = data.score;
         }
       });
     }

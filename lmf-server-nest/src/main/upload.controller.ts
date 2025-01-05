@@ -36,15 +36,13 @@ export class UploadController {
     @UploadedFile(new Mp3ValidationPipe()) file: Express.Multer.File,
     @Body() body: any
   ) {
-    //console.log('body', body);
-    //console.log('file', file.originalname);
-
     const existingSong = await this.songRepository.findOne({
       where: {
         name: file.originalname,
         fileSize: file.size
       }
     });
+
     /*if (existingSong) {
       const filePath = path.resolve('../uploads', file.filename);
       if (fs.existsSync(filePath))
