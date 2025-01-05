@@ -19,8 +19,7 @@ export class RateController {
     if (song) {
       song.userScore = body.score;
       await this.songRepository.save(song);
-      const feProcess = await this.featureExtractor.runExtraction();
-      //console.log('feProcess', feProcess);
+      await this.featureExtractor.runExtraction();
       return {
         message: 'song rated',
         id: body.id,

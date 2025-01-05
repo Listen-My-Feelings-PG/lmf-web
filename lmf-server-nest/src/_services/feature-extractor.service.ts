@@ -4,7 +4,6 @@ import { spawn } from 'child_process';
 import { SongEntity } from 'src/_entities/song.entity';
 import { Repository } from 'typeorm';
 import { writeFile } from 'fs/promises';
-import * as path from 'path';
 import * as zlib from 'zlib';
 
 @Injectable()
@@ -74,13 +73,21 @@ export class FeatureExtractorService {
             const gzipFilename = filename + '.json.gz';
             console.log('File compressed. Saving on ../features');
             await writeFile('../features/' + gzipFilename, gzipData);
-            this.checkPool(item);
+            const row = await this.songRepository.findOneBy({ id: item.value.idSong });
+            if (row) {
+              row.tsFeatures = gzipFilename;
+              await this.songRepository.save(row);
+              this.checkPool(item);
+            } else {
+              console.error('Error al modificar registro: La canción no existe en la base de datos')
+              this.checkPool(item);
+            }
           } catch (error) {
             console.error('Error compressing features:', error);
             this.checkPool(item);
           }
         } catch (parseError) {
-          console.error('Error al parsear las características extraídas:', parseError);
+          console.error('Error al parsear las características extraidas:', parseError);
           this.checkPool(item);
         }
       } else {
