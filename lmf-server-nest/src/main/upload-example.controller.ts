@@ -4,14 +4,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { writeFile } from 'fs/promises';
 import { diskStorage } from 'multer';
 import { SongEntity } from 'src/_entities/song.entity';
-import { TsFeatureExtractorService } from 'src/_services/ts-feature-extractor.service';
 import { Repository } from 'typeorm';
 import { GzipConverterService } from 'src/_services/gzip-converter.service';
 
 @Controller('upload-example')
 export class UploadExampleController {
   constructor(
-    private readonly tsFeatureExtractor: TsFeatureExtractorService,
     private readonly gzipConverter: GzipConverterService,
     @InjectRepository(SongEntity)
     private readonly songRepository: Repository<SongEntity>
@@ -32,7 +30,7 @@ export class UploadExampleController {
     @Body() body: string
   ) {
     try {
-      const features = await this.tsFeatureExtractor.extractFeature('../uploads/' + files[0].filename);
+      const features = null// await this.tsFeatureExtractor.extractFeature('../uploads/' + files[0].filename);
       const compressedFile = await this.gzipConverter.compressFile(features, files[0].filename);
       await writeFile(compressedFile.filePath, compressedFile.data);
       return {

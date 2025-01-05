@@ -4,7 +4,6 @@ import { AppService } from './app.service';
 import { UploadController } from './main/upload.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SongEntity } from './_entities/song.entity';
-import { TsFeatureExtractorService } from './_services/ts-feature-extractor.service';
 import { GzipConverterService } from './_services/gzip-converter.service';
 import { UploadExampleController } from './main/upload-example.controller';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -42,7 +41,6 @@ import { FeatureExtractorService } from './_services/feature-extractor.service';
   ],
   providers: [
     AppService,
-    TsFeatureExtractorService,
     GzipConverterService,
     FeatureExtractorService
   ],
