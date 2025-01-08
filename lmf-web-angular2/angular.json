@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "lmf-web-angular": {
+    "lmf-web-angular2": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -17,7 +17,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/lmf-web-angular",
+            "outputPath": "dist/lmf-web-angular2",
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": [
@@ -30,14 +30,17 @@
               "src/assets"
             ],
             "styles": [
-              "src/styles.scss",
               "node_modules/primeng/resources/primeng.min.css",
               "node_modules/primeng/resources/themes/saga-blue/theme.css",
-              "node_modules/primeicons/primeicons.css"
+              "node_modules/primeicons/primeicons.css",
+              "src/styles.scss"
             ],
-            "scripts": [
-              "node_modules/bootstrap/dist/js/bootstrap.bundle.js"
-            ]
+            "scripts": [],
+            "server": "src/main.server.ts",
+            "prerender": true,
+            "ssr": {
+              "entry": "server.ts"
+            }
           },
           "configurations": {
             "production": {
@@ -67,10 +70,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "lmf-web-angular:build:production"
+              "buildTarget": "lmf-web-angular2:build:production"
             },
             "development": {
-              "buildTarget": "lmf-web-angular:build:development"
+              "buildTarget": "lmf-web-angular2:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -78,7 +81,7 @@
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "buildTarget": "lmf-web-angular:build"
+            "buildTarget": "lmf-web-angular2:build"
           }
         },
         "test": {
