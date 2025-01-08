@@ -47,7 +47,31 @@ export class FeatureExtractorService {
         message: 'pool busy'
       }
     }
+  }
 
+  async decompressGzipFile(file: File): Promise<any> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const buffer = Buffer.from(new Uint8Array(reader.result as ArrayBuffer));
+        zlib.gunzip(buffer, (err, decompressedBuffer) => {
+          if (err) {
+            reject(new Error('Error descomprimiendo el archivo gzip: ' + err.message));
+          } else {
+            try {
+              const json = JSON.parse(decompressedBuffer.toString());
+              resolve(json);
+            } catch (parseError) {
+              reject(new Error('Error parseando el JSON: ' + parseError.message));
+            }
+          }
+        });
+      };
+      reader.onerror = () => {
+        reject(new Error('Error leyendo el archivo: ' + reader.error?.message));
+      };
+      reader.readAsArrayBuffer(file);
+    });
   }
 
   private triggerExtraction() {
