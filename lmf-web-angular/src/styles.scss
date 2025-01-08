@@ -1,1 +1,26 @@
-@import "../node_modules/primeicons/primeicons.css";
+@import '../node_modules/bootstrap/scss/functions';
+@import '../node_modules/bootstrap/scss/variables';
+@import '../node_modules/bootstrap/scss/mixins';
+@import '../node_modules/bootstrap/scss/utilities';
+
+
+$body-bg: #121212;
+$body-color: #ffffff;
+$link-color: #00a6df;
+$link-hover-color: lighten(#00a6df, 10%);
+$btn-primary-bg: #00a6df;
+$btn-primary-border: #00a6df;
+$btn-primary-hover-bg: darken(#00a6df, 10%);
+$btn-primary-hover-border: darken(#00a6df, 10%);
+
+@import '../node_modules/bootstrap/scss/utilities/api';
+
+:root {
+  --surface-ground: #121212;
+  --surface-card: #1e1e1e;
+  --text-color: #ffffff;
+  --primary-color: #00a6df;
+  --primary-color-text: #ffffff;
+  --button-bg: #00a6df;
+  --button-text-color: #ffffff;
+}
