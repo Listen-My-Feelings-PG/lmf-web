@@ -21,7 +21,6 @@ export class TrainingComponent {
     list: Array<Song>,
     pool: Array<Song>,
     poolBusy: boolean,
-    poolCounter: number,
     iterator: any
   }
 
@@ -37,7 +36,6 @@ export class TrainingComponent {
       list: [],
       pool: [],
       poolBusy: false,
-      poolCounter: 0,
       iterator: null
     }
 
@@ -53,7 +51,6 @@ export class TrainingComponent {
     let item = this.songs.iterator.next();
     if (item.done)
       return this.checkPool(item);
-    this.songs.poolCounter++;
     this.http.post('upload/file', item.value, true).subscribe({
       next: (data: any) => {
         let listSong = this.songs.list[item.value.listIndex];
@@ -75,7 +72,6 @@ export class TrainingComponent {
       this.triggerRequest();
     else {
       this.songs.pool = [];
-      this.songs.poolCounter = 0;
       this.songs.poolBusy = false;
     }
   }
