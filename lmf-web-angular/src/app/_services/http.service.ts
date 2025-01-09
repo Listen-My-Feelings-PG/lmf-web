@@ -1,7 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, ObservableInput, throwError } from 'rxjs';
-import { catchError, finalize } from 'rxjs/operators';
+import { BehaviorSubject, catchError, finalize, Observable, ObservableInput, throwError } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -14,7 +13,7 @@ export class HttpService {
   constructor(private http: HttpClient) {
     this.busy = false;
     this.baseUrl = 'http://localhost:3000/';
-    this.toastEvent = new BehaviorSubject<ToastProperties>({ //Evento en un servicio. La variable funcionará como puente entre el componente emisor (.next) y el receptor(.subscribe)
+    this.toastEvent = new BehaviorSubject<ToastProperties>({ //Evento en un servicio. La variable funcionarÃ¡ como puente entre el componente emisor (.next) y el receptor(.subscribe)
       key: null,
       severity: 'info',
       summary: '',
@@ -77,8 +76,8 @@ export class HttpService {
       this.toastEvent.next({
         key: 'default',
         severity: 'error',
-        summary: 'Error de conexión',
-        detail: 'Ocurrió un error en el servidor. Inténtelo mas tarde',
+        summary: 'Error de conexiÃ³n',
+        detail: 'OcurriÃ³ un error en el servidor. IntÃ©ntelo mas tarde',
         life: 5000
       });
     }

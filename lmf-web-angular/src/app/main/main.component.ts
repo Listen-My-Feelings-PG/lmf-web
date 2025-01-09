@@ -7,11 +7,11 @@ import { Song } from '../_models/song.model';
 
 @Component({
   selector: 'app-main',
+  standalone: true,
   imports: [
     FileUploadModule,
     ButtonModule,
-    CommonModule
-  ],
+    CommonModule],
   templateUrl: './main.component.html',
   styleUrl: './main.component.scss'
 })
