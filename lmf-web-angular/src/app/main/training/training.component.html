@@ -1,1 +1,55 @@
-<p>training works!</p>
+<div class="container">
+  <h1>Prueba 1</h1>
+  <div class="row">
+    <div class="col">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col"><i class="fas fa-home"></i></th>
+            <th scope="col">Nombre</th>
+            <th scope="col">Puntuación</th>
+            <th scope="col">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of songs.list; let i=index">
+            <td>{{i+1}}</td>
+            <td>{{item.name}}</td>
+            <td>
+              <div *ngIf="item.uploadSuccess; else scoreDisabled">
+                <ng-container *ngFor="let star of rating.stars; let ist = index">
+                  <i class="pi" [ngClass]="ist < item.userScore ? 'pi-star-fill' : 'pi-star'" (click)="rate(i,ist + 1)"
+                    style="font-size: 24px; cursor: pointer; margin-right: 8px; color: #FFD700;"></i>
+                </ng-container>
+              </div>
+              <ng-template #scoreDisabled>
+                <i class="pi pi-star" style="font-size: 24px; margin-right: 8px; color: #a8a8a8;"></i>
+                <i class="pi pi-star" style="font-size: 24px; margin-right: 8px; color: #a8a8a8;"></i>
+                <i class="pi pi-star" style="font-size: 24px; margin-right: 8px; color: #a8a8a8;"></i>
+              </ng-template>
+            </td>
+            <td class="text-center">
+              <div *ngIf="item.uploadSuccess===undefined">
+                <i class="pi pi-spin pi-spinner" style="font-size: 24px"></i>
+              </div>
+              <div *ngIf="item.uploadSuccess===true">
+                <i class="pi pi-check" style="font-size: 24px; color: rgb(0, 180, 45);"></i>
+              </div>
+              <div *ngIf="item.uploadSuccess===false">
+                <i class="pi pi-exclamation-triangle" style="font-size: 24px; color: red;"></i>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="col">
+      <div class="mb-3">
+        <label for="file">Cargar canción</label>
+        <p-fileUpload mode="basic" chooseLabel="Choose" chooseIcon="pi pi-upload" name="file"
+          url="https://www.primefaces.org/cdn/api/upload.php" accept="audio/mpeg,audio/mpg,audio/mpeg3,audio/mp3,"
+          maxFileSize="100000000" (onSelect)="onFilesSelected($event)" [auto]="true" [multiple]="true" />
+      </div>
+    </div>
+  </div>
+</div>

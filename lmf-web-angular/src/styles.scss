@@ -28,9 +28,24 @@ $btn-primary-border: $base-color;
   --primary-color-text: $base-text-color;
   --button-bg: $base-color;
   --button-text-color: $base-text-color;
+  --menubar-bg: #00c4df; // Color de fondo de la barra
+  --menubar-text-color: #ffffff; // Color del texto
 }
 
-html, body, .app-container {
+html,
+body,
+.app-container {
   background-color: $base-bg-color; // Fondo oscuro
   color: $base-text-color; // Texto claro
+}
+
+.main-container {
+  .p-menubar {
+    background-color: var(--menubar-bg);
+    color: var(--menubar-text-color);
+  }
+
+  .p-menubar-root .p-menuitem-link {
+    color: var(--menubar-text-color);
+  }
 }
