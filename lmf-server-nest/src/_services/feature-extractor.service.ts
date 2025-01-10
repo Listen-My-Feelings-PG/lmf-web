@@ -5,6 +5,7 @@ import { SongEntity } from 'src/_entities/song.entity';
 import { Repository } from 'typeorm';
 import { writeFile } from 'fs/promises';
 import * as zlib from 'zlib';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class FeatureExtractorService {
@@ -18,7 +19,8 @@ export class FeatureExtractorService {
 
   constructor(
     @InjectRepository(SongEntity)
-    private readonly songRepository: Repository<SongEntity>
+    private readonly songRepository: Repository<SongEntity>,
+    private readonly cf: ConfigService
   ) {
     this.pool = [];
     this.poolBusy = false;
@@ -27,7 +29,6 @@ export class FeatureExtractorService {
   }
 
   async runExtraction() {
-    console.log('runExtraction() executed...');
     if (!this.poolBusy) {
       const songs = await this.songRepository.find({ where: { tsFeatures: null } });
       console.log('Songs queried:', songs.length, 'Loading pool...');
@@ -36,13 +37,12 @@ export class FeatureExtractorService {
       });
       this.iterator = this.pool[Symbol.iterator]();
       this.poolBusy = true;
-      console.log('triggering extraction...');
       this.triggerExtraction();
       return {
         message: 'Running extraction',
       }
     } else {
-      console.log('The pool is busy. Ended');
+      console.log('runExtraction() => busy');
       return {
         message: 'pool busy'
       }
@@ -90,13 +90,12 @@ export class FeatureExtractorService {
       if (code === 0) {
         try {
           const parsedFeatures = JSON.parse(stdout);
-          console.log('Features parsed');
           try {
             console.log('Compressing file...')
+            const destPath = this.cf.get<string>('PATH_FEATURES');
             const gzipData = zlib.gzipSync(JSON.stringify(parsedFeatures));
             const gzipFilename = filename + '.json.gz';
-            console.log('File compressed. Saving on ../features');
-            await writeFile('../features/' + gzipFilename, gzipData);
+            await writeFile(destPath + '/' + gzipFilename, gzipData);
             const row = await this.songRepository.findOneBy({ id: item.value.idSong });
             if (row) {
               row.tsFeatures = gzipFilename;
