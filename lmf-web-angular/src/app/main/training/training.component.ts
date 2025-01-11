@@ -1,8 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { FileUploadModule } from 'primeng/fileupload';
-import { Song } from '../../_models/song.model';
+import { Song } from '../../_models/all.model';
 import { HttpService } from '../../_services/http.service';
 
 @Component({
@@ -16,7 +16,7 @@ import { HttpService } from '../../_services/http.service';
   templateUrl: './training.component.html',
   styleUrl: './training.component.scss'
 })
-export class TrainingComponent {
+export class TrainingComponent implements OnInit {
   songs: {
     list: Array<Song>,
     pool: Array<Song>,
@@ -47,6 +47,14 @@ export class TrainingComponent {
     this.songs.iterator = this.songs.pool[Symbol.iterator]();
   }
 
+  ngOnInit(): void {
+    this.http.get('songs/list').subscribe({
+      next: (res) => {
+        this.songs.list = res.data;
+      }
+    });
+  }
+
   private triggerRequest() {
     let item = this.songs.iterator.next();
     if (item.done)
@@ -54,14 +62,15 @@ export class TrainingComponent {
     this.http.post('upload/file', item.value, true).subscribe({
       next: (data: any) => {
         let listSong = this.songs.list[item.value.listIndex];
-        listSong.uploadSuccess = true;
+        listSong.status = 'uploaded';
         listSong.id = data.row.id;
         this.checkPool(item);
       },
       error: (error) => {
+        console.log('error', error);
         let listSong = this.songs.list[item.value.listIndex];
-        listSong.uploadSuccess = false;
-        listSong.errReason = 'duplicated';
+        listSong.status = 'error';
+        listSong.errReason = error.status == 403 ? 'duplicated' : 'other';
         this.checkPool(item);
       }
     });
@@ -83,8 +92,9 @@ export class TrainingComponent {
         type: 'file',
         file: item,
         link: '',
-        userScore: 0,
-        status: 'evaluated'
+        userScore: null,
+        tsScore: null,
+        status: 'local'
       }
       this.songs.list.push(song);
       this.songs.pool.push({ ...song, listIndex: this.songs.list.length - 1 });

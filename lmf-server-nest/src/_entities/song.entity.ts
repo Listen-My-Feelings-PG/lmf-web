@@ -17,13 +17,16 @@ export class SongEntity {
   @Column({ name: 'ca_calif_usuario', type: 'int', nullable: true })
   userScore: number;
 
-  @Column({ name: 'ca_filesize', type: 'int' })
+  @Column({ name: 'ca_filesize', type: 'int', nullable: true })
   fileSize: number;
 
-  @Column({ name: 'ca_filename', type: 'text' })
+  @Column({ name: 'ca_filename', type: 'text', nullable: true })
   fileName: string;
 
   @Column({ name: 'ca_calif_ts', type: 'int', nullable: true })
-  tsScore: number
+  tsScore: number;
+
+  @Column({ name: 'ca_id_tipo_dato', type: 'int' })
+  idDataType: number;
 
 }

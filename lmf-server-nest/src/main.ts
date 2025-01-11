@@ -7,7 +7,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors({
     origin: 'http://localhost:4200',
-    methods: 'GET,POST,PUT,DELETE,PATCH,OPTIONS',
+    methods: 'GET,POST,PUT,DELETE,PATCH',
     allowedHeaders: 'Content-Type,Authorization,Accept',
   });
   app.use(new LogMiddleware().use);

@@ -76,8 +76,8 @@ export class HttpService {
       this.toastEvent.next({
         key: 'default',
         severity: 'error',
-        summary: 'Error de conexiÃ³n',
-        detail: 'OcurriÃ³ un error en el servidor. IntÃ©ntelo mas tarde',
+        summary: 'Error de conexión',
+        detail: 'Ocurrió un error en el servidor. Inténtelo mas tarde',
         life: 5000
       });
     }
