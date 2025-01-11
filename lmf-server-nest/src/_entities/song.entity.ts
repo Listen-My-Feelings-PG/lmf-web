@@ -14,7 +14,7 @@ export class SongEntity {
   @Column({ name: 'ca_tsfeatures', type: 'text', nullable: true })
   tsFeatures: string;
 
-  @Column({ name: 'ca_calif_usuario', type: 'int', nullable:true })
+  @Column({ name: 'ca_calif_usuario', type: 'int', nullable: true })
   userScore: number;
 
   @Column({ name: 'ca_filesize', type: 'int' })
@@ -22,5 +22,8 @@ export class SongEntity {
 
   @Column({ name: 'ca_filename', type: 'text' })
   fileName: string;
+
+  @Column({ name: 'ca_calif_ts', type: 'int', nullable: true })
+  tsScore: number
 
 }
