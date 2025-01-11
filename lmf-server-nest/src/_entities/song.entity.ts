@@ -8,19 +8,22 @@ export class SongEntity {
   @Column({ name: 'ca_nombre', type: 'text' })
   name: string;
 
-  @Column({ name: 'ca_trainstatus', default: 0, type: 'int' })
-  trainstatus: number;
+  @Column({ name: 'ca_trainlevel', type: 'int', default: 0 })
+  trainlevel: number;
 
   @Column({ name: 'ca_tsfeatures', type: 'text', nullable: true })
   tsFeatures: string;
 
-  @Column({ name: 'ca_calif_usuario', default: 0, type: 'int' })
+  @Column({ name: 'ca_calif_usuario', type: 'int', nullable: true })
   userScore: number;
 
-  @Column({ name: 'ca_filesize',  type: 'int' })
+  @Column({ name: 'ca_filesize', type: 'int' })
   fileSize: number;
 
-  @Column({ name: 'ca_filename',  type: 'text' })
+  @Column({ name: 'ca_filename', type: 'text' })
   fileName: string;
+
+  @Column({ name: 'ca_calif_ts', type: 'int', nullable: true })
+  tsScore: number
 
 }

@@ -14,7 +14,8 @@ import { SongFeaturesController } from './main/song-features.controller';
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true
+      isGlobal: true,
+      envFilePath: '.env'
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],

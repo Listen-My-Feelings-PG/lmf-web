@@ -8,6 +8,7 @@ import { GzipConverterService } from 'src/_services/gzip-converter.service';
 import { Mp3ValidationPipe } from 'src/_pipes/mp3-validation.pipe';
 import * as fs from 'fs';
 import * as path from 'path';
+import { ConfigService } from '@nestjs/config';
 
 
 @Controller('upload')
@@ -22,7 +23,10 @@ export class UploadController {
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
-        destination: '../uploads',
+        destination: (req, file, cb) => {
+          const cf: ConfigService = new ConfigService();
+          cb(null, cf.get<string>('PATH_UPLOADS'))
+        },
         filename: ((req, file, cb) => {
           const uniqueSuffix = new Date().getTime();
           cb(null, `${uniqueSuffix}_${file.originalname}`);
@@ -41,13 +45,13 @@ export class UploadController {
       }
     });
 
-    if (existingSong) {
+    /*if (existingSong) {
       const filePath = path.resolve('../uploads', file.filename);
       if (fs.existsSync(filePath))
         await fs.unlinkSync(filePath);
       console.error('Canción duplicada:', file.filename);
       throw new HttpException('Duplicated song', HttpStatus.FORBIDDEN)
-    } else {
+    } else {*/
       const name = body.name;
       const row = await this.songRepository.save(this.songRepository.create({
         name: name,
@@ -58,7 +62,7 @@ export class UploadController {
         message: 'uploaded successful',
         row
       }
-    }
+    //}
   }
 
 }
