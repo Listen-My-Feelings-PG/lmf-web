@@ -8,8 +8,7 @@ export class Song {
     public tsScore: number | null,
     public status: 'local' | 'uploaded' | 'uploading' | 'error',
     public id?: number,
-    public errReason?: 'duplicated' | 'other',
     public listIndex?: number,
+    public errReason?: 'duplicated' | 'other',
   ) { }
 }
-

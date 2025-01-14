@@ -1,1 +1,26 @@
-<p>player works!</p>
+<div class="audio-player">
+  <button class="play-pause-btn"
+    (click)="togglePlayPause()"
+    [ngClass]="{ playing: isPlaying }">
+    <i class="pi"
+      [ngClass]="isPlaying ? 'pi-pause' : 'pi-play'"></i>
+  </button>
+  <div class="progress-container">
+    <input type="range"
+      class="progress-bar"
+      [value]="currentTime"
+      [max]="duration"
+      (input)="onSeek($event)" />
+    <div class="time-display">
+      <span>{{ formatTime(currentTime) }}</span>
+      <span>{{ formatTime(duration) }}</span>
+    </div>
+  </div>
+</div>
+<audio #audioPlayer
+  (timeupdate)="updateProgress()"
+  (loadedmetadata)="updateMetadata()">
+  <source [src]="songUrl"
+    type="audio/mpeg" />
+  Your browser does not support the audio element.
+</audio>

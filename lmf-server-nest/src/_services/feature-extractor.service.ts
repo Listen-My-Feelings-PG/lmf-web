@@ -31,7 +31,7 @@ export class FeatureExtractorService {
   async runExtraction() {
     if (!this.poolBusy) {
       const songs = await this.songRepository.find({ where: { tsFeatures: null } });
-      console.log('Songs queried:', songs.length, 'Loading pool...');
+      console.info('Songs queried:', songs.length, 'Loading pool...', new Date().toLocaleString());
       songs.forEach(async (item, index) => {
         this.pool.push({ idSong: item.id, filename: item.fileName });
       });
@@ -42,36 +42,10 @@ export class FeatureExtractorService {
         message: 'Running extraction',
       }
     } else {
-      console.log('runExtraction() => busy');
       return {
         message: 'pool busy'
       }
     }
-  }
-
-  async decompressGzipFile(file: File): Promise<any> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const buffer = Buffer.from(new Uint8Array(reader.result as ArrayBuffer));
-        zlib.gunzip(buffer, (err, decompressedBuffer) => {
-          if (err) {
-            reject(new Error('Error descomprimiendo el archivo gzip: ' + err.message));
-          } else {
-            try {
-              const json = JSON.parse(decompressedBuffer.toString());
-              resolve(json);
-            } catch (parseError) {
-              reject(new Error('Error parseando el JSON: ' + parseError.message));
-            }
-          }
-        });
-      };
-      reader.onerror = () => {
-        reject(new Error('Error leyendo el archivo: ' + reader.error?.message));
-      };
-      reader.readAsArrayBuffer(file);
-    });
   }
 
   private triggerExtraction() {
@@ -91,7 +65,6 @@ export class FeatureExtractorService {
         try {
           const parsedFeatures = JSON.parse(stdout);
           try {
-            console.log('Compressing file...')
             const destPath = this.cf.get<string>('PATH_FEATURES');
             const gzipData = zlib.gzipSync(JSON.stringify(parsedFeatures));
             const gzipFilename = filename + '.json.gz';
@@ -100,37 +73,61 @@ export class FeatureExtractorService {
             if (row) {
               row.tsFeatures = gzipFilename;
               await this.songRepository.save(row);
+              console.info('file compressed:', gzipFilename);
               this.checkPool(item);
             } else {
-              console.error('Error al modificar registro: La canción no existe en la base de datos')
+              console.error('Error al modificar registro: La canción no existe en la base de datos', new Date().toLocaleString())
               this.checkPool(item);
             }
           } catch (error) {
-            console.error('Error compressing features:', error);
+            console.error('Error compressing features:', error, new Date().toLocaleString());
             this.checkPool(item);
           }
         } catch (parseError) {
-          console.error('Error al parsear las características extraidas:', parseError);
+          console.error('Error al parsear las características extraidas:', parseError, new Date().toLocaleString());
           this.checkPool(item);
         }
       } else {
-        console.error('Error al extraer características:', stderr);
+        console.error('Error al extraer características:', stderr, new Date().toLocaleString());
         this.checkPool(item);
       }
     });
   }
 
   private checkPool(item: any) {
-    console.log('checking pool...');
-    if (!item.done) {
-      console.log('triggering extraction again...');
+    if (!item.done)
       this.triggerExtraction();
-    } else {
+    else {
       this.pool = [];
       this.poolCounter = 0;
       this.poolBusy = false;
-      console.log('The pool is finished and ready for next extraction.')
+      console.info('The pool is finished and ready for next extraction')
     }
+  }
+
+  async decompressGzipFile(file: File): Promise<any> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const buffer = Buffer.from(new Uint8Array(reader.result as ArrayBuffer));
+        zlib.gunzip(buffer, (err, decompressedBuffer) => {
+          if (err) {
+            reject(new Error('Error descomprimiendo el archivo gzip: ' + err.message,));
+          } else {
+            try {
+              const json = JSON.parse(decompressedBuffer.toString());
+              resolve(json);
+            } catch (parseError) {
+              reject(new Error('Error parseando el JSON: ' + parseError.message));
+            }
+          }
+        });
+      };
+      reader.onerror = () => {
+        reject(new Error('Error leyendo el archivo: ' + reader.error?.message));
+      };
+      reader.readAsArrayBuffer(file);
+    });
   }
 }
 

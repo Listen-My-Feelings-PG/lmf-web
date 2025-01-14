@@ -4,6 +4,7 @@ import { ButtonModule } from 'primeng/button';
 import { FileUploadModule } from 'primeng/fileupload';
 import { Song } from '../../_models/all.model';
 import { HttpService } from '../../_services/http.service';
+import { PlayerComponent } from "../../player/player.component";
 
 @Component({
   selector: 'app-training',
@@ -12,11 +13,13 @@ import { HttpService } from '../../_services/http.service';
     FileUploadModule,
     ButtonModule,
     CommonModule,
+    PlayerComponent
   ],
   templateUrl: './training.component.html',
   styleUrl: './training.component.scss'
 })
 export class TrainingComponent implements OnInit {
+  urlSongPlaying: string;
   songs: {
     list: Array<Song>,
     pool: Array<Song>,
@@ -32,6 +35,7 @@ export class TrainingComponent implements OnInit {
   constructor(
     private http: HttpService,
   ) {
+    this.urlSongPlaying = '';
     this.songs = {
       list: [],
       pool: [],
@@ -49,9 +53,7 @@ export class TrainingComponent implements OnInit {
 
   ngOnInit(): void {
     this.http.get('songs/list').subscribe({
-      next: (res) => {
-        this.songs.list = res.data;
-      }
+      next: (res) => { this.songs.list = res.data; }
     });
   }
 
@@ -116,5 +118,10 @@ export class TrainingComponent implements OnInit {
         }
       });
     }
+  }
+
+  play(listIndex: number) {
+    const s = this.songs.list[listIndex];
+    this.urlSongPlaying = `http://localhost:3000/songs/song/mp3?value=${s.id}`;
   }
 }
