@@ -38,7 +38,6 @@ export class SongsController {
     if (song) {
       const filePath = path.resolve(this.cf.get<string>('PATH_UPLOADS'), song.fileName);
       if (fs.existsSync(filePath)) {
-        console.log('filePath', filePath);
         res.set({
           'Content-Type': 'audio/mpeg',
           'Content-Disposition': `attachment; filename="file.mp3"`

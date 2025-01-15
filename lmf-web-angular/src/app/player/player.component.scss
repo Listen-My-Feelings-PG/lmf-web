@@ -24,7 +24,7 @@
     }
 
     &.playing {
-      background: $accent;
+      background: var(--color-accent);
     }
   }
 
@@ -36,7 +36,7 @@
     .progress-bar {
       width: 100%;
       appearance: none;
-      background: $base-bg-color;
+      background: var(--surface-ground);
       height: 5px;
       border-radius: 5px;
       outline: none;
@@ -46,7 +46,7 @@
         appearance: none;
         width: 10px;
         height: 10px;
-        background: $primary;
+        background: var(--color-primary);
         border-radius: 50%;
         cursor: pointer;
       }
@@ -56,7 +56,7 @@
       display: flex;
       justify-content: space-between;
       font-size: 12px;
-      color: $base-text-color;
+      color: var(--text-color);
     }
   }
 }

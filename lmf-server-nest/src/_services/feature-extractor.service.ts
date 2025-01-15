@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { spawn } from 'child_process';
 import { SongEntity } from 'src/_entities/song.entity';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { writeFile } from 'fs/promises';
 import * as zlib from 'zlib';
 import { ConfigService } from '@nestjs/config';
@@ -30,8 +30,9 @@ export class FeatureExtractorService {
 
   async runExtraction() {
     if (!this.poolBusy) {
-      const songs = await this.songRepository.find({ where: { tsFeatures: null } });
-      console.info('Songs queried:', songs.length, 'Loading pool...', new Date().toLocaleString());
+      const songs = await this.songRepository.find({ where: { tsFeatures: IsNull() } });
+      if (songs.length > 0)
+        console.info('Songs queried:', songs.length, 'Loading pool...', new Date().toLocaleString());
       songs.forEach(async (item, index) => {
         this.pool.push({ idSong: item.id, filename: item.fileName });
       });
@@ -54,7 +55,7 @@ export class FeatureExtractorService {
       return this.checkPool(item);
     this.poolCounter++;
     const filename = item.value.filename;
-    const process = spawn('python', ['../feature_extractor.py', '../uploads/' + filename]);
+    const process = spawn('python', ['../feature_extractor.py', this.cf.get<string>('PATH_UPLOADS') + '/' + filename]);
     let stdout = '';
     let stderr = '';
     process.stdout.on('data', (data) => stdout += data.toString());
@@ -73,7 +74,7 @@ export class FeatureExtractorService {
             if (row) {
               row.tsFeatures = gzipFilename;
               await this.songRepository.save(row);
-              console.info('file compressed:', gzipFilename);
+              console.info('File compressed:', gzipFilename);
               this.checkPool(item);
             } else {
               console.error('Error al modificar registro: La canción no existe en la base de datos', new Date().toLocaleString())
@@ -95,13 +96,17 @@ export class FeatureExtractorService {
   }
 
   private checkPool(item: any) {
+    let hideMessage = false;
     if (!item.done)
       this.triggerExtraction();
     else {
+      if (this.pool.length === 0)
+        hideMessage = true;
       this.pool = [];
       this.poolCounter = 0;
       this.poolBusy = false;
-      console.info('The pool is finished and ready for next extraction')
+      if (!hideMessage)
+        console.info('The pool is finished and ready for next extraction');
     }
   }
 

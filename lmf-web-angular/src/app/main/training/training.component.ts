@@ -53,7 +53,10 @@ export class TrainingComponent implements OnInit {
 
   ngOnInit(): void {
     this.http.get('songs/list').subscribe({
-      next: (res) => { this.songs.list = res.data; }
+      next: (res) => {
+        console.log('res', res);
+        this.songs.list = res.data;
+      }
     });
   }
 
@@ -113,8 +116,9 @@ export class TrainingComponent implements OnInit {
     let song = this.songs.list[indexSong];
     if (!this.rating.blocked || song.userScore != rate) {
       this.http.post('rate/song', { id: song.id, score: rate }, false, this.rating.blocked).subscribe({
-        next: (data) => {
-          song.userScore = data.score;
+        next: (res) => {
+          console.log('res', res);
+          song.userScore = res.score;
         }
       });
     }

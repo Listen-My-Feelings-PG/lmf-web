@@ -17,21 +17,18 @@
             <td>{{i+1}}</td>
             <td>{{item.name}}</td>
             <td>
-              <div *ngIf="(item.status=='local'||item.status=='uploaded')&&item.userScore===null; else scoreDisabled">
+              <div *ngIf="(item.status=='local'||item.status=='uploaded'); else scoreDisabled">
                 <ng-container *ngFor="let star of rating.stars; let ist = index">
-                  <i class="pi"
+                  <i class="star-rated pi"
                     [ngClass]="item.userScore!==null && ist < item.userScore ? 'pi-star-fill' : 'pi-star'"
-                    (click)="rate(i,ist + 1)"
-                    style="font-size: 24px; cursor: pointer; margin-right: 8px; color: #FFD700;"></i>
+                    (click)="rate(i,ist + 1)"></i>
                 </ng-container>
               </div>
               <ng-template #scoreDisabled>
-                <i class="pi pi-star"
-                  style="font-size: 24px; margin-right: 8px; color: #a8a8a8;"></i>
-                <i class="pi pi-star"
-                  style="font-size: 24px; margin-right: 8px; color: #a8a8a8;"></i>
-                <i class="pi pi-star"
-                  style="font-size: 24px; margin-right: 8px; color: #a8a8a8;"></i>
+                <ng-container *ngFor="let star of rating.stars; let ist = index">
+                  <i class="star-disabled pi"
+                    [ngClass]="item.userScore!==null && ist < item.userScore ? 'pi-star-fill' : 'pi-star'"></i>
+                </ng-container>
               </ng-template>
             </td>
             <td class="text-center">

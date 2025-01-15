@@ -18,7 +18,7 @@ export class UploadExampleController {
   @Post()
   @UseInterceptors(AnyFilesInterceptor({
     storage: diskStorage({
-      destination: '../uploads',
+      //destination: '../uploads',
       filename: ((req, file, cb) => {
         const uniqueSuffix = new Date().getTime();
         cb(null, `${uniqueSuffix}-${file.originalname}`);
@@ -30,7 +30,7 @@ export class UploadExampleController {
     @Body() body: string
   ) {
     try {
-      const features = null// await this.tsFeatureExtractor.extractFeature('../uploads/' + files[0].filename);
+      const features = null;
       const compressedFile = await this.gzipConverter.compressFile(features, files[0].filename);
       await writeFile(compressedFile.filePath, compressedFile.data);
       return {
