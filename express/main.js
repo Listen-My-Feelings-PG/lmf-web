@@ -17,7 +17,7 @@ app.use((req, res, next) => {
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Headers', 'Origin, Content-Type, Accept, Authorization');
   if (req.method != 'OPTIONS')
-    console.log(req.url, req.method, new Date().toLocaleString());
+    console.info(req.url, req.method, new Date().toLocaleString());
   else
     return res.sendStatus(200);
   next();
@@ -26,8 +26,6 @@ app.use((req, res, next) => {
 app.post('/upload', (req, res) => {
   let body = req.body;
   let files = req.files;
-  console.log('body', body);
-  console.log('files', files);
   return res.status(200).json('hold on...');
 });
 
@@ -35,6 +33,6 @@ const port = process.env.PORT || 3000;
 
 server.listen(port, (error) => {
   if (error)
-    console.log('Error al iniciar servidor:', error, new Date().toLocaleString());
-  console.log(`Server started on port`, port, new Date().toLocaleString());
+    console.error('Error al iniciar servidor:', error, new Date().toLocaleString());
+  console.info(`Server started on port`, port, new Date().toLocaleString());
 });

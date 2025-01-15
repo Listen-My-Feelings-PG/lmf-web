@@ -54,7 +54,6 @@ export class TrainingComponent implements OnInit {
   ngOnInit(): void {
     this.http.get('songs/list').subscribe({
       next: (res) => {
-        console.log('res', res);
         this.songs.list = res.data;
       }
     });
@@ -72,7 +71,6 @@ export class TrainingComponent implements OnInit {
         this.checkPool(item);
       },
       error: (error) => {
-        console.log('error', error);
         let listSong = this.songs.list[item.value.listIndex];
         listSong.status = 'error';
         listSong.errReason = error.status == 403 ? 'duplicated' : 'other';
@@ -117,7 +115,6 @@ export class TrainingComponent implements OnInit {
     if (!this.rating.blocked || song.userScore != rate) {
       this.http.post('rate/song', { id: song.id, score: rate }, false, this.rating.blocked).subscribe({
         next: (res) => {
-          console.log('res', res);
           song.userScore = res.score;
         }
       });

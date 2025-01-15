@@ -34,8 +34,7 @@ export class MainComponent implements OnInit {
       },
       {
         label: 'Biblioteca',
-        icon: 'pi pi-book',
-        command: () => { console.log('Navegando a Biblioteca'); }
+        icon: 'pi pi-book'
       },
       {
         label: 'Descubre',
