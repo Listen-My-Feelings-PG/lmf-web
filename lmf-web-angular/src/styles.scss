@@ -1,24 +1,27 @@
+@import '../node_modules/primeng/resources/themes/bootstrap4-dark-blue/theme.css';
+@import '../node_modules/primeicons/primeicons.css';
 @import '../node_modules/@fortawesome/fontawesome-free/css/all.css';
-@import '../node_modules/bootstrap/scss/functions';
-// Definir tus variables personalizadas
-$base-color: #00bfda;
-$base-text-color: #ffffff; // Establecer el color del texto en blanco para mejor legibilidad
-$base-bg-color: #121212; // Fondo oscuro
+@import '../node_modules/bootstrap/dist/css/bootstrap.min.css';
 
-// Sobrescribir variables de Bootstrap
+/*@import '../node_modules/bootstrap/scss/functions';
+@import '../node_modules/bootstrap/scss/variables';
+@import '../node_modules/bootstrap/scss/variables-dark';
+@import '../node_modules/bootstrap/scss/maps';
+@import '../node_modules/bootstrap/scss/mixins';
+@import '../node_modules/bootstrap/scss/utilities';
+@import '../node_modules/bootstrap/scss/utilities/api';*/
+//@import '../node_modules/bootstrap/dist/css/bootstrap-utilities.css';
+
+$base-color: #00bfda;
+$base-text-color: #ffffff;
+$base-bg-color: #121212;
+
 $body-bg: $base-bg-color;
 $body-color: $base-text-color;
 $link-color: $base-color;
 $link-hover-color: lighten($base-color, 10%);
 $btn-primary-bg: $base-color;
 $btn-primary-border: $base-color;
-
-@import '../node_modules/bootstrap/scss/variables';
-@import '../node_modules/bootstrap/scss/variables-dark';
-@import '../node_modules/bootstrap/scss/maps';
-@import '../node_modules/bootstrap/scss/mixins';
-@import '../node_modules/bootstrap/scss/utilities';
-@import '../node_modules/bootstrap/scss/utilities/api';
 
 :root {
   --surface-ground: $base-bg-color;

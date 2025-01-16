@@ -1,15 +1,17 @@
 <div class="container">
   <h1>Prueba 1</h1>
   <div class="row">
-    <div class="col">
-      <table class="table table-success table-striped">
+    <div class="col-md-6">
+      <table class="table table-dark table-hover table-scroll">
         <thead>
           <tr>
             <th scope="col">#</th>
             <th scope="col">Nombre</th>
-            <th scope="col">Puntuación</th>
+            <th scope="col"
+              class="rate-col">Puntuación</th>
             <th scope="col">Status</th>
             <th scope="col">Opción</th>
+            <th scope="col">Features</th>
           </tr>
         </thead>
         <tbody>
@@ -54,11 +56,21 @@
                 severity="success"
                 (click)="play(i)"></button>
             </td>
+            <td>
+              <div *ngIf="item.tsFeatures=='error'">
+                <i class="pi pi-exclamation-triangle"
+                  style="font-size: 24px; color: red;"></i>
+              </div>
+              <div *ngIf="item.tsFeatures===undefined">
+                --
+              </div>
+              <div *ngIf="item.tsFeatures&&item.tsFeatures !== 'error'">
+                {{getTsFeaturesDimensions(item)}}
+              </div>
+            </td>
           </tr>
         </tbody>
       </table>
-    </div>
-    <div class="col">
       <div class="mb-3">
         <label for="file">Cargar canción</label>
         <p-fileUpload mode="basic"
@@ -72,6 +84,22 @@
           [auto]="true"
           [multiple]="true" />
       </div>
+    </div>
+    <div class="col-md-6">
+      <button pButton
+        type="button"
+        severity="success"
+        (click)="getSongTsFeatures()"
+        [disabled]="tsFeatures.poolBusy">
+        Obtener características de las canciones calificadas
+      </button><br>
+      <button pButton
+        type="button"
+        severity="danger"
+        (click)="stopTsFeaturesPool()"
+        [disabled]="!tsFeatures.poolBusy">
+        Detener extracción
+      </button>
     </div>
   </div>
 </div>

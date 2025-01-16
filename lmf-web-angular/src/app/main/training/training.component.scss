@@ -21,3 +21,12 @@
   z-index: 1000;
   box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.2);
 }
+
+.table-scroll {
+  max-height: 300px !important;
+  overflow-y: scroll;
+}
+
+.rate-col {
+  min-width: 115px;
+}

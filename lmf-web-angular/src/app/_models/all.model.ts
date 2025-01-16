@@ -8,7 +8,14 @@ export class Song {
     public tsScore: number | null,
     public status: 'local' | 'uploaded' | 'uploading' | 'error',
     public id?: number,
-    public listIndex?: number,
-    public errReason?: 'duplicated' | 'other',
+    public listIndex?: number | null,
+    public errReason?: 'duplicated' | 'other' | null,
+    public tsFeatures?: LibrosaTsFeatures | 'error',
+    public tsFeaturesErrReason?: 'overload' | 'other'
   ) { }
+}
+
+export interface LibrosaTsFeatures {
+  mel_spectrogram: Array<Array<number>>,
+  tempo: number
 }
