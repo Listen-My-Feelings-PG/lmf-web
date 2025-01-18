@@ -2,9 +2,10 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { FileUploadModule } from 'primeng/fileupload';
-import { Song } from '../../_models/all.model';
+import { LibrosaTsFeatures, Song } from '../../_models/all.model';
 import { HttpService } from '../../_services/http.service';
 import { PlayerComponent } from "../../player/player.component";
+//import * as tf from '@tensorflow/tfjs';
 
 @Component({
   selector: 'app-training',
@@ -23,13 +24,16 @@ export class TrainingComponent implements OnInit {
   songs: {
     list: Array<Song>, //Lista principal
     pool: Array<Song>,
-    poolBusy: boolean,
+    busy: boolean,
     iterator: any
   }
 
   tsFeatures: {
-    poolSongIds: Array<number>,
-    poolBusy: boolean,
+    poolSongs: Array<{
+      id: number,
+      userScore: number
+    }>,
+    busy: boolean,
     iterator: any
   }
 
@@ -38,12 +42,14 @@ export class TrainingComponent implements OnInit {
     blocked: boolean
   }
 
+  model: /*tf.Sequential |*/ undefined;
+
   constructor(
     private http: HttpService,
   ) {
     this.tsFeatures = {
-      poolSongIds: [],
-      poolBusy: false,
+      poolSongs: [],
+      busy: false,
       iterator: null
     }
 
@@ -51,7 +57,7 @@ export class TrainingComponent implements OnInit {
     this.songs = {
       list: [],
       pool: [],
-      poolBusy: false,
+      busy: false,
       iterator: null
     }
 
@@ -61,7 +67,17 @@ export class TrainingComponent implements OnInit {
     }
 
     this.songs.iterator = this.songs.pool[Symbol.iterator]();
+    /*this.model = tf.sequential();
+    this.model.add(tf.layers.dense({ units: 64, activation: 'relu', inputShape: [128, 20000] }));
+    this.model.add(tf.layers.flatten());
+    this.model.add(tf.layers.dense({ units: 32, activation: 'relu' }));
+    this.model.add(tf.layers.dense({ units: 1, activation: 'linear' })); // Salida para predecir el score
 
+    this.model.compile({
+      optimizer: 'adam',
+      loss: 'meanSquaredError',
+      metrics: ['mse']
+    });*/
   }
 
   ngOnInit(): void {
@@ -97,7 +113,7 @@ export class TrainingComponent implements OnInit {
       this.triggerUploadRequest();
     else {
       this.songs.pool = [];
-      this.songs.poolBusy = false;
+      this.songs.busy = false;
     }
   }
 
@@ -116,9 +132,9 @@ export class TrainingComponent implements OnInit {
       this.songs.pool.push({ ...song, listIndex: this.songs.list.length - 1 });
     });
 
-    if (!this.songs.poolBusy) {
+    if (!this.songs.busy) {
       this.songs.iterator = this.songs.pool[Symbol.iterator]();
-      this.songs.poolBusy = true;
+      this.songs.busy = true;
       this.triggerUploadRequest();
     }
   }
@@ -140,11 +156,19 @@ export class TrainingComponent implements OnInit {
   }
 
   getSongTsFeatures() {
-    const idsSongsRated = this.songs.list.filter((obj) => obj.userScore !== null && obj.userScore > 0 && !obj.tsFeatures).map((obj) => obj.id);
-    this.tsFeatures.poolSongIds = idsSongsRated as Array<number>;
-    if (!this.tsFeatures.poolBusy) {
-      this.tsFeatures.iterator = this.tsFeatures.poolSongIds[Symbol.iterator]();
-      this.tsFeatures.poolBusy = true;
+    const songsRated: Array<{
+      id: number,
+      userScore: number
+    }> = this.songs.list.filter(
+      (obj) => obj.userScore !== null &&
+        obj.userScore > 0 &&
+        obj.tsFeaturesDimensions === undefined &&
+        obj.id
+    ).map((obj) => ({ id: obj.id as number, userScore: obj.userScore as number }));
+    this.tsFeatures.poolSongs = songsRated;
+    if (!this.tsFeatures.busy) {
+      this.tsFeatures.iterator = this.tsFeatures.poolSongs[Symbol.iterator]();
+      this.tsFeatures.busy = true;
       this.triggerTsfeaturesRequest();
       console.log('triggerTsfeaturesRequest disparado...');
     }
@@ -154,15 +178,36 @@ export class TrainingComponent implements OnInit {
     let item = this.tsFeatures.iterator.next();
     if (item.done)
       return this.checkTsFeaturesPool(item);
-    let songIndex = this.songs.list.findIndex((obj) => obj.id == item.value);
-    this.http.get(`download/tsfeatures?value=${item.value}`, true).subscribe({
+    let songIndex = this.songs.list.findIndex((obj) => obj.id == item.value.id);
+    this.http.get(`download/tsfeatures?value=${item.value.id}`, true).subscribe({
       next: (data) => {
-        this.songs.list[songIndex].tsFeatures = data;
-        this.checkTsFeaturesPool(item);
+        let tensorResources = {
+          features: data,
+          songId: item.value.id,
+          userScore: item.value.userScore
+        }
+
+        //const inputTensor = tf.tensor2d(tensorResources.features.mel_spectrogram);
+        //const outputTensor = tf.tensor1d([tensorResources.userScore]);
+
+        /*this.model.fit(inputTensor.expandDims(0), outputTensor, { epochs: 10, batchSize: 1 }).then((result) => {
+          console.log(`Entrenamiento completado para la canción con ID: ${tensorResources.songId}`, result);
+          this.songs.list[songIndex].tsFeaturesDimensions = this.getTsFeaturesDimensions(data);
+
+          inputTensor.dispose();
+          outputTensor.dispose();
+          this.checkTsFeaturesPool(item);
+
+        }).catch((error) => {
+          console.error('Ocurrió un error al entrenar el modelo', error);
+          inputTensor.dispose();
+          outputTensor.dispose();*/
+          this.checkTsFeaturesPool(item);/*
+        });*/
       },
       error: (error) => {
         console.log('error', error);
-        this.songs.list[songIndex].tsFeatures = 'error';
+        this.songs.list[songIndex].tsFeaturesDimensions = 'error';
         this.songs.list[songIndex].tsFeaturesErrReason = 'other';
         this.checkTsFeaturesPool(item);
       }
@@ -173,31 +218,25 @@ export class TrainingComponent implements OnInit {
     if (!item.done)
       this.triggerTsfeaturesRequest();
     else {
-      this.tsFeatures.poolSongIds = [];
-      this.tsFeatures.poolBusy = false
+      this.tsFeatures.poolSongs = [];
+      this.tsFeatures.busy = false
       console.log('Pool finalizado');
     }
   }
 
   stopTsFeaturesPool() {
-    this.tsFeatures.poolSongIds = [];
-    this.tsFeatures.iterator = this.tsFeatures.poolSongIds[Symbol.iterator]();
-    //this.checkTsFeaturesPool({ done: true });
+    this.tsFeatures.poolSongs = [];
+    this.tsFeatures.iterator = this.tsFeatures.poolSongs[Symbol.iterator]();
   }
 
-  getTsFeaturesDimensions(song: Song) {
+  getTsFeaturesDimensions(data: LibrosaTsFeatures) {
     let validColumns = 0;
-    if (song.tsFeatures !== undefined && song.tsFeatures !== 'error') {
-      song.tsFeatures?.mel_spectrogram.forEach((item) => {
-        item.forEach((value) => {
-          if (value > 0)
-            validColumns++;
-        });
+    data.mel_spectrogram.forEach((item) => {
+      item.forEach((value) => {
+        if (value > 0)
+          validColumns++;
       });
-      return validColumns;
-    } else
-      return '--';
+    });
+    return validColumns;
   }
-
-
 }

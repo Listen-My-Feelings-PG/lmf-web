@@ -10,7 +10,7 @@ export class Song {
     public id?: number,
     public listIndex?: number | null,
     public errReason?: 'duplicated' | 'other' | null,
-    public tsFeatures?: LibrosaTsFeatures | 'error',
+    public tsFeaturesDimensions?: number | 'error',
     public tsFeaturesErrReason?: 'overload' | 'other'
   ) { }
 }
