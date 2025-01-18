@@ -21,7 +21,7 @@ import { PlayerComponent } from "../../player/player.component";
 export class TrainingComponent implements OnInit {
   urlSongPlaying: string;
   songs: {
-    list: Array<Song>,
+    list: Array<Song>, //Lista principal
     pool: Array<Song>,
     poolBusy: boolean,
     iterator: any
