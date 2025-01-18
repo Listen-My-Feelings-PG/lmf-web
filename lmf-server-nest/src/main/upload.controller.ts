@@ -51,7 +51,8 @@ export class UploadController {
     const existingSong = await this.songsTable.findOne({
       where: {
         name: file.originalname,
-        fileSize: file.size
+        fileSize: file.size,
+        active: true
       }
     });
     const filePath = path.resolve(this.cf.get<string>('PATH_UPLOADS'), file.filename);
@@ -67,7 +68,7 @@ export class UploadController {
           name: name,
           fileSize: file.size,
           fileName: file.filename,
-          idDataType: 1 //hardcodeado!!
+          idDataType: 1, //hardcodeado!!
         }));
         return {
           message: 'uploaded successful',

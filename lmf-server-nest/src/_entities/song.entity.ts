@@ -29,4 +29,7 @@ export class SongEntity {
   @Column({ name: 'ca_id_tipo_dato', type: 'int' })
   idDataType: number;
 
+  @Column({ name: 'ca_activo', type: 'boolean' })
+  active: boolean;
+
 }

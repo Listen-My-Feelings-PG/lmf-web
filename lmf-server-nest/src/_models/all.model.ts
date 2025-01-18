@@ -6,9 +6,16 @@ export class Song {
     public link: string,
     public userScore: number | null,
     public tsScore: number | null,
-    public status: 'local' | 'uploaded' | 'uploading' | 'error',
+    public statusStorage: 'local' | 'uploaded' | 'uploading' | 'error',
     public id?: number,
-    public listIndex?: number,
-    public errReason?: 'duplicated' | 'other',
+    public listIndex?: number | null,
+    public statusErrReason?: 'duplicated' | 'other' | null,
+    public tsFeaturesDimensions?: number | 'error',
+    public tsFeaturesErrReason?: 'overload' | 'other'
   ) { }
+}
+
+export interface LibrosaTsFeatures {
+  mel_spectrogram: Array<Array<number>>,
+  tempo: number
 }
