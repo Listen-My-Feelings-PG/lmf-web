@@ -1,0 +1,32 @@
+.star-rated {
+  font-size: 24px;
+  cursor: pointer;
+  margin-right: 8px;
+  color: #FFD700;
+}
+
+.star-disabled {
+  font-size: 24px;
+  margin-right: 8px;
+  color: #a8a8a8;
+}
+
+.fixed-player {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: var(--surface-ground);
+  color: var(--primary-color-text);
+  z-index: 1000;
+  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.table-scroll {
+  max-height: 300px !important;
+  overflow-y: scroll;
+}
+
+.rate-col {
+  min-width: 115px;
+}

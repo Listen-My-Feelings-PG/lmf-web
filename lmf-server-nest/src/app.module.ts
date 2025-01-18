@@ -9,7 +9,8 @@ import { UploadExampleController } from './main/upload-example.controller';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { RateController } from './main/rate.controller';
 import { FeatureExtractorService } from './_services/feature-extractor.service';
-import { SongFeaturesController } from './main/song-features.controller';
+import { SongsController } from './main/songs.controller';
+import { DownloadController } from './main/download.controller';
 
 @Module({
   imports: [
@@ -40,7 +41,8 @@ import { SongFeaturesController } from './main/song-features.controller';
     UploadController,
     UploadExampleController,
     RateController,
-    SongFeaturesController
+    SongsController,
+    DownloadController
   ],
   providers: [
     AppService,

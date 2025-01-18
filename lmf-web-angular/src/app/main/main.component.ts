@@ -5,6 +5,7 @@ import { ButtonModule } from 'primeng/button';
 import { MenubarModule } from 'primeng/menubar';
 import { AvatarModule } from 'primeng/avatar';
 import { MenuModule } from 'primeng/menu';
+import { HttpService } from '../_services/http.service';
 @Component({
   selector: 'app-main',
   standalone: true,
@@ -21,7 +22,9 @@ import { MenuModule } from 'primeng/menu';
 export class MainComponent implements OnInit {
   menuItems: MenuItem[] | undefined;
   profileItems: MenuItem[] | undefined;
-  constructor() { }
+  constructor(
+    private http: HttpService
+  ) { }
   ngOnInit(): void {
     this.menuItems = [
       {
@@ -31,18 +34,17 @@ export class MainComponent implements OnInit {
       },
       {
         label: 'Biblioteca',
-        icon: 'pi pi-book',
-        command: () => { console.log('Navegando a Biblioteca'); }
+        icon: 'pi pi-book'
       },
       {
         label: 'Descubre',
         icon: 'pi pi-compass',
-        command: () => { console.log('Navegando a Descubre'); }
+        routerLink: 'player'
       },
       {
         label: 'Entrenamiento',
         icon: 'pi pi-chart-line',
-        command: () => { console.log('Navegando a Entrenamiento'); }
+        routerLink: 'training'
       }
     ];
     this.profileItems = [

@@ -1,12 +1,9 @@
 .main-container {
-  height: 100vh;
-
   .p-menubar {
 
     .menu-title {
       font-weight: bold;
       font-size: 1.2rem;
-      margin-right: 1rem;
     }
 
     .rounded-circle {
@@ -16,7 +13,6 @@
 
   .logo {
     height: 40px;
-    margin-right: 1rem;
   }
 
   .p-menubar-end {
@@ -24,4 +20,3 @@
     align-items: center;
   }
 }
-

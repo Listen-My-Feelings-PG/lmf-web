@@ -1,4 +1,12 @@
-import { Body, Controller, HttpException, HttpStatus, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpException,
+  HttpStatus,
+  Post,
+  UploadedFile,
+  UseInterceptors
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { InjectRepository } from '@nestjs/typeorm';
 import { diskStorage } from 'multer';
@@ -16,7 +24,8 @@ export class UploadController {
   constructor(
     private readonly gzipConverter: GzipConverterService,
     @InjectRepository(SongEntity)
-    private readonly songRepository: Repository<SongEntity>
+    private readonly songsTable: Repository<SongEntity>,
+    private readonly cf: ConfigService
   ) { }
 
   @Post('file')
@@ -29,7 +38,8 @@ export class UploadController {
         },
         filename: ((req, file, cb) => {
           const uniqueSuffix = new Date().getTime();
-          cb(null, `${uniqueSuffix}_${file.originalname}`);
+          const sanitizedFilename = Buffer.from(file.originalname, 'latin1').toString('utf8');
+          cb(null, `${uniqueSuffix}_${sanitizedFilename}`);
         })
       })
     })
@@ -38,31 +48,37 @@ export class UploadController {
     @UploadedFile(new Mp3ValidationPipe()) file: Express.Multer.File,
     @Body() body: any
   ) {
-    const existingSong = await this.songRepository.findOne({
+    const existingSong = await this.songsTable.findOne({
       where: {
         name: file.originalname,
         fileSize: file.size
       }
     });
-
-    /*if (existingSong) {
-      const filePath = path.resolve('../uploads', file.filename);
+    const filePath = path.resolve(this.cf.get<string>('PATH_UPLOADS'), file.filename);
+    if (existingSong) {
       if (fs.existsSync(filePath))
         await fs.unlinkSync(filePath);
       console.error('Canción duplicada:', file.filename);
-      throw new HttpException('Duplicated song', HttpStatus.FORBIDDEN)
-    } else {*/
+      throw new HttpException('Duplicated song', HttpStatus.FORBIDDEN);
+    } else {
       const name = body.name;
-      const row = await this.songRepository.save(this.songRepository.create({
-        name: name,
-        fileSize: file.size,
-        fileName: file.filename
-      }));
-      return {
-        message: 'uploaded successful',
-        row
+      try {
+        const row = await this.songsTable.save(this.songsTable.create({
+          name: name,
+          fileSize: file.size,
+          fileName: file.filename,
+          idDataType: 1 //hardcodeado!!
+        }));
+        return {
+          message: 'uploaded successful',
+          row
+        }
+      } catch (error) {
+        await fs.unlinkSync(filePath);
+        console.error('Error en inserción SQL:', error);
+        throw new HttpException('Error in SQL insertion', HttpStatus.INTERNAL_SERVER_ERROR);
       }
-    //}
+    }
   }
 
 }
