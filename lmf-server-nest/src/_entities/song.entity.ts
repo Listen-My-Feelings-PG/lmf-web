@@ -23,7 +23,7 @@ export class SongEntity {
   @Column({ name: 'ca_filename', type: 'text', nullable: true })
   fileName: string;
 
-  @Column({ name: 'ca_ts_prediccion', type: 'int', nullable: true })
+  @Column({ name: 'ca_ts_prediccion', type: 'numeric', nullable: true })
   tsPrediction: number;
 
   @Column({ name: 'ca_id_tipo_dato', type: 'int' })

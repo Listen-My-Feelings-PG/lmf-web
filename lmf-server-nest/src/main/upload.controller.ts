@@ -12,7 +12,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { diskStorage } from 'multer';
 import { SongEntity } from 'src/_entities/song.entity';
 import { Repository } from 'typeorm';
-import { GzipConverterService } from 'src/_services/gzip-converter.service';
 import { Mp3ValidationPipe } from 'src/_pipes/mp3-validation.pipe';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -22,7 +21,6 @@ import { ConfigService } from '@nestjs/config';
 @Controller('upload')
 export class UploadController {
   constructor(
-    private readonly gzipConverter: GzipConverterService,
     @InjectRepository(SongEntity)
     private readonly songsTable: Repository<SongEntity>,
     private readonly cf: ConfigService
@@ -79,6 +77,25 @@ export class UploadController {
         console.error('Error en inserción SQL:', error);
         throw new HttpException('Error in SQL insertion', HttpStatus.INTERNAL_SERVER_ERROR);
       }
+    }
+  }
+
+  @Post('prediction')
+  @UseInterceptors(FileInterceptor(''))
+  async setPrediction(@Body() body: any) {
+    const song = await this.songsTable.findOne({ where: { id: body.id, active: true } });
+    console.log('body', body);
+    if (song) {
+      song.tsPrediction = body.prediction;
+      await this.songsTable.save(song);
+      return {
+        message: 'prediction set',
+        id: body.id,
+        prediction: body.prediction
+      };
+    } else {
+      console.error('Cancion no encontrada:', body.id);
+      throw new HttpException('Song not found', HttpStatus.NOT_FOUND)
     }
   }
 
