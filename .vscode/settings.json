@@ -2,5 +2,13 @@
   "html.format.indentHandlebars": true,
   "html.format.indentInnerHtml": true,
   "html.format.wrapAttributesIndentSize": 2,
-  "html.format.wrapAttributes": "force"
+  "html.format.wrapAttributes": "force",
+  "github.copilot.chat.localeOverride": "es",
+  "github.copilot.advanced": {
+    "enabled": true,
+    "useTabNine": true,
+    "useLanguageServer": true
+  },
+  "typescript.locale": "es"
+  
 }

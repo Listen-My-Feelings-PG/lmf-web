@@ -5,7 +5,7 @@ export class Song {
     public file: File | null,
     public link: string,
     public userScore: number | null,
-    public tsScore: number | null,
+    public tsPrediction: number | null,
     public statusStorage: 'local' | 'uploaded' | 'uploading' | 'error',
     public id?: number,
     public listIndex?: number | null,

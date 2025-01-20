@@ -11,7 +11,7 @@ export class SongEntity {
   @Column({ name: 'ca_trainlevel', type: 'int', default: 0 })
   trainlevel: number;
 
-  @Column({ name: 'ca_tsfeatures', type: 'text', nullable: true })
+  @Column({ name: 'ca_ts_features', type: 'text', nullable: true })
   tsFeatures: string;
 
   @Column({ name: 'ca_calif_usuario', type: 'int', nullable: true })
@@ -23,8 +23,8 @@ export class SongEntity {
   @Column({ name: 'ca_filename', type: 'text', nullable: true })
   fileName: string;
 
-  @Column({ name: 'ca_calif_ts', type: 'int', nullable: true })
-  tsScore: number;
+  @Column({ name: 'ca_ts_prediccion', type: 'int', nullable: true })
+  tsPrediction: number;
 
   @Column({ name: 'ca_id_tipo_dato', type: 'int' })
   idDataType: number;

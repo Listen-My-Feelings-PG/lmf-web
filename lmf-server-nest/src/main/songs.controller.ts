@@ -20,13 +20,13 @@ export class SongsController {
   @Get('list')
   async getSongsList() {
     const list = await this.songsTable.find({
-      select: ['id', 'name', 'trainlevel', 'userScore', 'tsScore']
+      select: ['id', 'name', 'trainlevel', 'userScore', 'tsPrediction']
     });
     return {
       message: 'Query successful',
       data: list.map((obj) => new Song(
         obj.name, 'file', null, '', obj.userScore,
-        obj.tsScore, 'uploaded', obj.id
+        obj.tsPrediction, 'uploaded', obj.id
       ))
     }
   }

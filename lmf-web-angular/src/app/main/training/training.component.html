@@ -21,7 +21,7 @@
             <td>{{item.name}}</td>
             <td>
               <div
-                *ngIf="(item.statusStorage=='local'||(item.statusStorage=='uploaded'&& item.userScore && item.userScore>=0)); else scoreDisabled">
+                *ngIf="item.statusStorage == 'local'||(item.statusStorage == 'uploaded' && item.userScore !== null && item.userScore >= 0); else scoreDisabled">
                 <ng-container *ngFor="let star of rating.stars; let ist = index">
                   <i class="star-rated pi"
                     [ngClass]="item.userScore!==null && ist < item.userScore ? 'pi-star-fill' : 'pi-star'"
@@ -121,7 +121,7 @@
             <td>{{item.name}}</td>
             <td>
               <div
-                *ngIf="(item.statusStorage=='local'||(item.statusStorage=='uploaded' && item.userScore!==null && item.tsScore!==null)); else scoreDisabled">
+                *ngIf="(item.statusStorage=='local'||(item.statusStorage=='uploaded' && item.userScore!==null && item.tsPrediction!==null)); else scoreDisabled">
                 <ng-container *ngFor="let star of rating.stars; let ist = index">
                   <i class="star-rated pi"
                     [ngClass]="item.userScore!==null && ist < item.userScore ? 'pi-star-fill' : 'pi-star'"
@@ -136,7 +136,7 @@
               </ng-template>
             </td>
             <td class="text-center">
-              {{item.tsScore ? item.tsScore:'--'}}
+              {{item.tsPrediction ? item.tsPrediction:'--'}}
             </td>
             <td>
               <button pButton
