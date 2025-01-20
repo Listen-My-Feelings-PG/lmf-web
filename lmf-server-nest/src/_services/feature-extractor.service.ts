@@ -65,6 +65,27 @@ export class FeatureExtractorService {
       if (code === 0) {
         try {
           const parsedFeatures = JSON.parse(stdout);
+          let { mel_spectrogram, tempo } = parsedFeatures;
+          let maxValue = 0;
+          let first10Columns = [];
+          let last10Columns = [];
+          mel_spectrogram.forEach((itemY, indexY) => {
+            let first10Rows = [];
+            let last10Rows = [];
+            itemY.forEach((itemX, indexX) => {
+              if (itemX > maxValue)
+                maxValue = itemX;
+              if (indexX < 10)
+                first10Rows.push(itemX);
+              if (indexX >= itemY.length - 10)
+                last10Rows.push(itemX);
+            });
+            first10Columns.push(first10Rows);
+            last10Columns.push(last10Rows);
+          });
+          console.log('maxValue', maxValue);
+          console.log('first10Columns', first10Columns);
+          console.log('last10Columns', last10Columns);
           try {
             const destPath = this.cf.get<string>('PATH_FEATURES');
             const gzipData = zlib.gzipSync(JSON.stringify(parsedFeatures));
