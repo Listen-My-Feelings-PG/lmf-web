@@ -103,38 +103,39 @@ export class TrainingComponent implements OnInit {
     });
   }
 
-  private triggerUploadRequest(mode: 'train' | 'predict') {
-    let item = this.songs.iterator.next();
-    if (item.done)
-      return this.checkUploadPool(item, mode);
-    item.value.userScore = 0;
-    item.value.tsPrediction = null;
-    this.http.post('upload/file', item.value, true).subscribe({
-      next: (data: any) => {
-        let listSong = mode == 'train' ? this.songs.listForTrain[item.value.listIndex] : this.songs.listForPredict[item.value.listIndex];
-        listSong.statusStorage = 'uploaded';
-        listSong.id = data.row.id;
-        this.checkUploadPool(item, mode);
-      },
-      error: (error) => {
-        let listSong = this.songs.listForTrain[item.value.listIndex];
-        listSong.statusStorage = 'error';
-        listSong.statusErrReason = error.status == 403 ? 'duplicated' : 'other';
-        this.checkUploadPool(item, mode);
-      }
-    });
-  }
-
-  private checkUploadPool(item: any, mode: 'train' | 'predict') {
-    if (!item.done)
-      this.triggerUploadRequest(mode);
-    else {
-      this.songs.pool = [];
-      this.songs.busy = false;
+  uploadSongsProcess(evt: any, mode: 'train' | 'predict') {
+    const that = this;
+    function trigger() {
+      let item = that.songs.iterator.next();
+      if (item.done)
+        return checkPool(item);
+      item.value.userScore = 0;
+      item.value.tsPrediction = null;
+      that.http.post('upload/file', item.value, true).subscribe({
+        next: (data: any) => {
+          let listSong = mode == 'train' ? that.songs.listForTrain[item.value.listIndex] : that.songs.listForPredict[item.value.listIndex];
+          listSong.statusStorage = 'uploaded';
+          listSong.id = data.row.id;
+          checkPool(item);
+        },
+        error: (error) => {
+          let listSong = that.songs.listForTrain[item.value.listIndex];
+          listSong.statusStorage = 'error';
+          listSong.statusErrReason = error.status == 403 ? 'duplicated' : 'other';
+          checkPool(item);
+        }
+      });
     }
-  }
 
-  uploadFromInput(evt: any, mode: 'train' | 'predict') {
+    function checkPool(item: any) {
+      if (!item.done)
+        trigger();
+      else {
+        that.songs.pool = [];
+        that.songs.busy = false;
+      }
+    }
+
     evt.currentFiles.forEach((item: any) => {
       const song: Song = {
         name: item.name,
@@ -153,7 +154,7 @@ export class TrainingComponent implements OnInit {
     if (!this.songs.busy) {
       this.songs.iterator = this.songs.pool[Symbol.iterator]();
       this.songs.busy = true;
-      this.triggerUploadRequest(mode);
+      trigger();
     }
   }
 
@@ -174,6 +175,8 @@ export class TrainingComponent implements OnInit {
   }
 
   getSongTsFeatures(mode: 'train' | 'predict') {
+    const that = this;
+
     const songsRated: Array<{
       id: number,
       userScore: number
@@ -184,77 +187,78 @@ export class TrainingComponent implements OnInit {
         obj.id)) || (mode == 'predict' &&
           obj.id && obj.userScore === null)
     ).map((obj) => ({ id: obj.id as number, userScore: obj.userScore as number }));
+
     this.tsFeatures.poolSongs = songsRated;
-    console.log('poolSongs', this.tsFeatures.poolSongs, mode);
+
     if (!this.tsFeatures.busy) {
       this.tsFeatures.iterator = this.tsFeatures.poolSongs[Symbol.iterator]();
       this.tsFeatures.busy = true;
       console.log(`this.triggerTsfeaturesRequest('${mode}')...`);
-      this.triggerTsfeaturesRequest(mode);
+      trigger();
     }
-  }
 
-  private triggerTsfeaturesRequest(mode: 'train' | 'predict') {
-    let item = this.tsFeatures.iterator.next();
-    if (item.done)
-      return this.checkTsFeaturesPool(item, mode);
-    let songIndex = this.songs[mode == 'train' ? 'listForTrain' : 'listForPredict'].findIndex((obj) => obj.id == item.value.id);
-    this.http.get(`download/tsfeatures?value=${item.value.id}`, true).subscribe({ //El mismo request se hace tanto para el entrenamiento como para la predicción
-      next: async (data) => {
-        this.songs[mode == 'train' ? 'listForTrain' : 'listForPredict'][songIndex].tsFeaturesDimensions = this.getTsFeaturesDimensions(data);
-        let tensorResources = {
-          features: data, //Objeto con las características de la canción
-          songId: item.value.id, //ID de la canción
-          userScore: item.value.userScore //Calificación del usuario. Esta no importa cuando el modo es 'predict'
+    function trigger() {
+      let item = that.tsFeatures.iterator.next();
+      if (item.done)
+        return checkPool(item);
+      let songIndex = that.songs[mode == 'train' ? 'listForTrain' : 'listForPredict'].findIndex((obj) => obj.id == item.value.id);
+      that.http.get(`download/tsfeatures?value=${item.value.id}`, true).subscribe({ //El mismo request se hace tanto para el entrenamiento como para la predicción
+        next: async (data) => {
+          that.songs[mode == 'train' ? 'listForTrain' : 'listForPredict'][songIndex].tsFeaturesDimensions = that.getTsFeaturesDimensions(data);
+          let tensorResources = {
+            features: data, //Objeto con las características de la canción
+            songId: item.value.id, //ID de la canción
+            userScore: item.value.userScore //Calificación del usuario. Esta no importa cuando el modo es 'predict'
+          }
+          if (mode == 'train') {
+            console.log('Iniciando entrenamiento para la canción con ID:', tensorResources.songId);
+            const inputTensor/*Raw*/ = tf.tensor2d(tensorResources.features.mel_spectrogram); //Proceso de normalización omitido porque el script de Python ya lo hizo
+            //const minVal = tf.min(inputTensorRaw);
+            //const maxVal = tf.max(inputTensorRaw);
+            //const inputTensor = inputTensorRaw.sub(minVal).div(maxVal.sub(minVal));
+            const outputTensor = tf.tensor1d([tensorResources.userScore]); //Convierte la calificación del usuario en un tensor de salida
+            await that.model?.fit(inputTensor.expandDims(0), outputTensor, { epochs: 50, batchSize: 1 }); //Entrena el modelo con los tensores de entrada y salida
+            //Libera la memoria de los tensores
+            //inputTensorRaw.dispose();
+            inputTensor.dispose();
+            outputTensor.dispose();
+            checkPool(item);//Continúa con la siguiente canción
+          } else { //Si el mode no es 'train', entonces es 'predict'
+            console.log('Iniciando predicción para la canción con ID:', tensorResources.songId);
+            const inputTensorRaw = tf.tensor2d(tensorResources.features.mel_spectrogram); //Convierte las características de la canción en un tensor
+            const minVal = tf.min(inputTensorRaw);
+            const maxVal = tf.max(inputTensorRaw);
+            const inputTensor = inputTensorRaw.sub(minVal).div(maxVal.sub(minVal)); //Convierte las características de la canción en un tensor
+            const prediction = that.model?.predict(inputTensor.expandDims(0)) as tf.Tensor; //Realiza la predicción con el modelo entrenado
+            const predictedScore = prediction.dataSync()[0]; //Obtiene el valor de la predicción
+            that.songs.listForPredict[songIndex].tsPrediction = predictedScore; //Asigna la predicción a la canción
+
+            console.log(`Predicción para la nueva canción: ${predictedScore}`);
+            //Libera la memoria de los tensores
+            inputTensorRaw.dispose();
+            inputTensor.dispose();
+            prediction.dispose();
+            checkPool(item);//Continúa con la siguiente canción
+          }
+        },
+        error: (error) => {
+          console.error('Error al obtener características:', error);
+          that.songs.listForTrain[songIndex].tsFeaturesDimensions = 'error';
+          that.songs.listForTrain[songIndex].tsFeaturesErrReason = 'other';
+          checkPool(item);
         }
-        if (mode == 'train') {
-          console.log('Iniciando entrenamiento para la canción con ID:', tensorResources.songId);
-          const inputTensor/*Raw*/ = tf.tensor2d(tensorResources.features.mel_spectrogram); //Proceso de normalización omitido porque el script de Python ya lo hizo
-          //const minVal = tf.min(inputTensorRaw);
-          //const maxVal = tf.max(inputTensorRaw);
-          //const inputTensor = inputTensorRaw.sub(minVal).div(maxVal.sub(minVal));
-          const outputTensor = tf.tensor1d([tensorResources.userScore]); //Convierte la calificación del usuario en un tensor de salida
-          await this.model?.fit(inputTensor.expandDims(0), outputTensor, { epochs: 50, batchSize: 1 }); //Entrena el modelo con los tensores de entrada y salida
-          //Libera la memoria de los tensores
-          //inputTensorRaw.dispose();
-          inputTensor.dispose();
-          outputTensor.dispose();
-          this.checkTsFeaturesPool(item, mode);//Continúa con la siguiente canción
-        } else { //Si el mode no es 'train', entonces es 'predict'
-          console.log('Iniciando predicción para la canción con ID:', tensorResources.songId);
-          const inputTensorRaw = tf.tensor2d(tensorResources.features.mel_spectrogram); //Convierte las características de la canción en un tensor
-          const minVal = tf.min(inputTensorRaw);
-          const maxVal = tf.max(inputTensorRaw);
-          const inputTensor = inputTensorRaw.sub(minVal).div(maxVal.sub(minVal)); //Convierte las características de la canción en un tensor
-          const prediction = this.model?.predict(inputTensor.expandDims(0)) as tf.Tensor; //Realiza la predicción con el modelo entrenado
-          const predictedScore = prediction.dataSync()[0]; //Obtiene el valor de la predicción
-          this.songs.listForPredict[songIndex].tsPrediction = predictedScore; //Asigna la predicción a la canción
-          console.log(`Predicción para la nueva canción: ${predictedScore}`);
-          //Libera la memoria de los tensores
-          inputTensorRaw.dispose();
-          inputTensor.dispose();
-          prediction.dispose();
-          this.checkTsFeaturesPool(item, mode);//Continúa con la siguiente canción
-        }
-      },
-      error: (error) => {
-        console.error('Error al obtener características:', error);
-        this.songs.listForTrain[songIndex].tsFeaturesDimensions = 'error';
-        this.songs.listForTrain[songIndex].tsFeaturesErrReason = 'other';
-        this.checkTsFeaturesPool(item, mode);
+      });
+    }
+
+    function checkPool(item: any) {
+      if (!item.done)
+        trigger();
+      else {
+        that.tsFeatures.poolSongs = [];
+        that.tsFeatures.busy = false;
+        console.info('Pool finalizado');
+        console.log(`Variables activas: ${tf.memory().numTensors}`);
       }
-    });
-
-  }
-
-  private checkTsFeaturesPool(item: any, mode: 'train' | 'predict') {
-    if (!item.done)
-      this.triggerTsfeaturesRequest(mode);
-    else {
-      this.tsFeatures.poolSongs = [];
-      this.tsFeatures.busy = false;
-      console.info('Pool finalizado');
-      console.log(`Variables activas: ${tf.memory().numTensors}`);
     }
   }
 
