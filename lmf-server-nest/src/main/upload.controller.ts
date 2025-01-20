@@ -66,8 +66,11 @@ export class UploadController {
           name: name,
           fileSize: file.size,
           fileName: file.filename,
-          idDataType: 1, //hardcodeado!!
-        }));
+          idDataType: 1,
+          userScore: body.userScore !== undefined ? body.userScore : null,
+          tsPrediction: body.tsPrediction !== undefined ? body.tsPrediction : null
+        })); /*Regla: Todo lo que sea 'undefined' es porque en el front es NULL (un valor 0 es válido). 
+        Cuando sea necesario en la operación, este debe permitir nulos, o tener un valor por default*/
         return {
           message: 'uploaded successful',
           row
@@ -84,7 +87,6 @@ export class UploadController {
   @UseInterceptors(FileInterceptor(''))
   async setPrediction(@Body() body: any) {
     const song = await this.songsTable.findOne({ where: { id: body.id, active: true } });
-    console.log('body', body);
     if (song) {
       song.tsPrediction = body.prediction;
       await this.songsTable.save(song);

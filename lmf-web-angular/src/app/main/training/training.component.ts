@@ -71,12 +71,12 @@ export class TrainingComponent implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
-    console.log('Inicializando modelo...');
+    console.info('Inicializando modelo...');
     tf.engine().startScope();
     tf.disposeVariables();
     tf.engine().endScope();
     tf.engine().reset();
-    console.log(`Variables activas: ${tf.memory().numTensors}`);
+    console.info(`Variables activas: ${tf.memory().numTensors}`);
     if (this.model) {
       this.model.dispose();
       this.model = null;
@@ -84,7 +84,7 @@ export class TrainingComponent implements OnInit {
     if (!this.model) {
       this.model = tf.sequential();
 
-      this.model.add(tf.layers.dense({ units: 64, activation: 'relu', inputShape: [129, 20000] })); //el ultimo eje y representa la intensidad del tempo. Normalizala con los valores del espectrograma
+      this.model.add(tf.layers.dense({ units: 64, activation: 'relu', inputShape: [129, 20000] })); //el ultimo eje 'y' representa el tempo como intensidad normalizada. Normalizala con los valores del espectrograma
       this.model.add(tf.layers.dense({ units: 32, activation: 'relu' }));
       this.model.add(tf.layers.dense({ units: 1, activation: 'linear' }));
 
@@ -112,7 +112,7 @@ export class TrainingComponent implements OnInit {
       item.value.tsPrediction = null;
       that.http.post('upload/file', item.value, true).subscribe({
         next: (data: any) => {
-          let listSong = mode == 'train' ? that.songs.listForTrain[item.value.listIndex] : that.songs.listForPredict[item.value.listIndex];
+          let listSong = that.songs[mode == 'train' ? 'listForTrain' : 'listForPredict'][item.value.listIndex];
           listSong.statusStorage = 'uploaded';
           listSong.id = data.row.id;
           checkPool(item);
@@ -193,7 +193,6 @@ export class TrainingComponent implements OnInit {
     if (!this.tsFeatures.busy) {
       this.tsFeatures.iterator = this.tsFeatures.poolSongs[Symbol.iterator]();
       this.tsFeatures.busy = true;
-      console.log(`this.triggerTsfeaturesRequest('${mode}')...`);
       trigger();
     }
 
@@ -214,30 +213,23 @@ export class TrainingComponent implements OnInit {
           }
 
           if (mode == 'train') {
-            console.log('Iniciando entrenamiento para la canción con ID:', tensorResources.songId);
+            console.info('Iniciando entrenamiento para la canción con ID:', tensorResources.songId);
             //Hacer este calculo en el servidor (No debe haver ninguna tarea de normalización aqui, salvo la normalización del tempo)
-            let maxValue = 0;
-            tensorResources.features.mel_spectrogram.forEach((itemY: any, indexY: any) => {
-              itemY.forEach((itemX: any, indexX: any) => {
-                if (indexX > 0 && itemX > itemY[indexX - 1]) {
-                  maxValue = itemX;
-                }
-              });
-            });
-            console.log('Valor máximo:', maxValue);
+            /*Nuevo plan: La propiedad 'tempo' estará integrada en el espectrograma (coincidiendo con las dimensiones del tensor 
+            de entrada: [129,20000]). En el backend, se normalizará el espectrograma a un valor máximo de 1 , y el tempo se especificará 
+            en la última fila, expresándolo gráficamente (Se harán los cálculos necesarios)*/
+            const inputTensor = tf.tensor2d(tensorResources.features.mel_spectrogram);
 
-            /*const inputTensor = tf.tensor2d(tensorResources.features.mel_spectrogram); 
-
-            const outputTensor = tf.tensor1d([tensorResources.userScore]); 
-            await that.model?.fit(inputTensor.expandDims(0), outputTensor, { epochs: 50, batchSize: 1 }); 
+            const outputTensor = tf.tensor1d([tensorResources.userScore]);
+            await that.model?.fit(inputTensor.expandDims(0), outputTensor, { epochs: 50, batchSize: 1 });
 
             inputTensor.dispose();
             outputTensor.dispose();
-            */checkPool(item);
+            checkPool(item);
 
           } else {
 
-            console.log('Iniciando predicción para la canción con ID:', tensorResources.songId);
+            console.info('Iniciando predicción para la canción con ID:', tensorResources.songId);
             const inputTensorRaw = tf.tensor2d(tensorResources.features.mel_spectrogram);
 
             const melFlattened = inputTensorRaw.flatten();
@@ -249,8 +241,6 @@ export class TrainingComponent implements OnInit {
             songTarget.tsPrediction = predictedScore;
             that.http.post('upload/prediction', { id: tensorResources.songId, prediction: predictedScore }).subscribe({
               next: (res) => {
-                console.log(`Predicción para la nueva canción: ${predictedScore}`, res);
-
                 inputTensorRaw.dispose();
                 inputTensor.dispose();
                 prediction.dispose();
@@ -282,7 +272,7 @@ export class TrainingComponent implements OnInit {
         that.tsFeatures.poolSongs = [];
         that.tsFeatures.busy = false;
         console.info('Pool finalizado');
-        console.log(`Variables activas: ${tf.memory().numTensors}`);
+        console.info(`Variables activas: ${tf.memory().numTensors}`);
       }
     }
   }
