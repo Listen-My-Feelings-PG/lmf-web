@@ -104,6 +104,26 @@ export class TrainingComponent implements OnInit {
 
   uploadSongsProcess(evt: any, mode: 'train' | 'predict') {
     const that = this;
+    evt.currentFiles.forEach((item: any) => {
+      const song: Song = {
+        name: item.name,
+        type: 'file',
+        file: item,
+        link: '',
+        userScore: null,
+        tsPrediction: null,
+        statusStorage: 'local'
+      }
+      const list = mode == 'train' ? this.songs.listForTrain : this.songs.listForPredict;
+      this.songs.listForTrain.push(song);
+      this.songs.pool.push({ ...song, listIndex: list.length - 1 });
+    });
+
+    if (!this.songs.busy) {
+      this.songs.iterator = this.songs.pool[Symbol.iterator]();
+      this.songs.busy = true;
+      trigger();
+    }
     function trigger() {
       let item = that.songs.iterator.next();
       if (item.done)
@@ -133,27 +153,6 @@ export class TrainingComponent implements OnInit {
         that.songs.pool = [];
         that.songs.busy = false;
       }
-    }
-
-    evt.currentFiles.forEach((item: any) => {
-      const song: Song = {
-        name: item.name,
-        type: 'file',
-        file: item,
-        link: '',
-        userScore: null,
-        tsPrediction: null,
-        statusStorage: 'local'
-      }
-      const list = mode == 'train' ? this.songs.listForTrain : this.songs.listForPredict;
-      this.songs.listForTrain.push(song);
-      this.songs.pool.push({ ...song, listIndex: list.length - 1 });
-    });
-
-    if (!this.songs.busy) {
-      this.songs.iterator = this.songs.pool[Symbol.iterator]();
-      this.songs.busy = true;
-      trigger();
     }
   }
 
@@ -214,7 +213,6 @@ export class TrainingComponent implements OnInit {
 
           if (mode == 'train') {
             console.info('Iniciando entrenamiento para la canción con ID:', tensorResources.songId);
-            //Hacer este calculo en el servidor (No debe haver ninguna tarea de normalización aqui, salvo la normalización del tempo)
             /*Nuevo plan: La propiedad 'tempo' estará integrada en el espectrograma (coincidiendo con las dimensiones del tensor 
             de entrada: [129,20000]). En el backend, se normalizará el espectrograma a un valor máximo de 1 , y el tempo se especificará 
             en la última fila, expresándolo gráficamente (Se harán los cálculos necesarios)*/
@@ -228,8 +226,8 @@ export class TrainingComponent implements OnInit {
             checkPool(item);
 
           } else {
-
             console.info('Iniciando predicción para la canción con ID:', tensorResources.songId);
+
             const inputTensorRaw = tf.tensor2d(tensorResources.features.mel_spectrogram);
 
             const melFlattened = inputTensorRaw.flatten();
