@@ -20,7 +20,8 @@ export class SongsController {
   @Get('list')
   async getSongsList() {
     const list = await this.songsTable.find({
-      select: ['id', 'name', 'trainlevel', 'userScore', 'tsPrediction']
+      select: ['id', 'name', 'trainlevel', 'userScore', 'tsPrediction'],
+      order: { id: 'ASC' }
     });
     return {
       message: 'Query successful',
@@ -34,7 +35,7 @@ export class SongsController {
   @Get('song/mp3')
   @UsePipes(new ValidationPipe({ transform: true }))
   async getMp3Song(@Query() idSong: IntegerDto, @Res() res: Response) {
-    const song = await this.songsTable.findOne({ where: { id: idSong.value, active: true  } });
+    const song = await this.songsTable.findOne({ where: { id: idSong.value, active: true } });
     if (song) {
       const filePath = path.resolve(this.cf.get<string>('PATH_UPLOADS'), song.fileName);
       if (fs.existsSync(filePath)) {

@@ -1,6 +1,5 @@
 import { AfterViewInit, Component, ElementRef, ViewChild } from '@angular/core';
 import { HttpService } from '../../_services/http.service';
-import { LibrosaTsFeatures } from '../../_models/all.model';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -35,7 +34,7 @@ export class SpectrogramViewerComponent implements AfterViewInit {
   ctx!: CanvasRenderingContext2D;
 
   constructor(public http: HttpService) {
-    this.idSong = 187;
+    this.idSong = 600;
     this.loader = {
       pool: [],
       busy: false,
@@ -69,17 +68,17 @@ export class SpectrogramViewerComponent implements AfterViewInit {
     });
   }
 
-  resizeSpectrogram(mel_spectrogram: Array<Array<number>>): Promise<{
+  customizeSpectrogram(mel_spectrogram: Array<Array<number>>, tempo: number): Promise<{
     maxValue: number,
     firstIndex: number,
     lastIndex: number
-    resized: Array<Array<number>>
+    resized: Array<Array<number>>,
+    interval: number
   }> {
     return new Promise((resolve, reject) => {
       let control: { firstIndex: number, lastIndex: number, maxValue: number } = {
         firstIndex: -1, lastIndex: 20000, maxValue: 0
       };
-
       mel_spectrogram.forEach((row: any[], y: any) => {
         row.forEach((column, x) => {
           if (column > 0 && control.firstIndex == -1)
@@ -97,18 +96,25 @@ export class SpectrogramViewerComponent implements AfterViewInit {
         })
       });
 
+      let interval = Math.trunc((control.lastIndex - control.firstIndex) / tempo);
       resolve({
-        resized: mel_spectrogram.map((obj) => {
+        resized: mel_spectrogram.map((obj, index) => {
           let row: Array<any> = [];
-          for (let i = control.firstIndex; i < control.lastIndex + 1; i++) {
-            row.push(obj[i]);
-          }
+          if (index == 127)
+            for (let i = control.firstIndex; i < control.lastIndex + 1; i++) {
+              row.push(interval % tempo === 0 ? 1 : 0);
+            }
+          else
+            for (let i = control.firstIndex; i < control.lastIndex + 1; i++) {
+              row.push(obj[i]);
+            }
           return row;
         }),
         maxValue: control.maxValue,
         firstIndex: control.firstIndex,
-        lastIndex: control.lastIndex
-      })
+        lastIndex: control.lastIndex,
+        interval
+      });
     })
 
   }
@@ -124,7 +130,14 @@ export class SpectrogramViewerComponent implements AfterViewInit {
     this.canvas.nativeElement
     this.http.get(`download/tsfeatures?value=${this.idSong}`, true).subscribe({
       next: async (data) => {
-        this.resizeSpectrogram(data.mel_spectrogram).then((res) => {
+        this.customizeSpectrogram(data.mel_spectrogram, data.tempo).then((res) => {
+          console.log('res.interval', res.interval, res.resized.length);
+          res.resized.push([]);
+          
+          for (let i = res.firstIndex; i <= res.lastIndex; i++) {
+            res.resized[128].push(i % res.interval == 0 ? 1 : 0);
+          }
+
           this.loader.pool = res.resized;
           this.spec = {
             firstIndex: res.firstIndex,
