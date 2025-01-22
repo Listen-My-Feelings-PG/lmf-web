@@ -15,7 +15,7 @@ export class RateController {
   @Post('song')
   @UseInterceptors(FileInterceptor(''))
   async rateSong(@Body() body: any) {
-    const song = await this.songRepository.findOneBy({ id: body.id });
+    const song = await this.songRepository.findOneBy({ id: body.id, active: true  });
     if (song) {
       song.userScore = body.score;
       await this.songRepository.save(song);

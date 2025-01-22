@@ -37,7 +37,8 @@ def extract_features(file_path):
   
   # Ajustar espectrograma a la longitud máxima
   mel_spectrogram = pad_or_trim_spectrogram(mel_spectrogram, MAX_COLUMNS)
-
+  mel_spectrogram = librosa.util.normalize(mel_spectrogram)
+  
   features = {
     'mel_spectrogram': mel_spectrogram.tolist(),
     'tempo': librosa.beat.tempo(y=y, sr=sr)[0],

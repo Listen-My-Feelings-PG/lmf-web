@@ -2,9 +2,11 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { FileUploadModule } from 'primeng/fileupload';
-import { Song } from '../../_models/all.model';
+import { LibrosaTsFeatures, Song } from '../../_models/all.model';
 import { HttpService } from '../../_services/http.service';
 import { PlayerComponent } from "../../player/player.component";
+import * as tf from '@tensorflow/tfjs';
+import { SongFeaturesService } from '../../_services/song-features.service';
 
 @Component({
   selector: 'app-training',
@@ -21,15 +23,19 @@ import { PlayerComponent } from "../../player/player.component";
 export class TrainingComponent implements OnInit {
   urlSongPlaying: string;
   songs: {
-    list: Array<Song>,
+    listForTrain: Array<Song>, //Lista principal
+    listForPredict: Array<Song>
     pool: Array<Song>,
-    poolBusy: boolean,
+    busy: boolean,
     iterator: any
   }
 
   tsFeatures: {
-    poolSongIds: Array<number>,
-    poolBusy: boolean,
+    poolSongs: Array<{
+      id: number,
+      userScore: number | null
+    }>,
+    busy: boolean,
     iterator: any
   }
 
@@ -38,20 +44,24 @@ export class TrainingComponent implements OnInit {
     blocked: boolean
   }
 
+  model!: tf.Sequential | null;
+
   constructor(
     private http: HttpService,
+    private songFeaturesService: SongFeaturesService
   ) {
     this.tsFeatures = {
-      poolSongIds: [],
-      poolBusy: false,
+      poolSongs: [],
+      busy: false,
       iterator: null
     }
 
     this.urlSongPlaying = '';
     this.songs = {
-      list: [],
+      listForTrain: [],
+      listForPredict: [],
       pool: [],
-      poolBusy: false,
+      busy: false,
       iterator: null
     }
 
@@ -60,48 +70,43 @@ export class TrainingComponent implements OnInit {
       blocked: false
     }
 
-    this.songs.iterator = this.songs.pool[Symbol.iterator]();
-
   }
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
+    console.info('Inicializando modelo...');
+    tf.engine().startScope();
+    tf.disposeVariables();
+    tf.engine().endScope();
+    tf.engine().reset();
+    console.info(`Variables activas: ${tf.memory().numTensors}`);
+    if (this.model) {
+      this.model.dispose();
+      this.model = null;
+    }
+    if (!this.model) {
+      this.model = tf.sequential();
+
+      this.model.add(tf.layers.dense({ units: 64, activation: 'relu', inputShape: [129, 20000] }));
+      this.model.add(tf.layers.flatten());
+      this.model.add(tf.layers.dense({ units: 32, activation: 'relu' }));
+      this.model.add(tf.layers.dense({ units: 1, activation: 'linear' }));
+
+      await this.model.compile({
+        optimizer: tf.train.adam(),
+        loss: 'meanSquaredError',
+        metrics: ['mae']
+      });
+    }
     this.http.get('songs/list').subscribe({
       next: (res) => {
-        this.songs.list = res.data;
+        this.songs.listForTrain = res.data.filter((obj: any) => obj.userScore !== null && obj.tsPrediction === null);
+        this.songs.listForPredict = res.data.filter((obj: any) => obj.userScore === null && (obj.tsPrediction === null || obj.tsPrediction >= 0));
       }
     });
   }
 
-  private triggerUploadRequest() {
-    let item = this.songs.iterator.next();
-    if (item.done)
-      return this.checkUploadPool(item);
-    this.http.post('upload/file', item.value, true).subscribe({
-      next: (data: any) => {
-        let listSong = this.songs.list[item.value.listIndex];
-        listSong.status = 'uploaded';
-        listSong.id = data.row.id;
-        this.checkUploadPool(item);
-      },
-      error: (error) => {
-        let listSong = this.songs.list[item.value.listIndex];
-        listSong.status = 'error';
-        listSong.errReason = error.status == 403 ? 'duplicated' : 'other';
-        this.checkUploadPool(item);
-      }
-    });
-  }
-
-  private checkUploadPool(item: any) {
-    if (!item.done)
-      this.triggerUploadRequest();
-    else {
-      this.songs.pool = [];
-      this.songs.poolBusy = false;
-    }
-  }
-
-  onFilesSelected(evt: any) {
+  uploadSongsProcess(evt: any, mode: 'train' | 'predict') {
+    const that = this;
     evt.currentFiles.forEach((item: any) => {
       const song: Song = {
         name: item.name,
@@ -109,22 +114,53 @@ export class TrainingComponent implements OnInit {
         file: item,
         link: '',
         userScore: null,
-        tsScore: null,
-        status: 'local'
+        tsPrediction: null,
+        statusStorage: 'local'
       }
-      this.songs.list.push(song);
-      this.songs.pool.push({ ...song, listIndex: this.songs.list.length - 1 });
+      const list = mode == 'train' ? this.songs.listForTrain : this.songs.listForPredict;
+      this.songs.listForTrain.push(song);
+      this.songs.pool.push({ ...song, listIndex: list.length - 1 });
     });
 
-    if (!this.songs.poolBusy) {
+    if (!this.songs.busy) {
       this.songs.iterator = this.songs.pool[Symbol.iterator]();
-      this.songs.poolBusy = true;
-      this.triggerUploadRequest();
+      this.songs.busy = true;
+      trigger();
+    }
+    function trigger() {
+      let item = that.songs.iterator.next();
+      if (item.done)
+        return checkPool(item);
+      item.value.userScore = 0;
+      item.value.tsPrediction = null;
+      that.http.post('upload/file', item.value, true).subscribe({
+        next: (data: any) => {
+          let listSong = that.songs[mode == 'train' ? 'listForTrain' : 'listForPredict'][item.value.listIndex];
+          listSong.statusStorage = 'uploaded';
+          listSong.id = data.row.id;
+          checkPool(item);
+        },
+        error: (error) => {
+          let listSong = that.songs.listForTrain[item.value.listIndex];
+          listSong.statusStorage = 'error';
+          listSong.statusErrReason = error.status == 403 ? 'duplicated' : 'other';
+          checkPool(item);
+        }
+      });
+    }
+
+    function checkPool(item: any) {
+      if (!item.done)
+        trigger();
+      else {
+        that.songs.pool = [];
+        that.songs.busy = false;
+      }
     }
   }
 
-  rate(indexSong: number, rate: number): void {
-    let song = this.songs.list[indexSong];
+  rate(indexSong: number, rate: number, mode: 'train' | 'predict'): void {
+    let song = mode == 'train' ? this.songs.listForTrain[indexSong] : this.songs.listForPredict[indexSong];
     if (!this.rating.blocked || song.userScore != rate) {
       this.http.post('rate/song', { id: song.id, score: rate }, false, this.rating.blocked).subscribe({
         next: (res) => {
@@ -134,69 +170,122 @@ export class TrainingComponent implements OnInit {
     }
   }
 
-  play(listIndex: number) {
-    const s = this.songs.list[listIndex];
+  play(listIndex: number, mode: 'train' | 'predict') {
+    const s = mode == 'train' ? this.songs.listForTrain[listIndex] : this.songs.listForPredict[listIndex];
     this.urlSongPlaying = `http://localhost:3000/songs/song/mp3?value=${s.id}`;
   }
 
-  getSongTsFeatures() {
-    const idsSongsRated = this.songs.list.filter((obj) => obj.userScore !== null && obj.userScore > 0 && !obj.tsFeatures).map((obj) => obj.id);
-    this.tsFeatures.poolSongIds = idsSongsRated as Array<number>;
-    if (!this.tsFeatures.poolBusy) {
-      this.tsFeatures.iterator = this.tsFeatures.poolSongIds[Symbol.iterator]();
-      this.tsFeatures.poolBusy = true;
-      this.triggerTsfeaturesRequest();
-      console.log('triggerTsfeaturesRequest disparado...');
+  getSongTsFeatures(mode: 'train' | 'predict') {
+
+    const that = this;
+
+    const songsRated: Array<{
+      id: number,
+      userScore: number
+    }> = this.songs[mode == 'train' ? 'listForTrain' : 'listForPredict'].filter(
+      (obj) => (mode == 'train' && (obj.userScore !== null &&
+        obj.userScore > 0 &&
+        obj.tsFeaturesDimensions === undefined &&
+        obj.id)) || (mode == 'predict' &&
+          obj.id && obj.userScore === null)
+    ).map((obj) => ({ id: obj.id as number, userScore: obj.userScore as number }));
+
+    this.tsFeatures.poolSongs = songsRated;
+
+    if (!this.tsFeatures.busy) {
+      this.tsFeatures.iterator = this.tsFeatures.poolSongs[Symbol.iterator]();
+      this.tsFeatures.busy = true;
+      trigger();
     }
-  }
 
-  private triggerTsfeaturesRequest() {
-    let item = this.tsFeatures.iterator.next();
-    if (item.done)
-      return this.checkTsFeaturesPool(item);
-    let songIndex = this.songs.list.findIndex((obj) => obj.id == item.value);
-    this.http.get(`download/tsfeatures?value=${item.value}`, true).subscribe({
-      next: (data) => {
-        this.songs.list[songIndex].tsFeatures = data;
-        this.checkTsFeaturesPool(item);
-      },
-      error: (error) => {
-        console.log('error', error);
-        this.songs.list[songIndex].tsFeatures = 'error';
-        this.songs.list[songIndex].tsFeaturesErrReason = 'other';
-        this.checkTsFeaturesPool(item);
+    function trigger() {
+      let item = that.tsFeatures.iterator.next();
+      if (item.done)
+        return checkPool(item);
+      let songIndex = that.songs[mode == 'train' ? 'listForTrain' : 'listForPredict'].findIndex((obj) => obj.id == item.value.id);
+      let songTarget = that.songs[mode == 'train' ? 'listForTrain' : 'listForPredict'][songIndex];
+      that.http.get(`download/tsfeatures?value=${item.value.id}`, true).subscribe({
+        next: (res) => {
+          const tensorResources = {
+            features: res,
+            songId: item.value.id,
+            userScore: item.value.userScore
+          }
+
+          that.songFeaturesService.customizeSpectrogram(
+            tensorResources.features.mel_spectrogram,
+            tensorResources.features.tempo,
+            false
+          ).then(async (data) => {
+            songTarget.tsFeaturesDimensions = data.lastIndex - data.firstIndex;
+            const mel_spectrogram_resized = data.resized;
+            if (mode == 'train') {
+              console.info('Iniciando entrenamiento para la canción con ID:', tensorResources.songId);
+              console.log(
+                'mel_spectrogram_resized',
+                mel_spectrogram_resized.length,
+                mel_spectrogram_resized[0].length, '|',
+                data.firstIndex, data.lastIndex, '|',
+                tensorResources.userScore ** 4
+              );
+              const inputTensor = tf.tensor2d(mel_spectrogram_resized);
+              const outputTensor = tf.tensor1d([tensorResources.userScore]);
+              await that.model?.fit(inputTensor.expandDims(0), outputTensor, { epochs: [1, 16, 81][tensorResources.userScore - 1], batchSize: 1 });
+              /**Epocas (mejor a peor):
+               * -tensorResources.userScore ** 4
+               * -tensorResources.userScore ** 3 */
+
+              inputTensor.dispose();
+              outputTensor.dispose();
+              checkPool(item);
+
+            } else {
+              console.info('Iniciando predicción para la canción con ID:', tensorResources.songId);
+
+              const inputTensor = tf.tensor2d(mel_spectrogram_resized);
+              const prediction = that.model?.predict(inputTensor.expandDims(0)) as tf.Tensor;
+              const predictedScore = prediction.dataSync()[0];
+
+              songTarget.tsPrediction = predictedScore;
+              that.http.post('upload/prediction', { id: tensorResources.songId, prediction: predictedScore }).subscribe({
+                next: (res) => {
+                  inputTensor.dispose();
+                  prediction.dispose();
+                  checkPool(item);
+                }, error: (error) => {
+                  console.error('Error al enviar la predicción:', error);
+                  inputTensor.dispose();
+                  prediction.dispose();
+                  checkPool(item);
+                }
+              })
+            }
+          });
+        },
+        error: (error) => {
+          console.error('Error al obtener características:', error);
+          that.songs.listForTrain[songIndex].tsFeaturesDimensions = 'error';
+          that.songs.listForTrain[songIndex].tsFeaturesErrReason = 'other';
+          checkPool(item);
+        }
+      });
+    }
+
+    function checkPool(item: any) {
+      if (!item.done)
+        trigger();
+      else {
+        that.tsFeatures.poolSongs = [];
+        that.tsFeatures.busy = false;
+        console.info('Pool finalizado');
+        console.info(`Variables activas: ${tf.memory().numTensors}`);
       }
-    });
-  }
-
-  private checkTsFeaturesPool(item: any) {
-    if (!item.done)
-      this.triggerTsfeaturesRequest();
-    else {
-      this.tsFeatures.poolSongIds = [];
-      this.tsFeatures.poolBusy = false
-      console.log('Pool finalizado');
     }
   }
 
   stopTsFeaturesPool() {
-    this.tsFeatures.poolSongIds = [];
-    this.tsFeatures.iterator = this.tsFeatures.poolSongIds[Symbol.iterator]();
-    //this.checkTsFeaturesPool({ done: true });
-  }
-
-  getTsFeaturesDimensions(song: Song) {
-    let validColumns = 0;
-    if (song.tsFeatures !== undefined && song.tsFeatures !== 'error') {
-      song.tsFeatures?.mel_spectrogram.forEach((item) => {
-        item.forEach((value) => {
-          if (value > 0)
-            validColumns++;
-        });
-      });
-      return validColumns;
-    } else
-      return '--';
+    this.tsFeatures.poolSongs = [];
+    this.tsFeatures.iterator = this.tsFeatures.poolSongs[Symbol.iterator]();
   }
 
 

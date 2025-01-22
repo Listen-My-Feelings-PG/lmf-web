@@ -5,12 +5,12 @@ export class Song {
     public file: File | null,
     public link: string,
     public userScore: number | null,
-    public tsScore: number | null,
-    public status: 'local' | 'uploaded' | 'uploading' | 'error',
+    public tsPrediction: number | null,
+    public statusStorage: 'local' | 'uploaded' | 'uploading' | 'error',
     public id?: number,
     public listIndex?: number | null,
-    public errReason?: 'duplicated' | 'other' | null,
-    public tsFeatures?: LibrosaTsFeatures | 'error',
+    public statusErrReason?: 'duplicated' | 'other' | null,
+    public tsFeaturesDimensions?: number | 'error',
     public tsFeaturesErrReason?: 'overload' | 'other'
   ) { }
 }

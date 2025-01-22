@@ -1,0 +1,24 @@
+<br>
+<div class="canvas-wrapper">
+  <canvas id="miCanvas"
+    #canvas></canvas>
+</div>
+<br>
+<input type="number"
+  name="idSong"
+  id="idSong"
+  [disabled]="http.busy||loader.busy"
+  [(ngModel)]="idSong">
+<button type="button"
+  [disabled]="http.busy||loader.busy"
+  (click)="loadSpectrogram()"
+  class="btn btn-success">Cargar espectrograma</button>
+<button type="button"
+  (click)="stopLoading()"
+  class="btn btn-danger">Detener</button><br>
+<h3>Estadisticas:</h3>
+<ul>
+  <li><b>Inicio de la canción: </b>{{spec.firstIndex}}</li>
+  <li><b>Fin de la canción: </b>{{spec.lastIndex}}</li>
+  <li><b>Valor normalizado: </b>{{spec.maxValue}}</li>
+</ul>

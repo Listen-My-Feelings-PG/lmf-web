@@ -12,7 +12,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { diskStorage } from 'multer';
 import { SongEntity } from 'src/_entities/song.entity';
 import { Repository } from 'typeorm';
-import { GzipConverterService } from 'src/_services/gzip-converter.service';
 import { Mp3ValidationPipe } from 'src/_pipes/mp3-validation.pipe';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -22,7 +21,6 @@ import { ConfigService } from '@nestjs/config';
 @Controller('upload')
 export class UploadController {
   constructor(
-    private readonly gzipConverter: GzipConverterService,
     @InjectRepository(SongEntity)
     private readonly songsTable: Repository<SongEntity>,
     private readonly cf: ConfigService
@@ -51,7 +49,8 @@ export class UploadController {
     const existingSong = await this.songsTable.findOne({
       where: {
         name: file.originalname,
-        fileSize: file.size
+        fileSize: file.size,
+        active: true
       }
     });
     const filePath = path.resolve(this.cf.get<string>('PATH_UPLOADS'), file.filename);
@@ -67,8 +66,11 @@ export class UploadController {
           name: name,
           fileSize: file.size,
           fileName: file.filename,
-          idDataType: 1 //hardcodeado!!
-        }));
+          idDataType: 1,
+          userScore: body.userScore !== undefined ? body.userScore : null,
+          tsPrediction: body.tsPrediction !== undefined ? body.tsPrediction : null
+        })); /*Regla: Todo lo que sea 'undefined' es porque en el front es NULL (un valor 0 es válido). 
+        Cuando sea necesario en la operación, este debe permitir nulos, o tener un valor por default*/
         return {
           message: 'uploaded successful',
           row
@@ -78,6 +80,24 @@ export class UploadController {
         console.error('Error en inserción SQL:', error);
         throw new HttpException('Error in SQL insertion', HttpStatus.INTERNAL_SERVER_ERROR);
       }
+    }
+  }
+
+  @Post('prediction')
+  @UseInterceptors(FileInterceptor(''))
+  async setPrediction(@Body() body: any) {
+    const song = await this.songsTable.findOne({ where: { id: body.id, active: true } });
+    if (song) {
+      song.tsPrediction = body.prediction;
+      await this.songsTable.save(song);
+      return {
+        message: 'prediction set',
+        id: body.id,
+        prediction: body.prediction
+      };
+    } else {
+      console.error('Cancion no encontrada:', body.id);
+      throw new HttpException('Song not found', HttpStatus.NOT_FOUND)
     }
   }
 

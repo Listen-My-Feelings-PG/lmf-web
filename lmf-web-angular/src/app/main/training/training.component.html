@@ -1,11 +1,12 @@
-<div class="container">
+<div class="container mb-5">
   <h1>Prueba 1</h1>
   <div class="row">
     <div class="col-md-6">
+      <h3>Entrenamiento:</h3>
       <table class="table table-dark table-hover table-scroll">
         <thead>
           <tr>
-            <th scope="col">#</th>
+            <th scope="col">id</th>
             <th scope="col">Nombre</th>
             <th scope="col"
               class="rate-col">Puntuación</th>
@@ -15,15 +16,16 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let item of songs.list; let i=index">
-            <td>{{i+1}}</td>
+          <tr *ngFor="let item of songs.listForTrain; let i=index">
+            <td>{{item.id}}</td>
             <td>{{item.name}}</td>
             <td>
-              <div *ngIf="(item.status=='local'||item.status=='uploaded'); else scoreDisabled">
+              <div
+                *ngIf="item.statusStorage == 'local'||(item.statusStorage == 'uploaded' && item.userScore !== null && item.userScore >= 0); else scoreDisabled">
                 <ng-container *ngFor="let star of rating.stars; let ist = index">
                   <i class="star-rated pi"
                     [ngClass]="item.userScore!==null && ist < item.userScore ? 'pi-star-fill' : 'pi-star'"
-                    (click)="rate(i,ist + 1)"></i>
+                    (click)="rate(i,ist + 1,'train')"></i>
                 </ng-container>
               </div>
               <ng-template #scoreDisabled>
@@ -34,15 +36,15 @@
               </ng-template>
             </td>
             <td class="text-center">
-              <div *ngIf="item.status=='local'">
+              <div *ngIf="item.statusStorage=='local'">
                 <i class="pi pi-spin pi-spinner"
                   style="font-size: 24px"></i>
               </div>
-              <div *ngIf="item.status=='uploaded'">
+              <div *ngIf="item.statusStorage=='uploaded'">
                 <i class="pi pi-check"
                   style="font-size: 24px; color: rgb(0, 180, 45);"></i>
               </div>
-              <div *ngIf="item.status=='error'">
+              <div *ngIf="item.statusStorage=='error'">
                 <i class="pi pi-exclamation-triangle"
                   style="font-size: 24px; color: red;"></i>
               </div>
@@ -54,18 +56,18 @@
                 [outlined]="true"
                 icon="fa-solid fa-circle-play"
                 severity="success"
-                (click)="play(i)"></button>
+                (click)="play(i,'train')"></button>
             </td>
             <td>
-              <div *ngIf="item.tsFeatures=='error'">
+              <div *ngIf="item.tsFeaturesDimensions=='error'">
                 <i class="pi pi-exclamation-triangle"
                   style="font-size: 24px; color: red;"></i>
               </div>
-              <div *ngIf="item.tsFeatures===undefined">
+              <div *ngIf="item.tsFeaturesDimensions===undefined">
                 --
               </div>
-              <div *ngIf="item.tsFeatures&&item.tsFeatures !== 'error'">
-                {{getTsFeaturesDimensions(item)}}
+              <div *ngIf="item.tsFeaturesDimensions!==undefined">
+                {{item.tsFeaturesDimensions}}
               </div>
             </td>
           </tr>
@@ -74,30 +76,104 @@
       <div class="mb-3">
         <label for="file">Cargar canción</label>
         <p-fileUpload mode="basic"
-          chooseLabel="Choose"
+          chooseLabel="Cargar"
           chooseIcon="pi pi-upload"
           name="file"
           url="https://www.primefaces.org/cdn/api/upload.php"
           accept="audio/mpeg,audio/mpg,audio/mpeg3,audio/mp3,"
           maxFileSize="100000000"
-          (onSelect)="onFilesSelected($event)"
+          (onSelect)="uploadSongsProcess($event, 'train')"
           [auto]="true"
           [multiple]="true" />
-      </div>
-    </div>
-    <div class="col-md-6">
+      </div><br>
       <button pButton
         type="button"
         severity="success"
-        (click)="getSongTsFeatures()"
-        [disabled]="tsFeatures.poolBusy">
-        Obtener características de las canciones calificadas
+        (click)="getSongTsFeatures('train')"
+        [disabled]="tsFeatures.busy">
+        Obtener características de las canciones calificadas y entrenar
       </button><br>
       <button pButton
         type="button"
         severity="danger"
         (click)="stopTsFeaturesPool()"
-        [disabled]="!tsFeatures.poolBusy">
+        [disabled]="!tsFeatures.busy">
+        Detener extracción
+      </button>
+    </div>
+    <div class="col-md-6">
+      <h3>Predicción:</h3>
+      <table class="table table-dark table-hover table-scroll">
+        <thead>
+          <tr>
+            <th scope="col">id</th>
+            <th scope="col">Nombre</th>
+            <th scope="col"
+              class="rate-col">Puntuación</th>
+            <th scope="col">Prediccion</th>
+            <th scope="col">Opción</th>
+            <th scope="col">Features</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of songs.listForPredict; let i=index">
+            <td>{{item.id}}</td>
+            <td>{{item.name}}</td>
+            <td>
+              <div
+                *ngIf="(item.statusStorage=='local'||(item.statusStorage=='uploaded' && item.userScore!==null && item.tsPrediction!==null)); else scoreDisabled">
+                <ng-container *ngFor="let star of rating.stars; let ist = index">
+                  <i class="star-rated pi"
+                    [ngClass]="item.userScore!==null && ist < item.userScore ? 'pi-star-fill' : 'pi-star'"
+                    (click)="rate(i,ist + 1,'predict')"></i>
+                </ng-container>
+              </div>
+              <ng-template #scoreDisabled>
+                <ng-container *ngFor="let star of rating.stars; let ist = index">
+                  <i class="star-disabled pi"
+                    [ngClass]="item.userScore!==null && ist < item.userScore ? 'pi-star-fill' : 'pi-star'"></i>
+                </ng-container>
+              </ng-template>
+            </td>
+            <td class="text-center">
+              {{item.tsPrediction ? item.tsPrediction:'--'}}
+            </td>
+            <td>
+              <button pButton
+                type="button"
+                size="small"
+                [outlined]="true"
+                icon="fa-solid fa-circle-play"
+                severity="success"
+                (click)="play(i,'predict')"></button>
+            </td>
+            <td>
+              <div *ngIf="item.tsFeaturesDimensions=='error'">
+                <i class="pi pi-exclamation-triangle"
+                  style="font-size: 24px; color: red;"></i>
+              </div>
+              <div *ngIf="item.tsFeaturesDimensions===undefined">
+                --
+              </div>
+              <div *ngIf="item.tsFeaturesDimensions!==undefined">
+                {{item.tsFeaturesDimensions}}
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <button pButton
+        type="button"
+        severity="success"
+        (click)="getSongTsFeatures('predict')"
+        [disabled]="tsFeatures.busy">
+        Obtener características de las canciones y predecir
+      </button><br>
+      <button pButton
+        type="button"
+        severity="danger"
+        (click)="stopTsFeaturesPool()"
+        [disabled]="!tsFeatures.busy">
         Detener extracción
       </button>
     </div>

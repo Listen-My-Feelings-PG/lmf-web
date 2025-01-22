@@ -21,8 +21,8 @@ export class DownloadController {
   @UsePipes(IntegerDto)
   async getTsFeatures(@Query('value') value: number, @Res() res: Response): Promise<void> {
     try {
-      const song = await this.songRepository.findOne({ where: { id: value } });
-      if (!song) 
+      const song = await this.songRepository.findOne({ where: { id: value, active: true } });
+      if (!song)
         throw new HttpException('Song not found', HttpStatus.NOT_FOUND);
 
       const tsFeaturesPath = song.tsFeatures;
