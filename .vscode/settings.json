@@ -9,6 +9,31 @@
     "useTabNine": true,
     "useLanguageServer": true
   },
-  "typescript.locale": "es"
-  
+  "typescript.locale": "es",
+  "editor.defaultFoldingRangeProvider": "Angular.ng-template",
+  "editor.defaultFormatter": "GitHub.copilot",
+  "notebook.defaultFormatter": "GitHub.copilot",
+  "github.copilot.chat.followUps": "always",
+  "github.copilot.chat.scopeSelection": true,
+  "github.copilot.chat.terminalChatLocation": "terminal",
+  "github.copilot.chat.reviewSelection.instructions": [
+    {
+      "file": ".copilot-instructions.md"
+    }
+  ],
+  "github.copilot.chat.codeGeneration.instructions": [
+    {
+      "file": ".copilot-instructions.md"
+    }
+  ],
+  "github.copilot.chat.commitMessageGeneration.instructions": [
+    {
+      "file": ".copilot-commit-message-instructions.md"
+    }
+  ],
+  "github.copilot.chat.search.semanticTextResults": true,
+  "github.copilot.chat.temporalContext.enabled": true,
+  "[typescript]": {
+    "editor.defaultFormatter": "vscode.typescript-language-features"
+  }
 }
