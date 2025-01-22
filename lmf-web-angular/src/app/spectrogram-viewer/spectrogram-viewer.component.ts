@@ -1,5 +1,5 @@
 import { AfterViewInit, Component, ElementRef, ViewChild } from '@angular/core';
-import { HttpService } from '../../_services/http.service';
+import { HttpService } from '../_services/http.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
