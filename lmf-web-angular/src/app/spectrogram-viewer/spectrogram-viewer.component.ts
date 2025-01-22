@@ -2,6 +2,7 @@ import { AfterViewInit, Component, ElementRef, ViewChild } from '@angular/core';
 import { HttpService } from '../_services/http.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { SongFeaturesService } from '../_services/song-features.service';
 
 @Component({
   selector: 'app-spectrogram-viewer',
@@ -33,7 +34,7 @@ export class SpectrogramViewerComponent implements AfterViewInit {
 
   ctx!: CanvasRenderingContext2D;
 
-  constructor(public http: HttpService) {
+  constructor(public http: HttpService, public songFeaturesService: SongFeaturesService) {
     this.idSong = 600;
     this.loader = {
       pool: [],
@@ -100,14 +101,9 @@ export class SpectrogramViewerComponent implements AfterViewInit {
       resolve({
         resized: mel_spectrogram.map((obj, index) => {
           let row: Array<any> = [];
-          if (index == 127)
-            for (let i = control.firstIndex; i < control.lastIndex + 1; i++) {
-              row.push(interval % tempo === 0 ? 1 : 0);
-            }
-          else
-            for (let i = control.firstIndex; i < control.lastIndex + 1; i++) {
-              row.push(obj[i]);
-            }
+          for (let i = control.firstIndex; i < control.lastIndex + 1; i++) {
+            row.push(obj[i]);
+          }
           return row;
         }),
         maxValue: control.maxValue,
@@ -130,10 +126,9 @@ export class SpectrogramViewerComponent implements AfterViewInit {
     this.canvas.nativeElement
     this.http.get(`download/tsfeatures?value=${this.idSong}`, true).subscribe({
       next: async (data) => {
-        this.customizeSpectrogram(data.mel_spectrogram, data.tempo).then((res) => {
-          console.log('res.interval', res.interval, res.resized.length);
+        that.songFeaturesService.customizeSpectrogram(data.mel_spectrogram, data.tempo, true).then((res) => {
+          console.log('res', res.firstIndex, res.lastIndex, '|', data.tempo, res.interval);
           res.resized.push([]);
-          
           for (let i = res.firstIndex; i <= res.lastIndex; i++) {
             res.resized[128].push(i % res.interval == 0 ? 1 : 0);
           }
