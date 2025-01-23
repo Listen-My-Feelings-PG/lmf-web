@@ -35,5 +35,6 @@
   "github.copilot.chat.temporalContext.enabled": true,
   "[typescript]": {
     "editor.defaultFormatter": "vscode.typescript-language-features"
-  }
+  },
+  "terminal.integrated.hideOnStartup": "whenEmpty"
 }
