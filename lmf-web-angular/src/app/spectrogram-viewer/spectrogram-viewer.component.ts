@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnDestroy, ViewChild } from '@angular/core';
 import { HttpService } from '../_services/http.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -9,14 +9,15 @@ import { SongFeaturesService } from '../_services/song-features.service';
   standalone: true,
   imports: [
     CommonModule,
-
     FormsModule
   ],
   templateUrl: './spectrogram-viewer.component.html',
   styleUrl: './spectrogram-viewer.component.scss'
 })
-export class SpectrogramViewerComponent implements AfterViewInit {
+export class SpectrogramViewerComponent implements AfterViewInit, OnDestroy {
   @ViewChild('canvas', { static: false }) canvas!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('overlayCanvas', { static: false }) overlayCanvas!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('canvasWrapper', { static: false }) canvasWrapper!: ElementRef<HTMLDivElement>;
   idSong: number;
   loader: {
     pool: Array<Array<number>>
@@ -33,9 +34,16 @@ export class SpectrogramViewerComponent implements AfterViewInit {
   }
 
   ctx!: CanvasRenderingContext2D;
+  overlayCtx!: CanvasRenderingContext2D;
+  audio: HTMLAudioElement;
+  currentTime: number = 0;
+  intervalId: any;
+
+  counter: number;
 
   constructor(public http: HttpService, public songFeaturesService: SongFeaturesService) {
-    this.idSong = 600;
+    this.counter = 0;
+    this.idSong = 182;
     this.loader = {
       pool: [],
       busy: false,
@@ -48,13 +56,20 @@ export class SpectrogramViewerComponent implements AfterViewInit {
       firstIndex: 0,
       lastIndex: 0
     }
+    this.audio = new Audio();
   }
 
   ngAfterViewInit(): void {
     const canvas = this.canvas.nativeElement;
+    const overlayCanvas = this.overlayCanvas.nativeElement;
     canvas.width = 20000;
     canvas.height = 129;
+    overlayCanvas.width = 20000;
+    overlayCanvas.height = 129;
     this.ctx = canvas.getContext('2d')!;
+    this.overlayCtx = overlayCanvas.getContext('2d')!;
+    console.log(this.overlayCanvas.nativeElement.width);
+    this.loadSpectrogram();
   }
 
   draw(x: number, y: number, v: number) {
@@ -69,50 +84,58 @@ export class SpectrogramViewerComponent implements AfterViewInit {
     });
   }
 
-  customizeSpectrogram(mel_spectrogram: Array<Array<number>>, tempo: number): Promise<{
-    maxValue: number,
-    firstIndex: number,
-    lastIndex: number
-    resized: Array<Array<number>>,
-    interval: number
-  }> {
-    return new Promise((resolve, reject) => {
-      let control: { firstIndex: number, lastIndex: number, maxValue: number } = {
-        firstIndex: -1, lastIndex: 20000, maxValue: 0
-      };
-      mel_spectrogram.forEach((row: any[], y: any) => {
-        row.forEach((column, x) => {
-          if (column > 0 && control.firstIndex == -1)
-            control.firstIndex = x;
-          else if (column > 0 && control.firstIndex > x)
-            control.firstIndex = x;
+  playSong(): void {
+    this.audio.src = `http://localhost:3000/songs/song/mp3?value=${this.idSong}`; // Cambia la ruta según sea necesario
+    this.audio.play();
+    this.currentTime = 0;
+    this.intervalId = setInterval(() => {
+      this.currentTime = this.audio.currentTime; // Actualiza el tiempo actual con el tiempo de la canción
+      this.scrollCanvas(this.moveCursor(30, 'rgba(255, 255, 0, 1)', 5));
+    }, 8); // Actualiza cada 100 ms
+  }
 
-          if (row[19999 - x] > 0 && control.lastIndex == 20000)
-            control.lastIndex = 19999 - x;
-          else if (row[19999 - x] > 0 && control.lastIndex < (19999 - x))
-            control.lastIndex = 19999 - x;
+  stopSong(): void {
+    this.audio.pause();
+    this.audio.currentTime = 0;
+    clearInterval(this.intervalId);
+    this.overlayCtx.clearRect(0, 0, this.overlayCanvas.nativeElement.width, this.overlayCanvas.nativeElement.height); // Limpia el canvas de la línea
+  }
 
-          if (column > control.maxValue)
-            control.maxValue = column;
-        })
-      });
+  moveCursor(lineWidth: number, colorFade: string, separation: number): number {
+    const step = this.spec.lastIndex / this.audio.duration;
+    const realX = Math.floor(this.currentTime * step);
+    let x = Math.floor(this.currentTime * step);
+    this.overlayCtx.clearRect(0, 0, this.overlayCanvas.nativeElement.width, this.overlayCanvas.nativeElement.height); // Limpia el canvas de la línea
 
-      let interval = Math.trunc((control.lastIndex - control.firstIndex) / tempo);
-      resolve({
-        resized: mel_spectrogram.map((obj, index) => {
-          let row: Array<any> = [];
-          for (let i = control.firstIndex; i < control.lastIndex + 1; i++) {
-            row.push(obj[i]);
-          }
-          return row;
-        }),
-        maxValue: control.maxValue,
-        firstIndex: control.firstIndex,
-        lastIndex: control.lastIndex,
-        interval
-      });
-    })
+    let gradient1 = this.overlayCtx.createLinearGradient(x, 0, x + lineWidth, 0);
+    gradient1.addColorStop(1, colorFade);
+    gradient1.addColorStop(0, 'rgba(0, 0, 0, 0)');
 
+    this.overlayCtx.beginPath();
+
+    this.overlayCtx.moveTo(x, 0);
+    this.overlayCtx.lineTo(x, this.overlayCanvas.nativeElement.height);
+    this.overlayCtx.strokeStyle = gradient1;
+    this.overlayCtx.lineWidth = lineWidth * 2;
+    this.overlayCtx.stroke();
+    this.overlayCtx.closePath();
+
+    x += lineWidth;
+
+    let gradient2 = this.overlayCtx.createLinearGradient(x, 0, x + lineWidth, 0);
+    gradient2.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    gradient2.addColorStop(0, colorFade);
+
+    this.overlayCtx.beginPath();
+
+    this.overlayCtx.moveTo(x + (separation * 4), 0);
+    this.overlayCtx.lineTo(x + (separation * 4), this.overlayCanvas.nativeElement.height);
+    this.overlayCtx.strokeStyle = gradient2;
+    this.overlayCtx.lineWidth = lineWidth + separation;
+    this.overlayCtx.stroke();
+
+
+    return x;
   }
 
   stopLoading() {
@@ -120,14 +143,21 @@ export class SpectrogramViewerComponent implements AfterViewInit {
     this.loader.iterator = this.loader.pool[Symbol.iterator]();
   }
 
+  scrollCanvas(linePos: number): void {
+    const x = ((this.overlayCanvas.nativeElement.width / this.spec.lastIndex) * linePos) *
+      (this.spec.lastIndex / this.overlayCanvas.nativeElement.width);
+    console.log('this.overlayCanvas.nativeElement.width', this.overlayCanvas.nativeElement.width);
+    const canvasWrapper = this.canvasWrapper.nativeElement;
+    const centerX = canvasWrapper.clientWidth / 2;
+    canvasWrapper.scrollLeft = x - centerX;
+  }
+
   loadSpectrogram(): void {
     const that = this;
-    console.log('idSong', this.idSong);
     this.canvas.nativeElement
     this.http.get(`download/tsfeatures?value=${this.idSong}`, true).subscribe({
       next: async (data) => {
-        that.songFeaturesService.customizeSpectrogram(data.mel_spectrogram, data.tempo, true).then((res) => {
-          console.log('res', res.firstIndex, res.lastIndex, '|', data.tempo, res.interval);
+        that.songFeaturesService.customizeSpectrogram(data.mel_spectrogram, data.tempo, false).then((res) => {
           res.resized.push([]);
           for (let i = res.firstIndex; i <= res.lastIndex; i++) {
             res.resized[128].push(i % res.interval == 0 ? 1 : 0);
@@ -203,6 +233,10 @@ export class SpectrogramViewerComponent implements AfterViewInit {
         console.error('Error al obtener características:', error);
       }
     });
+  }
+
+  ngOnDestroy(): void {
+    clearInterval(this.intervalId); // Limpia el intervalo al destruir el componente
   }
 
 }

@@ -1,8 +1,20 @@
 <br>
-<div class="canvas-wrapper">
-  <canvas id="miCanvas"
+<div #canvasWrapper
+  class="canvas-wrapper">
+  <canvas class="spec-canvas"
     #canvas></canvas>
+  <canvas class="line-canvas"
+    #overlayCanvas></canvas>
+
 </div>
+<br>
+<button type="button"
+  class="btn btn-primary"
+  [disabled]="http.busy||loader.busy"
+  (click)="playSong()">Reproducir</button>
+<button type="button"
+  class="btn btn-secondary"
+  (click)="stopSong()">Detener</button>
 <br>
 <input type="number"
   name="idSong"
