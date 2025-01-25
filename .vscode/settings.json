@@ -11,7 +11,6 @@
   },
   "typescript.locale": "es",
   "editor.defaultFoldingRangeProvider": "Angular.ng-template",
-  "editor.defaultFormatter": "GitHub.copilot",
   "notebook.defaultFormatter": "GitHub.copilot",
   "github.copilot.chat.followUps": "always",
   "github.copilot.chat.scopeSelection": true,
