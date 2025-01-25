@@ -55,7 +55,7 @@ export class FeatureExtractorService {
       return this.checkPool(item);
     this.poolCounter++;
     const filename = item.value.filename;
-    const process = spawn('python', ['../feature_extractor.py', this.cf.get<string>('PATH_UPLOADS') + '/' + filename]);
+    const process = spawn('python', ['../feature_extractor.py', this.cf.get<string>('TS_PATH_UPLOADS') + '/' + filename]);
     let stdout = '';
     let stderr = '';
     process.stdout.on('data', (data) => stdout += data.toString());
@@ -87,7 +87,7 @@ export class FeatureExtractorService {
           console.log('first10Columns', first10Columns);
           console.log('last10Columns', last10Columns);
           try {
-            const destPath = this.cf.get<string>('PATH_FEATURES');
+            const destPath = this.cf.get<string>('TS_PATH_FEATURES');
             const gzipData = zlib.gzipSync(JSON.stringify(parsedFeatures));
             const gzipFilename = filename + '.json.gz';
             await writeFile(destPath + '/' + gzipFilename, gzipData);

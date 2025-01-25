@@ -32,7 +32,7 @@ export class UploadController {
       storage: diskStorage({
         destination: (req, file, cb) => {
           const cf: ConfigService = new ConfigService();
-          cb(null, cf.get<string>('PATH_UPLOADS'))
+          cb(null, cf.get<string>('TS_PATH_UPLOADS'))
         },
         filename: ((req, file, cb) => {
           const uniqueSuffix = new Date().getTime();
@@ -53,7 +53,7 @@ export class UploadController {
         active: true
       }
     });
-    const filePath = path.resolve(this.cf.get<string>('PATH_UPLOADS'), file.filename);
+    const filePath = path.resolve(this.cf.get<string>('TS_PATH_UPLOADS'), file.filename);
     if (existingSong) {
       if (fs.existsSync(filePath))
         await fs.unlinkSync(filePath);

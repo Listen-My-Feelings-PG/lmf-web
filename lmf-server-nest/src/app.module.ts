@@ -24,11 +24,11 @@ import { DownloadController } from './main/download.controller';
       useFactory: (cf: ConfigService) => {
         return {
           type: 'postgres',
-          host: cf.get<string>('DB_HOST'),
-          port: parseInt(cf.get<string>('DB_PORT') || '5432', 10),
-          username: cf.get<string>('DB_USERNAME'),
-          password: cf.get<string>('DB_PASSWORD'),
-          database: cf.get<string>('DB_DATABASE'),
+          host: cf.get<string>('TS_DB_HOST'),
+          port: parseInt(cf.get<string>('TS_DB_PORT') || '5432', 10),
+          username: cf.get<string>('TS_DB_USERNAME'),
+          password: cf.get<string>('TS_DB_PASSWORD'),
+          database: cf.get<string>('TS_DB_DATABASE'),
           entities: [__dirname + '/**/*.entity{.ts,.js}'],
           synchronize: true, // No usar en producción
         };
