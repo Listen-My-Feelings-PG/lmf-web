@@ -1,4 +1,6 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany, ManyToOne } from 'typeorm';
+import { SongsPlaylistsEntity } from './songs-playlists.entity';
+import { DataTypeEntity } from './data-type.entity';
 
 @Entity('canciones')
 export class SongEntity {
@@ -8,7 +10,7 @@ export class SongEntity {
   @Column({ name: 'ca_nombre', type: 'text' })
   name: string;
 
-  @Column({ name: 'ca_train_level', type: 'int', default: 0 })
+  @Column({ name: 'ca_train_level_global', type: 'int', default: 0 })
   trainlevel: number;
 
   @Column({ name: 'ca_ts_features', type: 'text', nullable: true })
@@ -26,10 +28,20 @@ export class SongEntity {
   @Column({ name: 'ca_ts_prediccion', type: 'numeric', nullable: true })
   tsPrediction: number;
 
+  @ManyToOne(() => DataTypeEntity)
   @Column({ name: 'ca_id_tipodato', type: 'int' })
   idDataType: number;
 
   @Column({ name: 'ca_activo', type: 'boolean', default: true })
   active: boolean;
+
+  @Column({ name: 'ca_ts_status', type: 'int' })
+  tsStatus: number;
+
+  @Column({ name: 'ca_ts_init_status', type: 'text' })
+  tsInitStatus: number;
+
+  @OneToMany(() => SongsPlaylistsEntity, songsPlaylists => songsPlaylists.song)
+  songsPlaylists: SongsPlaylistsEntity[];
 
 }
