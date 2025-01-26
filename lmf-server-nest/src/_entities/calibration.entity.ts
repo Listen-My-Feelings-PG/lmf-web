@@ -15,7 +15,7 @@ export class CalibrationEntity {
     @Column({ name: 'cl_ts_prediccion', type: 'numeric', nullable: true })
     tsPrediction: string;
 
-    @Column({ name: 'cl_fecha_calibracion', type: 'timestamp with local time zone', default: () => 'CURRENT_TIMESTAMP' })
+    @Column({ name: 'cl_fecha_calibracion', type: 'timestamp with time zone', default: () => 'CURRENT_TIMESTAMP' })
     calibrationDate: string;
 
     @Column({ name: 'cl_estatus_calibracion', type: 'text', nullable: true })

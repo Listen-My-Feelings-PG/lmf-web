@@ -20,14 +20,16 @@ export class SongsController {
   @Get('list')
   async getSongsList() {
     const list = await this.songsTable.find({
-      select: ['id', 'name', 'trainlevel', 'userScore', 'tsPrediction'],
+      select: ['id', 'name', 'tsStatus', 'tsInitStatus', 'trainLevelGlobal', 'userScore', 'tsPrediction'],
+      where: { active: true },
       order: { id: 'ASC' }
     });
     return {
       message: 'Query successful',
       data: list.map((obj) => new Song(
-        obj.name, 'file', null, '', obj.userScore,
-        obj.tsPrediction, 'uploaded', obj.id
+        obj.name, 'file', null, obj.userScore, obj.tsPrediction, 'uploaded',
+        (obj.tsStatus as 'trained' | 'predicted' | 'retrained'),
+        (obj.tsInitStatus as 'train' | 'predict' | 'retrain'), null, obj.id
       ))
     }
   }

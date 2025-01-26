@@ -29,6 +29,7 @@ export class Playlist {
 export class TsModel {
   constructor(
     public id: number,
+    public type: 'tensorflow',
     public global: boolean,
     public trainCount: number
   ) { }

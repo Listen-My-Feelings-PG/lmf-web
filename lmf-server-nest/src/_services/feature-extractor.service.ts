@@ -19,7 +19,7 @@ export class FeatureExtractorService {
 
   constructor(
     @InjectRepository(SongEntity)
-    private readonly songRepository: Repository<SongEntity>,
+    private readonly tableSongs: Repository<SongEntity>,
     private readonly cf: ConfigService
   ) {
     this.pool = [];
@@ -30,7 +30,7 @@ export class FeatureExtractorService {
 
   async runExtraction() {
     if (!this.poolBusy) {
-      const songs = await this.songRepository.find({ where: { tsFeatures: IsNull() } });
+      const songs = await this.tableSongs.find({ where: { tsFeatures: IsNull() } });
       if (songs.length > 0)
         console.info('Songs queried:', songs.length, 'Loading pool...', new Date().toLocaleString());
       songs.forEach(async (item, index) => {
@@ -83,18 +83,15 @@ export class FeatureExtractorService {
             first10Columns.push(first10Rows);
             last10Columns.push(last10Rows);
           });
-          console.log('maxValue', maxValue);
-          console.log('first10Columns', first10Columns);
-          console.log('last10Columns', last10Columns);
           try {
             const destPath = this.cf.get<string>('TS_PATH_FEATURES');
             const gzipData = zlib.gzipSync(JSON.stringify(parsedFeatures));
             const gzipFilename = filename + '.json.gz';
             await writeFile(destPath + '/' + gzipFilename, gzipData);
-            const row = await this.songRepository.findOneBy({ id: item.value.idSong });
+            const row = await this.tableSongs.findOneBy({ id: item.value.idSong });
             if (row) {
               row.tsFeatures = gzipFilename;
-              await this.songRepository.save(row);
+              await this.tableSongs.save(row);
               console.info('File compressed:', gzipFilename);
               this.checkPool(item);
             } else {

@@ -99,15 +99,14 @@ export class TrainingComponent implements OnInit {
     }
     this.http.get('songs/list').subscribe({
       next: (res) => {
-        this.songs.listForTrain = res.data.filter((obj: any) => obj.userScore !== null && obj.tsPrediction === null);
-        this.songs.listForPredict = res.data.filter((obj: any) => obj.userScore === null && (obj.tsPrediction === null || obj.tsPrediction >= 0));
+        this.songs.listForTrain = res.data.filter((obj: any) => obj.tsInitStatus === 'train');
+        this.songs.listForPredict = res.data.filter((obj: any) => obj.tsInitStatus === 'predict');
       }
     });
   }
 
   uploadSongsProcess(evt: any, mode: 'train' | 'predict') {
-    const that = this;
-    const list = this.songs[mode == 'train' ? 'listForTrain' : 'listForPredict'];
+    const mainList = this.songs[mode == 'train' ? 'listForTrain' : 'listForPredict'];
     evt.currentFiles.forEach((item: any) => {
       const song: Song = {
         name: item.name,
@@ -120,21 +119,25 @@ export class TrainingComponent implements OnInit {
         tsInitStatus: mode,
         listIndex: null
       }
-      this.songs.listForTrain.push(song);
-      this.songService.addToPoolSongs({ ...song, listIndex: list.length - 1 });
+      mainList.push(song);
+      this.songService.addToPoolSongsForUpload({ ...song, listIndex: mainList.length - 1 });
     });
 
-    this.songService.uploadSongsToServer(list).then((res) => {
-      console.info('Canciones subidas correctamente');
-    }).catch((err) => {
-      console.error(err);
+    this.songService.uploadSongsToServer((error: boolean, data: any) => {
+      if (error) {
+        mainList[data.listIndex].storageStatus = 'error';
+        mainList[data.listIndex].storageStatusErrReason = data.storageStatusErrReason;
+      } else if (!data.completed) {
+        mainList[data.listIndex].id = data.id;
+        mainList[data.listIndex].storageStatus = 'uploaded';
+      }
     });
   }
 
   rate(indexSong: number, rate: number, mode: 'train' | 'predict'): void {
-    let song = mode == 'train' ? this.songs.listForTrain[indexSong] : this.songs.listForPredict[indexSong];
+    let song = this.songs[mode == 'train' ? 'listForTrain' : 'listForPredict'][indexSong];
     if (!this.rating.blocked || song.userScore != rate) {
-      this.http.post('rate/song', { id: song.id, score: rate },true).subscribe({
+      this.http.post('rate/song', { id: song.id, score: rate }, true).subscribe({
         next: (res) => {
           song.userScore = res.score;
         }
@@ -162,7 +165,9 @@ export class TrainingComponent implements OnInit {
           obj.id && obj.userScore === null)
     ).map((obj) => ({ id: obj.id as number, userScore: obj.userScore as number }));
 
-    this.tsFeatures.poolSongs = songsRated;
+    console.log('songsRated', songsRated);
+
+    /*this.tsFeatures.poolSongs = songsRated;
 
     if (!this.tsFeatures.busy) {
       this.tsFeatures.iterator = this.tsFeatures.poolSongs[Symbol.iterator]();
@@ -193,13 +198,6 @@ export class TrainingComponent implements OnInit {
             const mel_spectrogram_resized = data.resized;
             if (mode == 'train') {
               console.info('Iniciando entrenamiento para la canción con ID:', tensorResources.songId);
-              console.log(
-                'mel_spectrogram_resized',
-                mel_spectrogram_resized.length,
-                mel_spectrogram_resized[0].length, '|',
-                data.firstIndex, data.lastIndex, '|',
-                tensorResources.userScore ** 4
-              );
               const inputTensor = tf.tensor2d(mel_spectrogram_resized);
               const outputTensor = tf.tensor1d([tensorResources.userScore]);
               await that.model?.fit(inputTensor.expandDims(0), outputTensor, { epochs: [1, 16, 81][tensorResources.userScore - 1], batchSize: 1 });
@@ -248,7 +246,7 @@ export class TrainingComponent implements OnInit {
         console.info('Pool finalizado');
         console.info(`Variables activas: ${tf.memory().numTensors}`);
       }
-    }
+    }*/
   }
 
   stopTsFeaturesPool() {

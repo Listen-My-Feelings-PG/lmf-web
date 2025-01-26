@@ -13,7 +13,7 @@ export class ModelEntity {
 	@Column({ name: 'mo_descripcion', type: 'text', nullable: true })
 	description: string;
 
-	@Column({ name: 'mo_fecha_creacion', type: 'timestamp with local time zone', default: () => 'CURRENT_TIMESTAMP' })
+	@Column({ name: 'mo_fecha_creacion', type: 'timestamp with time zone', default: () => 'CURRENT_TIMESTAMP' })
 	creationDate: string;
 
 	@Column({ name: 'mo_train_count', type: 'int' })
@@ -23,9 +23,9 @@ export class ModelEntity {
 	isGlobal: string;
 
 	@OneToMany(() => CalibrationEntity, calibration => calibration.idModel)
-  calibrations: CalibrationEntity[];
+	calibrations: CalibrationEntity[];
 
-  @OneToMany(() => PlaylistEntity, playlist => playlist.idModel)
-  playlists: PlaylistEntity[];
+	@OneToMany(() => PlaylistEntity, playlist => playlist.idModel)
+	playlists: PlaylistEntity[];
 
 }

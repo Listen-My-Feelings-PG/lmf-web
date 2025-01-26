@@ -13,7 +13,7 @@ export class PlaylistEntity {
     @Column({ name: 'pl_activo', type: 'boolean' })
     active: string;
 
-    @Column({ name: 'pl_fecha_creacion', type: 'timestamp with local time zone', default: () => 'CURRENT_TIMESTAMP' })
+    @Column({ name: 'pl_fecha_creacion', type: 'timestamp with time zone', default: () => 'CURRENT_TIMESTAMP' })
     creationDate: string;
 
     @Column({ name: 'pl_default', type: 'boolean' })

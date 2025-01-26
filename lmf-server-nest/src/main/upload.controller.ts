@@ -16,6 +16,7 @@ import { Mp3ValidationPipe } from 'src/_pipes/mp3-validation.pipe';
 import * as fs from 'fs';
 import * as path from 'path';
 import { ConfigService } from '@nestjs/config';
+import { Song } from 'src/_models/all.model';
 
 
 @Controller('upload')
@@ -44,7 +45,7 @@ export class UploadController {
   )
   async uploadHandler(
     @UploadedFile(new Mp3ValidationPipe()) file: Express.Multer.File,
-    @Body() body: any
+    @Body() body: Song
   ) {
     const existingSong = await this.songsTable.findOne({
       where: {
@@ -64,13 +65,15 @@ export class UploadController {
       try {
         const row = await this.songsTable.save(this.songsTable.create({
           name: name,
+          idDataType: 1,
+          tsStatus: null,
+          tsInitStatus: body.tsInitStatus,
           fileSize: file.size,
           fileName: file.filename,
-          idDataType: 1,
           userScore: body.userScore !== undefined ? body.userScore : null,
           tsPrediction: body.tsPrediction !== undefined ? body.tsPrediction : null
-        })); /*Regla: Todo lo que sea 'undefined' es porque en el front es NULL (un valor 0 es válido). 
-        Cuando sea necesario en la operación, este debe permitir nulos, o tener un valor por default*/
+        }));/*Regla: Todo lo que sea 'undefined' es porque en el front es NULL (un valor 0 es válido). 
+       Cuando sea necesario en la operación, este debe permitir nulos, o tener un valor por default*/
         return {
           message: 'uploaded successful',
           row

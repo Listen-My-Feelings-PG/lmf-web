@@ -20,7 +20,7 @@
             <td>{{item.id}}</td>
             <td>{{item.name}}</td>
             <td>
-              <div *ngIf="false; else scoreDisabled">
+              <div *ngIf="item.tsInitStatus=='train'; else scoreDisabled">
                 <ng-container *ngFor="let star of rating.stars; let ist = index">
                   <i class="star-rated pi"
                     [ngClass]="item.userScore !== null && ist < item.userScore! ? 'pi-star-fill' : 'pi-star'"

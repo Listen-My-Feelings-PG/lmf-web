@@ -7,10 +7,10 @@ export class DataTypeEntity {
     id: number;
 
     @Column({ name: 'td_tipo', type: 'text', nullable: true })
-    name: string;
+    name: 'file' | 'link';
 
     @Column({ name: 'td_tipo_modelo', type: 'text' })
-    typeModel: string;
+    typeModel: 'tensorflow';
 
     @Column({ name: 'td_descripcion', type: 'text', nullable: true })
     description: string;

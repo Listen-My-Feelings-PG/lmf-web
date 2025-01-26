@@ -68,7 +68,6 @@ export class SpectrogramViewerComponent implements AfterViewInit, OnDestroy {
     overlayCanvas.height = 129;
     this.ctx = canvas.getContext('2d')!;
     this.overlayCtx = overlayCanvas.getContext('2d')!;
-    console.log(this.overlayCanvas.nativeElement.width);
     this.loadSpectrogram();
   }
 
@@ -146,7 +145,6 @@ export class SpectrogramViewerComponent implements AfterViewInit, OnDestroy {
   scrollCanvas(linePos: number): void {
     const x = ((this.overlayCanvas.nativeElement.width / this.spec.lastIndex) * linePos) *
       (this.spec.lastIndex / this.overlayCanvas.nativeElement.width);
-    console.log('this.overlayCanvas.nativeElement.width', this.overlayCanvas.nativeElement.width);
     const canvasWrapper = this.canvasWrapper.nativeElement;
     const centerX = canvasWrapper.clientWidth / 2;
     canvasWrapper.scrollLeft = x - centerX;

@@ -128,53 +128,49 @@ export class SongService {
     });
   }
 
-  addToPoolSongs(song: Song) {
+  addToPoolSongsForUpload(song: Song) {
     this.pools.songsForUpload.push(song);
   }
 
-  uploadSongsToServer(listForFill: Array<Song>) {
+  uploadSongsToServer(taskCallback: Function): void {
     let that = this;
-    return new Promise((resolve, reject) => {
-      if (!this.busyFlags.songsForUpload) {
-        this.iterators.songsForUpload = this.pools.songsForUpload[Symbol.iterator]();
-        this.busyFlags.songsForUpload = true;
-        trigger();
-      } else
-        reject('Pool is busy');
+    if (!this.busyFlags.songsForUpload) {
+      this.iterators.songsForUpload = this.pools.songsForUpload[Symbol.iterator]();
+      this.busyFlags.songsForUpload = true;
+      trigger();
+    } else if (this.pools.songsForUpload.length == 0)
+      return taskCallback(true, 'Pool is empty');
+    else
+      return taskCallback(true, 'Pool is busy');
 
-      function trigger() {
-        let item = that.iterators.songsForUpload.next();
-        if (item.done)
-          return checkPool(item);
-        item.value.userScore = 0;
-        item.value.tsPrediction = null;
-        that.http.post('upload/file', item.value).subscribe({
-          next: (data: any) => {
-            let listSong = listForFill[item.value.listIndex];
-            listSong.storageStatus = 'uploaded';
-            listSong.id = data.row.id;
-            checkPool(item);
-          },
-          error: (error: { status: number; }) => {
-            let listSong = listForFill[item.value.listIndex];
-            listSong.storageStatus = 'error';
-            listSong.storageStatusErrReason = error.status == 403 ? 'duplicated' : 'other';
-            checkPool(item);
-          }
-        });
-      }
-
-      function checkPool(item: any) {
-        if (!item.done)
-          trigger();
-        else {
-          that.pools.songsForUpload = [];
-          that.busyFlags.songsForUpload = false;
-          resolve(listForFill);
+    function trigger() {
+      let item = that.iterators.songsForUpload.next();
+      if (item.done)
+        return checkPool(item);
+      item.value.userScore = 0;
+      item.value.tsPrediction = null;
+      that.http.post('upload/file', item.value).subscribe({
+        next: (data: any) => {
+          taskCallback(false, { completed: false, listIndex: item.value.listIndex, storageStatus: 'uploaded', id: data.row.id });
+          checkPool(item);
+        },
+        error: (error: { status: number; }) => {
+          taskCallback(true, { completed: false, listIndex: item.value.listIndex, storageStatus: 'error', storageStatusErrReason: error.status == 403 ? 'duplicated' : 'other' });
+          checkPool(item);
         }
-      }
+      });
+    }
 
-    })
+    function checkPool(item: any) {
+      if (!item.done)
+        trigger();
+      else {
+        that.pools.songsForUpload = [];
+        that.busyFlags.songsForUpload = false;
+        taskCallback(false, { completed: true });
+      }
+    }
+
   }
 
   stopUploadSongsToServer() {
