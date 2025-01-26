@@ -20,11 +20,10 @@
             <td>{{item.id}}</td>
             <td>{{item.name}}</td>
             <td>
-              <div
-                *ngIf="item.statusStorage == 'local'||(item.statusStorage == 'uploaded' && item.userScore !== null && item.userScore >= 0); else scoreDisabled">
+              <div *ngIf="false; else scoreDisabled">
                 <ng-container *ngFor="let star of rating.stars; let ist = index">
                   <i class="star-rated pi"
-                    [ngClass]="item.userScore!==null && ist < item.userScore ? 'pi-star-fill' : 'pi-star'"
+                    [ngClass]="item.userScore !== null && ist < item.userScore! ? 'pi-star-fill' : 'pi-star'"
                     (click)="rate(i,ist + 1,'train')"></i>
                 </ng-container>
               </div>
@@ -36,15 +35,15 @@
               </ng-template>
             </td>
             <td class="text-center">
-              <div *ngIf="item.statusStorage=='local'">
+              <div *ngIf="item.storageStatus=='local'">
                 <i class="pi pi-spin pi-spinner"
                   style="font-size: 24px"></i>
               </div>
-              <div *ngIf="item.statusStorage=='uploaded'">
+              <div *ngIf="item.storageStatus=='uploaded'">
                 <i class="pi pi-check"
                   style="font-size: 24px; color: rgb(0, 180, 45);"></i>
               </div>
-              <div *ngIf="item.statusStorage=='error'">
+              <div *ngIf="item.storageStatus=='error'">
                 <i class="pi pi-exclamation-triangle"
                   style="font-size: 24px; color: red;"></i>
               </div>
@@ -103,65 +102,6 @@
     </div>
     <div class="col-md-6">
       <h3>Predicción:</h3>
-      <table class="table table-dark table-hover table-scroll">
-        <thead>
-          <tr>
-            <th scope="col">id</th>
-            <th scope="col">Nombre</th>
-            <th scope="col"
-              class="rate-col">Puntuación</th>
-            <th scope="col">Prediccion</th>
-            <th scope="col">Opción</th>
-            <th scope="col">Features</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let item of songs.listForPredict; let i=index">
-            <td>{{item.id}}</td>
-            <td>{{item.name}}</td>
-            <td>
-              <div
-                *ngIf="(item.statusStorage=='local'||(item.statusStorage=='uploaded' && item.userScore!==null && item.tsPrediction!==null)); else scoreDisabled">
-                <ng-container *ngFor="let star of rating.stars; let ist = index">
-                  <i class="star-rated pi"
-                    [ngClass]="item.userScore!==null && ist < item.userScore ? 'pi-star-fill' : 'pi-star'"
-                    (click)="rate(i,ist + 1,'predict')"></i>
-                </ng-container>
-              </div>
-              <ng-template #scoreDisabled>
-                <ng-container *ngFor="let star of rating.stars; let ist = index">
-                  <i class="star-disabled pi"
-                    [ngClass]="item.userScore!==null && ist < item.userScore ? 'pi-star-fill' : 'pi-star'"></i>
-                </ng-container>
-              </ng-template>
-            </td>
-            <td class="text-center">
-              {{item.tsPrediction ? item.tsPrediction:'--'}}
-            </td>
-            <td>
-              <button pButton
-                type="button"
-                size="small"
-                [outlined]="true"
-                icon="fa-solid fa-circle-play"
-                severity="success"
-                (click)="play(i,'predict')"></button>
-            </td>
-            <td>
-              <div *ngIf="item.tsFeaturesDimensions=='error'">
-                <i class="pi pi-exclamation-triangle"
-                  style="font-size: 24px; color: red;"></i>
-              </div>
-              <div *ngIf="item.tsFeaturesDimensions===undefined">
-                --
-              </div>
-              <div *ngIf="item.tsFeaturesDimensions!==undefined">
-                {{item.tsFeaturesDimensions}}
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
       <button pButton
         type="button"
         severity="success"

@@ -112,10 +112,11 @@ export class TrainingComponent implements OnInit {
         name: item.name,
         type: 'file',
         file: item,
-        link: '',
         userScore: null,
         tsPrediction: null,
-        statusStorage: 'local'
+        storageStatus: 'local',
+        tsStatus: null,
+        tsInitStatus: mode
       }
       const list = mode == 'train' ? this.songs.listForTrain : this.songs.listForPredict;
       this.songs.listForTrain.push(song);
@@ -136,14 +137,14 @@ export class TrainingComponent implements OnInit {
       that.http.post('upload/file', item.value, true).subscribe({
         next: (data: any) => {
           let listSong = that.songs[mode == 'train' ? 'listForTrain' : 'listForPredict'][item.value.listIndex];
-          listSong.statusStorage = 'uploaded';
+          listSong.storageStatus = 'uploaded';
           listSong.id = data.row.id;
           checkPool(item);
         },
         error: (error) => {
           let listSong = that.songs.listForTrain[item.value.listIndex];
-          listSong.statusStorage = 'error';
-          listSong.statusErrReason = error.status == 403 ? 'duplicated' : 'other';
+          listSong.storageStatus = 'error';
+          listSong.storageStatusErrReason = error.status == 403 ? 'duplicated' : 'other';
           checkPool(item);
         }
       });
