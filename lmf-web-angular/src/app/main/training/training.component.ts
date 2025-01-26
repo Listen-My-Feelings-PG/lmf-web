@@ -6,7 +6,6 @@ import { Song } from '../../_models/all.model';
 import { HttpService } from '../../_services/http.service';
 import { PlayerComponent } from "../../player/player.component";
 import * as tf from '@tensorflow/tfjs';
-import { SongFeaturesService } from '../../_services/song-features.service';
 import { SongService } from '../../_services/song.service';
 
 @Component({
@@ -49,7 +48,6 @@ export class TrainingComponent implements OnInit {
 
   constructor(
     private http: HttpService,
-    private songFeaturesService: SongFeaturesService,
     private songService: SongService
   ) {
     this.tsFeatures = {
@@ -186,7 +184,7 @@ export class TrainingComponent implements OnInit {
             userScore: item.value.userScore
           }
 
-          that.songFeaturesService.customizeSpectrogram(
+          that.songService.customizeSpectrogram(
             tensorResources.features.mel_spectrogram,
             tensorResources.features.tempo,
             false

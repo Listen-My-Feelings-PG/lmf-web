@@ -2,7 +2,7 @@ import { AfterViewInit, Component, ElementRef, OnDestroy, ViewChild } from '@ang
 import { HttpService } from '../_services/http.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { SongFeaturesService } from '../_services/song-features.service';
+import { SongService } from '../_services/song.service';
 
 @Component({
   selector: 'app-spectrogram-viewer',
@@ -41,7 +41,7 @@ export class SpectrogramViewerComponent implements AfterViewInit, OnDestroy {
 
   counter: number;
 
-  constructor(public http: HttpService, public songFeaturesService: SongFeaturesService) {
+  constructor(public http: HttpService, public songService: SongService) {
     this.counter = 0;
     this.idSong = 182;
     this.loader = {
@@ -157,7 +157,7 @@ export class SpectrogramViewerComponent implements AfterViewInit, OnDestroy {
     this.canvas.nativeElement
     this.http.get(`download/tsfeatures?value=${this.idSong}`, true).subscribe({
       next: async (data) => {
-        that.songFeaturesService.customizeSpectrogram(data.mel_spectrogram, data.tempo, false).then((res) => {
+        that.songService.customizeSpectrogram(data.mel_spectrogram, data.tempo, false).then((res) => {
           res.resized.push([]);
           for (let i = res.firstIndex; i <= res.lastIndex; i++) {
             res.resized[128].push(i % res.interval == 0 ? 1 : 0);

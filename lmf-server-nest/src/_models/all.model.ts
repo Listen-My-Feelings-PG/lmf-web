@@ -21,6 +21,7 @@ export class Playlist {
     public name: string,
     public songs: Array<Song>,
     public model: Model,
+    public isDefault: boolean,
     public id?: number
   ) { }
 }
