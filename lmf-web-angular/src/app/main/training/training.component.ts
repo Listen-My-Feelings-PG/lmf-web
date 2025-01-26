@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { FileUploadModule } from 'primeng/fileupload';
-import { Song } from '../../_models/all.model';
+import { LibrosaTsFeatures, Song } from '../../_models/all.model';
 import { HttpService } from '../../_services/http.service';
 import { PlayerComponent } from "../../player/player.component";
 import * as tf from '@tensorflow/tfjs';
@@ -154,7 +154,7 @@ export class TrainingComponent implements OnInit {
 
     const that = this;
 
-    const songsRated: Array<{
+    let songsRated: Array<{
       id: number,
       userScore: number
     }> = this.songs[mode == 'train' ? 'listForTrain' : 'listForPredict'].filter(
@@ -165,7 +165,23 @@ export class TrainingComponent implements OnInit {
           obj.id && obj.userScore === null)
     ).map((obj) => ({ id: obj.id as number, userScore: obj.userScore as number }));
 
-    console.log('songsRated', songsRated);
+    this.songService.extractFeaturesFromSongs(songsRated.map((obj) => obj.id), (error: boolean, features: LibrosaTsFeatures, completed: boolean, idSong: number | null, next: Function) => {
+      if (!completed) {
+        if (!error) {
+          this.songService.customizeSpectrogram(features.mel_spectrogram, features.tempo, false).then((customized) => {
+            console.log('Customized:', customized);
+            //Logica del entrenamiento
+            next();
+          }).catch((error) => {
+            console.error('Error al personalizar espectrograma:', error);
+            next();
+          })
+        } else {
+          console.error('Error al extraer características:', features);
+          next();
+        }
+      }
+    })
 
     /*this.tsFeatures.poolSongs = songsRated;
 

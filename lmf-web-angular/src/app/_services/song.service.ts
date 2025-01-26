@@ -57,23 +57,19 @@ export class SongService {
       let item = that.iterators.idSongsForFeatures.next();
       if (item.done)
         return checkPool(item);
-      that.http.get(`download/tsfeatures?value=${item.value.id}`).subscribe({
-        next: (data: any) => {
-          taskCallback(false, data);
-          checkPool(item);
-        },
-        error: (error: any) => {
-          taskCallback(true, `Error al extraer características:${JSON.stringify(error)}`,);
-          checkPool(item);
-        }
+      that.http.get(`download/tsfeatures?value=${item.value}`).subscribe({
+        next: (data: any) => taskCallback(false, data, false, item.value, () => checkPool(item)),
+        error: (error: any) => taskCallback(true, `Error al extraer características: ${JSON.stringify(error)}`, false, item.value, () => checkPool(item))
       });
     }
+
     function checkPool(item: any) {
       if (!item.done)
         trigger();
       else {
         that.pools.idSongsForFeatures = [];
         that.busyFlags.idSongsForFeatures = false;
+        taskCallback(false, 'Pool finalizado', true, () => { return; });
       }
     }
   }
