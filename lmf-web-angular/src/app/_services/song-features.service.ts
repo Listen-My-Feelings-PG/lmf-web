@@ -12,7 +12,22 @@ export interface SpectrogramSpecs {
   providedIn: 'root'
 })
 export class SongFeaturesService {
-  constructor() { }
+  idSongsPool: Array<number>;
+  poolBusy: boolean;
+  iterator: any;
+
+  constructor() {
+    this.idSongsPool = [];
+    this.poolBusy = false;
+    this.iterator = null;
+  }
+
+  extractFeatures(idSongs: Array<number>, taskCallback: Function): void {
+    this.idSongsPool=Object.assign([], idSongs);
+    
+    function trigger() { }
+    function checkPool(item: any) { }
+  }
   customizeSpectrogram(mel_spectrogram: Array<Array<number>>, tempo: number, extendTempo: boolean): Promise<SpectrogramSpecs> {
     return new Promise((resolve) => {
       let control: { firstIndex: number, lastIndex: number, maxValue: number } = {

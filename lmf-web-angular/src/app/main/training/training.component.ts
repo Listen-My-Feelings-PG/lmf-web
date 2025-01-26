@@ -2,11 +2,12 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { FileUploadModule } from 'primeng/fileupload';
-import { LibrosaTsFeatures, Song } from '../../_models/all.model';
+import { Song } from '../../_models/all.model';
 import { HttpService } from '../../_services/http.service';
 import { PlayerComponent } from "../../player/player.component";
 import * as tf from '@tensorflow/tfjs';
 import { SongFeaturesService } from '../../_services/song-features.service';
+import { SongService } from '../../_services/song.service';
 
 @Component({
   selector: 'app-training',
@@ -48,7 +49,8 @@ export class TrainingComponent implements OnInit {
 
   constructor(
     private http: HttpService,
-    private songFeaturesService: SongFeaturesService
+    private songFeaturesService: SongFeaturesService,
+    private songService: SongService
   ) {
     this.tsFeatures = {
       poolSongs: [],
@@ -107,6 +109,7 @@ export class TrainingComponent implements OnInit {
 
   uploadSongsProcess(evt: any, mode: 'train' | 'predict') {
     const that = this;
+    const list = this.songs[mode == 'train' ? 'listForTrain' : 'listForPredict'];
     evt.currentFiles.forEach((item: any) => {
       const song: Song = {
         name: item.name,
@@ -116,48 +119,18 @@ export class TrainingComponent implements OnInit {
         tsPrediction: null,
         storageStatus: 'local',
         tsStatus: null,
-        tsInitStatus: mode
+        tsInitStatus: mode,
+        listIndex: null
       }
-      const list = mode == 'train' ? this.songs.listForTrain : this.songs.listForPredict;
       this.songs.listForTrain.push(song);
-      this.songs.pool.push({ ...song, listIndex: list.length - 1 });
+      this.songService.addToPoolSongs({ ...song, listIndex: list.length - 1 });
     });
 
-    if (!this.songs.busy) {
-      this.songs.iterator = this.songs.pool[Symbol.iterator]();
-      this.songs.busy = true;
-      trigger();
-    }
-    function trigger() {
-      let item = that.songs.iterator.next();
-      if (item.done)
-        return checkPool(item);
-      item.value.userScore = 0;
-      item.value.tsPrediction = null;
-      that.http.post('upload/file', item.value, true).subscribe({
-        next: (data: any) => {
-          let listSong = that.songs[mode == 'train' ? 'listForTrain' : 'listForPredict'][item.value.listIndex];
-          listSong.storageStatus = 'uploaded';
-          listSong.id = data.row.id;
-          checkPool(item);
-        },
-        error: (error) => {
-          let listSong = that.songs.listForTrain[item.value.listIndex];
-          listSong.storageStatus = 'error';
-          listSong.storageStatusErrReason = error.status == 403 ? 'duplicated' : 'other';
-          checkPool(item);
-        }
-      });
-    }
-
-    function checkPool(item: any) {
-      if (!item.done)
-        trigger();
-      else {
-        that.songs.pool = [];
-        that.songs.busy = false;
-      }
-    }
+    this.songService.uploadSongsToServer(list).then((res) => {
+      console.info('Canciones subidas correctamente');
+    }).catch((err) => {
+      console.error(err);
+    });
   }
 
   rate(indexSong: number, rate: number, mode: 'train' | 'predict'): void {
@@ -232,10 +205,6 @@ export class TrainingComponent implements OnInit {
               const inputTensor = tf.tensor2d(mel_spectrogram_resized);
               const outputTensor = tf.tensor1d([tensorResources.userScore]);
               await that.model?.fit(inputTensor.expandDims(0), outputTensor, { epochs: [1, 16, 81][tensorResources.userScore - 1], batchSize: 1 });
-              /**Epocas (mejor a peor):
-               * -tensorResources.userScore ** 4
-               * -tensorResources.userScore ** 3 */
-
               inputTensor.dispose();
               outputTensor.dispose();
               checkPool(item);

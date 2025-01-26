@@ -44,5 +44,6 @@
   },
   "[scss]": {
     "editor.defaultFormatter": "vscode.css-language-features"
-  }
+  },
+  "editor.stickyScroll.enabled": false
 }

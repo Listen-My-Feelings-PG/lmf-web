@@ -8,8 +8,8 @@ export class Song {
     public storageStatus: 'local' | 'uploaded' | 'error',
     public tsStatus: 'trained' | 'predicted' | 'retrained' | 'error' | null,
     public tsInitStatus: 'train' | 'predict' | 'retrain',
+    public listIndex: number | null,
     public id?: number,
-    public listIndex?: number | null,
     public storageStatusErrReason?: 'duplicated' | 'other' | null,
     public tsFeaturesDimensions?: number | 'error',
     public tsFeaturesErrReason?: 'overload' | 'other'
