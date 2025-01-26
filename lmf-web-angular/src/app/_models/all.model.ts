@@ -20,13 +20,13 @@ export class Playlist {
   constructor(
     public name: string,
     public songs: Array<Song>,
-    public model: Model,
+    public model: TsModel,
     public isDefault: boolean,
     public id?: number
   ) { }
 }
 
-export class Model {
+export class TsModel {
   constructor(
     public id: number,
     public global: boolean,

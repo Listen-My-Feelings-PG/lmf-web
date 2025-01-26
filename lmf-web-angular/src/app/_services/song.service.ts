@@ -15,31 +15,66 @@ export interface SpectrogramSpecs {
 })
 export class SongService {
   private pools: {
-    idSongs: Array<number>,
-    songs: Array<Song>
+    idSongsForFeatures: Array<number>,
+    songsForUpload: Array<Song>
   }
   private iterators: {
-    idSongs: any,
-    songs: any
+    idSongsForFeatures: any,
+    songsForUpload: any
   }
   busyFlags: {
-    idSongs: boolean,
-    songs: boolean
+    idSongsForFeatures: boolean,
+    songsForUpload: boolean
   }
   constructor(
     private http: HttpService
   ) {
     this.pools = {
-      idSongs: [],
-      songs: []
+      idSongsForFeatures: [],
+      songsForUpload: []
     }
     this.iterators = {
-      idSongs: null,
-      songs: null
+      idSongsForFeatures: null,
+      songsForUpload: null
     }
     this.busyFlags = {
-      idSongs: false,
-      songs: false
+      idSongsForFeatures: false,
+      songsForUpload: false
+    }
+  }
+
+  extractFeaturesFromSongs(idSongs: Array<number>, taskCallback: Function): void {
+    const that = this;
+    this.pools.idSongsForFeatures = Object.assign([], idSongs);
+    if (!this.busyFlags.idSongsForFeatures) {
+      this.iterators.idSongsForFeatures = this.pools.idSongsForFeatures[Symbol.iterator]();
+      this.busyFlags.idSongsForFeatures = true;
+      trigger();
+    } else
+      taskCallback(true, 'Pool is busy');
+
+    function trigger() {
+      let item = that.iterators.idSongsForFeatures.next();
+      if (item.done)
+        return checkPool(item);
+      that.http.get(`download/tsfeatures?value=${item.value.id}`).subscribe({
+        next: (data: any) => {
+          taskCallback(false, data);
+          checkPool(item);
+        },
+        error: (error: any) => {
+          taskCallback(true, `Error al extraer características:${JSON.stringify(error)}`,);
+          checkPool(item);
+        }
+      });
+    }
+    function checkPool(item: any) {
+      if (!item.done)
+        trigger();
+      else {
+        that.pools.idSongsForFeatures = [];
+        that.busyFlags.idSongsForFeatures = false;
+      }
     }
   }
 
@@ -94,26 +129,26 @@ export class SongService {
   }
 
   addToPoolSongs(song: Song) {
-    this.pools.songs.push(song);
+    this.pools.songsForUpload.push(song);
   }
 
   uploadSongsToServer(listForFill: Array<Song>) {
     let that = this;
     return new Promise((resolve, reject) => {
-      if (!this.busyFlags.songs) {
-        this.iterators.songs = this.pools.songs[Symbol.iterator]();
-        this.busyFlags.songs = true;
+      if (!this.busyFlags.songsForUpload) {
+        this.iterators.songsForUpload = this.pools.songsForUpload[Symbol.iterator]();
+        this.busyFlags.songsForUpload = true;
         trigger();
       } else
         reject('Pool is busy');
 
       function trigger() {
-        let item = that.iterators.songs.next();
+        let item = that.iterators.songsForUpload.next();
         if (item.done)
           return checkPool(item);
         item.value.userScore = 0;
         item.value.tsPrediction = null;
-        that.http.post('upload/file', item.value, true).subscribe({
+        that.http.post('upload/file', item.value).subscribe({
           next: (data: any) => {
             let listSong = listForFill[item.value.listIndex];
             listSong.storageStatus = 'uploaded';
@@ -133,8 +168,8 @@ export class SongService {
         if (!item.done)
           trigger();
         else {
-          that.pools.songs = [];
-          that.busyFlags.songs = false;
+          that.pools.songsForUpload = [];
+          that.busyFlags.songsForUpload = false;
           resolve(listForFill);
         }
       }
@@ -143,8 +178,8 @@ export class SongService {
   }
 
   stopUploadSongsToServer() {
-    this.pools.songs = [];
-    this.iterators.songs = this.pools.songs[Symbol.iterator]();
-    this.busyFlags.songs = false;
+    this.pools.songsForUpload = [];
+    this.iterators.songsForUpload = this.pools.songsForUpload[Symbol.iterator]();
+    this.busyFlags.songsForUpload = false;
   }
 }

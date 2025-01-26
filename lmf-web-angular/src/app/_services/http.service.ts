@@ -9,17 +9,6 @@ export class HttpService {
   busy: boolean;
   baseUrl: string;
   private toastEvent: BehaviorSubject<ToastProperties>;
-  /**
-   * Crea una instancia de HttpService.
-   * 
-   * @param http - La instancia de HttpClient utilizada para realizar solicitudes HTTP.
-   * 
-   * @remarks
-   * Inicializa la bandera `busy` a `false` y establece el `baseUrl` en 'http://localhost:3000/'.
-   * También inicializa el BehaviorSubject `toastEvent` con `ToastProperties` predeterminadas.
-   * 
-   * El `toastEvent` sirve como un evento en el servicio, actuando como un puente entre el componente emisor (.next) y el componente receptor (.subscribe).
-   */
   constructor(private http: HttpClient) {
     this.busy = false;
     this.baseUrl = 'http://localhost:3000/';
@@ -31,58 +20,67 @@ export class HttpService {
       life: 4000
     });
   }
+
   /**
-   * Envía una solicitud GET a la URL especificada.
+   * Envía una solicitud GET a la URL especificada y opcionalmente muestra notificaciones toast.
    *
-   * @param url - La URL del endpoint al que se enviará la solicitud GET.
-   * @param toastBlocked - Indicador opcional para indicar si se deben bloquear las notificaciones toast.
-   * @param blockedItem - Indicador opcional para indicar si el elemento debe ser bloqueado durante la solicitud.
-   * @returns Un Observable que emite la respuesta de la solicitud GET.
+   * @param {string} url - La URL a la que se envía la solicitud GET.
+   * @param {ToastProperties} [toastError] - Propiedades opcionales para mostrar una notificación toast de error.
+   * @param {ToastProperties} [toastSuccess] - Propiedades opcionales para mostrar una notificación toast de éxito.
+   * @returns {Observable<any>} - Un observable de la respuesta HTTP.
    */
-  get(url: string, toastBlocked?: boolean, blockedItem?: boolean): Observable<any> {
+  get(url: string, toastError?: ToastProperties | true, toastSuccess?: ToastProperties): Observable<any> {
     this.busy = true;
-    if (blockedItem !== undefined)
-      blockedItem = true;
     return this.http.get(this.baseUrl + url)
       .pipe(
         finalize(() => {
           this.busy = false;
-          if (blockedItem)
-            blockedItem = false;
+          if (toastSuccess !== undefined)
+            this.setToast(
+              toastSuccess.severity,
+              toastSuccess.summary,
+              toastSuccess.detail,
+              toastSuccess.life
+            );
         }),
-        catchError((err) => this.handleError(err, toastBlocked))
+        catchError((err) => this.handleError(err, toastError))
       );
   }
+
   /**
-   * Realiza una solicitud HTTP POST al servidor.
+   * Envía una solicitud POST a la URL especificada con el cuerpo proporcionado y opcionalmente muestra notificaciones toast.
    *
-   * @param {string} url - La URL a la que se enviará la solicitud POST.
-   * @param {Object} body - El cuerpo de la solicitud que se enviará.
-   * @param {boolean} [toastBlocked] - Indica si se debe bloquear la notificación de toast en caso de error.
-   * @param {boolean} [blockedItem] - Indica si el elemento debe ser bloqueado durante la solicitud.
-   * @returns {Observable<any>} Un observable que emite la respuesta del servidor.
+   * @param {string} url - La URL a la que se envía la solicitud POST.
+   * @param {Object} body - El cuerpo de la solicitud POST.
+   * @param {ToastProperties} [toastError] - Propiedades opcionales para mostrar una notificación toast de error.
+   * @param {ToastProperties} [toastSuccess] - Propiedades opcionales para mostrar una notificación toast de éxito.
+   * @returns {Observable<any>} - Un observable de la respuesta HTTP.
    */
-  post(url: string, body: Object, toastBlocked?: boolean, blockedItem?: boolean): Observable<any> {
+  post(url: string, body: Object, toastError?: ToastProperties | true, toastSuccess?: ToastProperties): Observable<any> {
     this.busy = true;
-    if (blockedItem !== undefined)
-      blockedItem = true;
     return this.http.post(this.baseUrl + url, body)
       .pipe(
         finalize(() => {
           this.busy = false;
-          if (blockedItem)
-            blockedItem = false;
+          if (toastSuccess !== undefined)
+            this.setToast(
+              toastSuccess.severity,
+              toastSuccess.summary,
+              toastSuccess.detail,
+              toastSuccess.life
+            );
         }),
-        catchError((err) => this.handleError(err, toastBlocked))
+        catchError((err) => this.handleError(err, toastError))
       );
   }
+
   /**
-   * Configura y dispara un evento de notificación tipo toast.
-   *
-   * @param {'success' | 'info' | 'warn' | 'error'} severity - El nivel de severidad del mensaje.
-   * @param {string} summary - Un resumen breve del mensaje.
-   * @param {string} detail - Detalles adicionales del mensaje.
-   * @param {number} [life=5000] - La duración de la notificación en milisegundos. Por defecto es 5000 ms.
+   * Muestra una notificación toast con los parámetros especificados.
+   * 
+   * @param severity - El nivel de severidad del toast. Puede ser 'success', 'info', 'warn' o 'error'.
+   * @param summary - Un breve resumen del mensaje del toast.
+   * @param detail - Una descripción detallada del mensaje del toast.
+   * @param life - (Opcional) La duración en milisegundos durante la cual se debe mostrar el toast. Por defecto es 5000 milisegundos si no se proporciona.
    */
   setToast(
     severity: 'success' | 'info' | 'warn' | 'error',
@@ -98,38 +96,47 @@ export class HttpService {
       life: life ? life : 5000
     });
   }
+
+
   /**
-   * Maneja los errores de las solicitudes HTTP.
-   *
-   * @param {Error | any} error - El error que se produjo en la solicitud.
-   * @param {boolean} [toastBlocked] - Indicador opcional para indicar si se deben bloquear las notificaciones toast.
-   * @returns {ObservableInput<Error>} Un observable que emite el error.
+   * Maneja los errores HTTP y opcionalmente muestra una notificación tipo toast.
+   * 
+   * @param error - El objeto de error o cualquier otra información de error.
+   * @param toastError - Parámetro opcional para especificar propiedades del toast o un booleano para mostrar un toast de error predeterminado.
+   * @returns Un observable input del error.
+   * 
+   * Si el estado del error es 422, elimina el 'currentUser' del almacenamiento de sesión y recarga la ventana.
+   * Si `toastError` se proporciona y no es un booleano, establece un toast con las propiedades proporcionadas.
+   * Si `toastError` es verdadero, establece un toast de error predeterminado indicando un error de conexión.
    */
-  handleError(error: Error | any, toastBlocked?: boolean): ObservableInput<Error> {
+  handleError(error: Error | any, toastError?: ToastProperties | true): ObservableInput<Error> {
     if (error.status == 422) {
       sessionStorage.removeItem('currentUser');
       window.location.reload();
-    } else if (!toastBlocked) {
-
-      this.toastEvent.next({
-        key: 'default',
-        severity: 'error',
-        summary: 'Error de conexión',
-        detail: 'Ocurrió un error en el servidor. Inténtelo mas tarde',
-        life: 5000
-      });
+    } else if (toastError !== undefined) {
+      if (typeof toastError !== 'boolean')
+        this.setToast(
+          toastError.severity,
+          toastError.summary,
+          toastError.detail,
+          toastError.life
+        );
+      else
+        this.setToast('error', 'Error de conexión', 'No se pudo establecer conexión con el servidor');
     }
-
     return throwError(error);
   }
 
+  /**
+   * Recupera el observable del evento toast actual.
+   *
+   * @returns {Observable<any>} El observable para el evento toast.
+   */
   getToastEvent() {
     return this.toastEvent;
   }
 }
-/**
- * Interfaz que define las propiedades de una notificación tipo toast.
- */
+
 export interface ToastProperties {
   key: 'default' | 'custom' | null,
   severity: 'success' | 'info' | 'warn' | 'error',

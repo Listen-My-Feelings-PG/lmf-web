@@ -134,7 +134,7 @@ export class TrainingComponent implements OnInit {
   rate(indexSong: number, rate: number, mode: 'train' | 'predict'): void {
     let song = mode == 'train' ? this.songs.listForTrain[indexSong] : this.songs.listForPredict[indexSong];
     if (!this.rating.blocked || song.userScore != rate) {
-      this.http.post('rate/song', { id: song.id, score: rate }, false, this.rating.blocked).subscribe({
+      this.http.post('rate/song', { id: song.id, score: rate },true).subscribe({
         next: (res) => {
           song.userScore = res.score;
         }

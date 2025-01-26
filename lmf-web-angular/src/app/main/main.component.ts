@@ -23,7 +23,6 @@ export class MainComponent implements OnInit {
   menuItems: MenuItem[] | undefined;
   profileItems: MenuItem[] | undefined;
   constructor(
-    private http: HttpService
   ) { }
   ngOnInit(): void {
     this.menuItems = [
