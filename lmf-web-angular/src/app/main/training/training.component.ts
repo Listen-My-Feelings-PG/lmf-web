@@ -5,8 +5,8 @@ import { FileUploadModule } from 'primeng/fileupload';
 import { LibrosaTsFeatures, Song } from '../../_models/all.model';
 import { HttpService } from '../../_services/http.service';
 import { PlayerComponent } from "../../player/player.component";
-import * as tf from '@tensorflow/tfjs';
 import { SongService } from '../../_services/song.service';
+import { TensorflowService } from '../../_services/tensorflow.service';
 
 @Component({
   selector: 'app-training',
@@ -44,11 +44,10 @@ export class TrainingComponent implements OnInit {
     blocked: boolean
   }
 
-  model!: tf.Sequential | null;
-
   constructor(
     private http: HttpService,
-    private songService: SongService
+    private songService: SongService,
+    private tsService: TensorflowService
   ) {
     this.tsFeatures = {
       poolSongs: [],
@@ -73,30 +72,6 @@ export class TrainingComponent implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
-    console.info('Inicializando modelo...');
-    tf.engine().startScope();
-    tf.disposeVariables();
-    tf.engine().endScope();
-    tf.engine().reset();
-    console.info(`Variables activas: ${tf.memory().numTensors}`);
-    if (this.model) {
-      this.model.dispose();
-      this.model = null;
-    }
-    if (!this.model) {
-      this.model = tf.sequential();
-
-      this.model.add(tf.layers.dense({ units: 64, activation: 'relu', inputShape: [129, 20000] }));
-      this.model.add(tf.layers.flatten());
-      this.model.add(tf.layers.dense({ units: 32, activation: 'relu' }));
-      this.model.add(tf.layers.dense({ units: 1, activation: 'linear' }));
-
-      await this.model.compile({
-        optimizer: tf.train.adam(),
-        loss: 'meanSquaredError',
-        metrics: ['mae']
-      });
-    }
     this.http.get('songs/list').subscribe({
       next: (res) => {
         this.songs.listForTrain = res.data.filter((obj: any) => obj.tsInitStatus === 'train');
@@ -151,9 +126,9 @@ export class TrainingComponent implements OnInit {
   }
 
   getSongTsFeatures(mode: 'train' | 'predict') {
+    this.tsService.loadModel();
 
     const that = this;
-
     let songsRated: Array<{
       id: number,
       userScore: number
@@ -165,11 +140,17 @@ export class TrainingComponent implements OnInit {
           obj.id && obj.userScore === null)
     ).map((obj) => ({ id: obj.id as number, userScore: obj.userScore as number }));
 
-    this.songService.extractFeaturesFromSongs(songsRated.map((obj) => obj.id), (error: boolean, features: LibrosaTsFeatures, completed: boolean, idSong: number | null, next: Function) => {
+    /*this.songService.extractFeaturesFromSongs(
+      songsRated.map((obj) => obj.id), (
+        error: boolean,
+        features: LibrosaTsFeatures,
+        completed: boolean,
+        idSong: number | null,
+        next: Function
+      ) => {
       if (!completed) {
         if (!error) {
           this.songService.customizeSpectrogram(features.mel_spectrogram, features.tempo, false).then((customized) => {
-            console.log('Customized:', customized);
             //Logica del entrenamiento
             next();
           }).catch((error) => {
@@ -183,7 +164,7 @@ export class TrainingComponent implements OnInit {
       }
     })
 
-    /*this.tsFeatures.poolSongs = songsRated;
+    this.tsFeatures.poolSongs = songsRated;
 
     if (!this.tsFeatures.busy) {
       this.tsFeatures.iterator = this.tsFeatures.poolSongs[Symbol.iterator]();
@@ -260,7 +241,6 @@ export class TrainingComponent implements OnInit {
         that.tsFeatures.poolSongs = [];
         that.tsFeatures.busy = false;
         console.info('Pool finalizado');
-        console.info(`Variables activas: ${tf.memory().numTensors}`);
       }
     }*/
   }

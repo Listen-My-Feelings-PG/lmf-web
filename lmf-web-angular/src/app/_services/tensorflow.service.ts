@@ -31,17 +31,6 @@ export class TensorflowService {
   private model!: tf.Sequential | null;
 
   constructor() {
-    console.info('Inicializando modelo...');
-    tf.engine().startScope();
-    tf.disposeVariables();
-    tf.engine().endScope();
-    tf.engine().reset();
-    console.info(`Variables activas: ${tf.memory().numTensors}`);
-    if (this.model) {
-      this.model.dispose();
-      this.model = null;
-    }
-
     this.pools = {
       forTrain: [],
       forPredict: []
@@ -56,36 +45,51 @@ export class TensorflowService {
     };
   }
 
-  loadModel(modelInput: tf.Sequential | null) {
-    if (!modelInput) {
-      this.model = tf.sequential();
+  init(): void {
+    console.info('Inicializando tensorflow...');
+    tf.engine().startScope();
+    tf.disposeVariables();
+    tf.engine().endScope();
+    tf.engine().reset();
+    console.log('Tensorflow inicializado.');
+  }
 
-      this.model.add(tf.layers.dense({ units: 64, activation: 'relu', inputShape: [129, 20000] }));
-      this.model.add(tf.layers.flatten());
-      this.model.add(tf.layers.dense({ units: 32, activation: 'relu' }));
-      this.model.add(tf.layers.dense({ units: 1, activation: 'linear' }));
-
-      this.model.compile({
-        optimizer: tf.train.adam(),
-        loss: 'meanSquaredError',
-        metrics: ['mae']
-      });
+  async loadModel(): Promise<void> {
+    if (this.model) {
+      this.model.dispose();
+      this.model = null;
     }
+    this.model = tf.sequential();
+    this.model.add(tf.layers.dense({ units: 64, activation: 'relu', inputShape: [129, 20000] }));
+    this.model.add(tf.layers.flatten());
+    this.model.add(tf.layers.dense({ units: 32, activation: 'relu' }));
+    this.model.add(tf.layers.dense({ units: 1, activation: 'linear' }));
+
+    this.model.compile({
+      optimizer: tf.train.adam(),
+      loss: 'meanSquaredError',
+      metrics: ['mae']
+    });
+    console.log('saving model...');
+    await this.model.save('http://localhost:3000/upload/model?value=true').then((res) => {
+      console.log('Modelo guardado:', res);
+    }).catch((err) => {
+      console.error('Error al guardar modelo:', err);
+    });
+  }
+
+  predict() {
 
   }
 
-  async predict() {
-
-  }
-
-  async trainList(songsList: Array<{
+  trainList(songsList: Array<{
     idSong: number,
     score: number,
     features: Array<Array<number>>
   }>) {
 
-    function trigger() { 
-      
+    function trigger() {
+
     }
 
     function checkPool() { }

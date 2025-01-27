@@ -4,8 +4,11 @@ import {
   HttpException,
   HttpStatus,
   Post,
+  Query,
   UploadedFile,
-  UseInterceptors
+  UseInterceptors,
+  UsePipes,
+  ValidationPipe
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -17,6 +20,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { ConfigService } from '@nestjs/config';
 import { Song } from 'src/_models/all.model';
+import { BooleanDto } from 'src/_pipes/dtos.pipe';
 
 
 @Controller('upload')
@@ -101,6 +105,36 @@ export class UploadController {
     } else {
       console.error('Cancion no encontrada:', body.id);
       throw new HttpException('Song not found', HttpStatus.NOT_FOUND)
+    }
+  }
+
+  @Post('model')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: (req, file, cb) => {
+          console.log('req:', req);
+          const cf: ConfigService = new ConfigService();
+          cb(null, cf.get<string>('TS_PATH_MODELS'))
+        },
+        filename: ((req, file, cb) => {
+          const uniqueSuffix = new Date().getTime();
+          const sanitizedFilename = Buffer.from(file.originalname, 'latin1').toString('utf8');
+          cb(null, `${uniqueSuffix}_${sanitizedFilename}`);
+        })
+      })
+    })
+  )
+  uploadModel(
+    @UploadedFile() file: Express.Multer.File,
+    @Body() body: any,
+    @Query() isGlobal: BooleanDto
+  ) {
+    console.log('isGlobal:', isGlobal);
+    console.log('body:', body);
+    return {
+      message: 'model uploaded'
     }
   }
 

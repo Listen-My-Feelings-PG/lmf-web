@@ -5,7 +5,7 @@ import { ButtonModule } from 'primeng/button';
 import { MenubarModule } from 'primeng/menubar';
 import { AvatarModule } from 'primeng/avatar';
 import { MenuModule } from 'primeng/menu';
-import { HttpService } from '../_services/http.service';
+
 @Component({
   selector: 'app-main',
   standalone: true,
@@ -23,7 +23,7 @@ export class MainComponent implements OnInit {
   menuItems: MenuItem[] | undefined;
   profileItems: MenuItem[] | undefined;
   constructor(
-  ) { }
+  ) {}
   ngOnInit(): void {
     this.menuItems = [
       {

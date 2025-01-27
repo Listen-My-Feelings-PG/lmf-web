@@ -3,7 +3,7 @@ import { Response } from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as zlib from 'zlib';
-import { IntegerDto } from '../_pipes/integer-dto.pipe';
+import { IntegerDto } from '../_pipes/dtos.pipe';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { SongEntity } from '../_entities/song.entity';

@@ -1,6 +1,5 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import * as fileUpload from 'express-fileupload';
 import { LogMiddleware } from './_middlewares/log.middleware';
 
 async function bootstrap() {

@@ -2,7 +2,7 @@ import { Controller, Get, HttpException, HttpStatus, Query, Res, UsePipes, Valid
 import { InjectRepository } from '@nestjs/typeorm';
 import { SongEntity } from 'src/_entities/song.entity';
 import { Song } from '../_models/all.model';
-import { IntegerDto } from 'src/_pipes/integer-dto.pipe';
+import { IntegerDto } from 'src/_pipes/dtos.pipe';
 import { Repository } from 'typeorm';
 import * as fs from 'fs';
 import * as path from 'path';
