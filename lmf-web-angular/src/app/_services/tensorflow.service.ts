@@ -51,30 +51,27 @@ export class TensorflowService {
     tf.disposeVariables();
     tf.engine().endScope();
     tf.engine().reset();
-    console.log('Tensorflow inicializado.');
+    console.info(`Tensorflow inicializado. Variables activas: ${tf.memory().numTensors}`);
   }
 
-  async loadModel(): Promise<void> {
-    if (this.model) {
-      this.model.dispose();
-      this.model = null;
-    }
-    this.model = tf.sequential();
-    this.model.add(tf.layers.dense({ units: 64, activation: 'relu', inputShape: [129, 20000] }));
-    this.model.add(tf.layers.flatten());
-    this.model.add(tf.layers.dense({ units: 32, activation: 'relu' }));
-    this.model.add(tf.layers.dense({ units: 1, activation: 'linear' }));
+  loadModel(): Promise<string> {
+    return new Promise((resolve) => {
+      if (this.model) {
+        this.model.dispose();
+        this.model = null;
+      }
+      this.model = tf.sequential();
+      this.model.add(tf.layers.dense({ units: 64, activation: 'relu', inputShape: [129, 20000] }));
+      this.model.add(tf.layers.flatten());
+      this.model.add(tf.layers.dense({ units: 32, activation: 'relu' }));
+      this.model.add(tf.layers.dense({ units: 1, activation: 'linear' }));
 
-    this.model.compile({
-      optimizer: tf.train.adam(),
-      loss: 'meanSquaredError',
-      metrics: ['mae']
-    });
-    console.log('saving model...');
-    await this.model.save('http://localhost:3000/upload/model?value=true').then((res) => {
-      console.log('Modelo guardado:', res);
-    }).catch((err) => {
-      console.error('Error al guardar modelo:', err);
+      this.model.compile({
+        optimizer: tf.train.adam(),
+        loss: 'meanSquaredError',
+        metrics: ['mae']
+      });
+      resolve('Modelo cargado');
     });
   }
 
@@ -82,19 +79,24 @@ export class TensorflowService {
 
   }
 
-  trainList(songsList: Array<{
-    idSong: number,
+  trainSong(
+    mel_spectrogram: Array<Array<number>>,
     score: number,
-    features: Array<Array<number>>
-  }>) {
-
-    function trigger() {
-
-    }
-
-    function checkPool() { }
-
-
-
+  ) {
+    return new Promise(async (resolve, reject) => {
+      if (!this.model)
+        return reject('Modelo no cargado');
+      try {
+        const inputTensor = tf.tensor2d(mel_spectrogram);
+        const outputTensor = tf.tensor1d([score]);
+        await this.model.fit(inputTensor.expandDims(0), outputTensor, { epochs: [1, 16, 81][score - 1], batchSize: 1 });
+        inputTensor.dispose();
+        outputTensor.dispose();
+        resolve('Entrenamiento completado');
+      } catch (e) {
+        console.error('Error al entrenar canción:', e);
+        reject('Error al entrenar');
+      }
+    });
   }
 }

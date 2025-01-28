@@ -58,8 +58,13 @@ export class SongService {
       if (item.done)
         return checkPool(item);
       that.http.get(`download/tsfeatures?value=${item.value}`).subscribe({
-        next: (data: any) => taskCallback(false, data, false, item.value, () => checkPool(item)),
-        error: (error: any) => taskCallback(true, `Error al extraer características: ${JSON.stringify(error)}`, false, item.value, () => checkPool(item))
+        next: (data: any) => taskCallback(
+          false, data, false, item.value, () => checkPool(item)
+        ),
+        error: (error: any) => taskCallback(
+          true, `Error al extraer características: ${JSON.stringify(error)}`,
+          false, item.value, () => checkPool(item)
+        )
       });
     }
 

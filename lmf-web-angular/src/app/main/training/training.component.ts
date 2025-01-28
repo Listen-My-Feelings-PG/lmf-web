@@ -7,6 +7,7 @@ import { HttpService } from '../../_services/http.service';
 import { PlayerComponent } from "../../player/player.component";
 import { SongService } from '../../_services/song.service';
 import { TensorflowService } from '../../_services/tensorflow.service';
+import * as tf from '@tensorflow/tfjs';
 
 @Component({
   selector: 'app-training',
@@ -44,10 +45,12 @@ export class TrainingComponent implements OnInit {
     blocked: boolean
   }
 
+  model!: tf.Sequential | null;
+
   constructor(
     private http: HttpService,
     private songService: SongService,
-    private tsService: TensorflowService
+    //private tsService: TensorflowService
   ) {
     this.tsFeatures = {
       poolSongs: [],
@@ -72,9 +75,33 @@ export class TrainingComponent implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
+    console.info('Inicializando modelo...');
+    tf.engine().startScope();
+    tf.disposeVariables();
+    tf.engine().endScope();
+    tf.engine().reset();
+    console.info(`Variables activas: ${tf.memory().numTensors}`);
+    if (this.model) {
+      this.model.dispose();
+      this.model = null;
+    }
+    if (!this.model) {
+      this.model = tf.sequential();
+
+      this.model.add(tf.layers.dense({ units: 64, activation: 'relu', inputShape: [129, 20000] }));
+      this.model.add(tf.layers.flatten());
+      this.model.add(tf.layers.dense({ units: 32, activation: 'relu' }));
+      this.model.add(tf.layers.dense({ units: 1, activation: 'linear' }));
+
+      await this.model.compile({
+        optimizer: tf.train.adam(),
+        loss: 'meanSquaredError',
+        metrics: ['mae']
+      });
+    }
     this.http.get('songs/list').subscribe({
       next: (res) => {
-        this.songs.listForTrain = res.data.filter((obj: any) => obj.tsInitStatus === 'train');
+        this.songs.listForTrain = res.data.filter((obj: any) => obj.tsInitStatus === 'train' || obj.tsInitStatus === 'retrain');
         this.songs.listForPredict = res.data.filter((obj: any) => obj.tsInitStatus === 'predict');
       }
     });
@@ -125,11 +152,62 @@ export class TrainingComponent implements OnInit {
     this.urlSongPlaying = `http://localhost:3000/songs/song/mp3?value=${s.id}`;
   }
 
-  getSongTsFeatures(mode: 'train' | 'predict') {
-    this.tsService.loadModel();
-
+  async getSongTsFeatures(mode: 'train' | 'predict') {
     const that = this;
-    let songsRated: Array<{
+    /*const list = this.songs[mode == 'train' ? 'listForTrain' : 'listForPredict'];
+    await this.tsService.loadModel();
+    console.log('Modelo cargado. Extrayendo características de cada canción...');
+    this.songService.extractFeaturesFromSongs(
+      list.map((obj) => obj.id).filter((id): id is number => id !== undefined),
+      (
+        error: boolean,
+        features: LibrosaTsFeatures,
+        completed: boolean,
+        idSong: number | null,
+        next: Function
+      ) => {
+        if (!completed) {
+          if (!error) {
+            console.log(`Características extraidas para la canción con id ${idSong}. Ajustando su espectrograma...`);
+            this.songService.customizeSpectrogram(features.mel_spectrogram, features.tempo, false).then(async (customized) => {
+              const spectrogram = customized.resized;
+              console.log(`Espectrograma ajustado`);
+              if (mode == 'train') {
+                const actualSong = list.find((obj) => obj.id == idSong);
+                console.log(`Iniciando entrenamiento...`);
+                try {
+                  await this.tsService.trainSong(spectrogram, actualSong?.userScore as number);
+                  console.log(`Entrenamiento completado.`);
+                  if (actualSong)
+                    actualSong.tsStatus = 'trained';
+                  console.log('Siguiente...');
+                  next();
+                } catch (error) {
+                  console.log(`Error al entrenar la canción con ID: ${idSong}`, error);
+                  if (actualSong)
+                    actualSong.tsStatus = 'error';
+                  console.log('Siguiente...');
+                  next();
+                }
+              } else {
+
+              }
+              next();
+            }).catch((error) => {
+              console.log('Error al personalizar espectrograma:', error);
+              console.log('Siguiente...');
+              next();
+            })
+          } else {
+            console.log('Error al extraer características:', features);
+            console.log('Siguiente...');
+            next();
+          }
+        } else
+          console.log('El pool de extracción de características marca como completado');
+      }
+    )*/
+    const songsRated: Array<{
       id: number,
       userScore: number
     }> = this.songs[mode == 'train' ? 'listForTrain' : 'listForPredict'].filter(
@@ -139,30 +217,6 @@ export class TrainingComponent implements OnInit {
         obj.id)) || (mode == 'predict' &&
           obj.id && obj.userScore === null)
     ).map((obj) => ({ id: obj.id as number, userScore: obj.userScore as number }));
-
-    /*this.songService.extractFeaturesFromSongs(
-      songsRated.map((obj) => obj.id), (
-        error: boolean,
-        features: LibrosaTsFeatures,
-        completed: boolean,
-        idSong: number | null,
-        next: Function
-      ) => {
-      if (!completed) {
-        if (!error) {
-          this.songService.customizeSpectrogram(features.mel_spectrogram, features.tempo, false).then((customized) => {
-            //Logica del entrenamiento
-            next();
-          }).catch((error) => {
-            console.error('Error al personalizar espectrograma:', error);
-            next();
-          })
-        } else {
-          console.error('Error al extraer características:', features);
-          next();
-        }
-      }
-    })
 
     this.tsFeatures.poolSongs = songsRated;
 
@@ -242,7 +296,7 @@ export class TrainingComponent implements OnInit {
         that.tsFeatures.busy = false;
         console.info('Pool finalizado');
       }
-    }*/
+    }
   }
 
   stopTsFeaturesPool() {

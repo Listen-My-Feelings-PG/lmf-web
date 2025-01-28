@@ -114,7 +114,6 @@ export class UploadController {
     FileInterceptor('file', {
       storage: diskStorage({
         destination: (req, file, cb) => {
-          console.log('req:', req);
           const cf: ConfigService = new ConfigService();
           cb(null, cf.get<string>('TS_PATH_MODELS'))
         },
@@ -131,6 +130,7 @@ export class UploadController {
     @Body() body: any,
     @Query() isGlobal: BooleanDto
   ) {
+    console.log('file:', file);
     console.log('isGlobal:', isGlobal);
     console.log('body:', body);
     return {

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Type } from 'class-transformer';
-import { IsInt } from 'class-validator';
+import { IsBoolean, IsInt } from 'class-validator';
 
 @Injectable()
 export class IntegerDto {
@@ -12,5 +12,6 @@ export class IntegerDto {
 @Injectable()
 export class BooleanDto {
   @Type(() => Boolean)
+  @IsBoolean({ message: 'El parámetro debe ser un booleano' })
   value: boolean;
 }
