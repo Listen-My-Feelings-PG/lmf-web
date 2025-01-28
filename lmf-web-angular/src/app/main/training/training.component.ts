@@ -7,7 +7,8 @@ import { HttpService } from '../../_services/http.service';
 import { PlayerComponent } from "../../player/player.component";
 import { SongService } from '../../_services/song.service';
 import { TensorflowService } from '../../_services/tensorflow.service';
-import * as tf from '@tensorflow/tfjs';
+import { ChipModule } from 'primeng/chip';
+import { BadgeModule } from 'primeng/badge';
 
 @Component({
   selector: 'app-training',
@@ -16,7 +17,9 @@ import * as tf from '@tensorflow/tfjs';
     FileUploadModule,
     ButtonModule,
     CommonModule,
-    PlayerComponent
+    PlayerComponent,
+    ChipModule,
+    BadgeModule
   ],
   templateUrl: './training.component.html',
   styleUrl: './training.component.scss'
@@ -45,12 +48,10 @@ export class TrainingComponent implements OnInit {
     blocked: boolean
   }
 
-  model!: tf.Sequential | null;
-
   constructor(
     private http: HttpService,
     private songService: SongService,
-    //private tsService: TensorflowService
+    private tsService: TensorflowService
   ) {
     this.tsFeatures = {
       poolSongs: [],
@@ -75,30 +76,6 @@ export class TrainingComponent implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
-    console.info('Inicializando modelo...');
-    tf.engine().startScope();
-    tf.disposeVariables();
-    tf.engine().endScope();
-    tf.engine().reset();
-    console.info(`Variables activas: ${tf.memory().numTensors}`);
-    if (this.model) {
-      this.model.dispose();
-      this.model = null;
-    }
-    if (!this.model) {
-      this.model = tf.sequential();
-
-      this.model.add(tf.layers.dense({ units: 64, activation: 'relu', inputShape: [129, 20000] }));
-      this.model.add(tf.layers.flatten());
-      this.model.add(tf.layers.dense({ units: 32, activation: 'relu' }));
-      this.model.add(tf.layers.dense({ units: 1, activation: 'linear' }));
-
-      await this.model.compile({
-        optimizer: tf.train.adam(),
-        loss: 'meanSquaredError',
-        metrics: ['mae']
-      });
-    }
     this.http.get('songs/list').subscribe({
       next: (res) => {
         this.songs.listForTrain = res.data.filter((obj: any) => obj.tsInitStatus === 'train' || obj.tsInitStatus === 'retrain');
@@ -137,7 +114,7 @@ export class TrainingComponent implements OnInit {
   }
 
   rate(indexSong: number, rate: number, mode: 'train' | 'predict'): void {
-    let song = this.songs[mode == 'train' ? 'listForTrain' : 'listForPredict'][indexSong];
+    const song = this.songs[mode == 'train' ? 'listForTrain' : 'listForPredict'][indexSong];
     if (!this.rating.blocked || song.userScore != rate) {
       this.http.post('rate/song', { id: song.id, score: rate }, true).subscribe({
         next: (res) => {
@@ -153,10 +130,8 @@ export class TrainingComponent implements OnInit {
   }
 
   async getSongTsFeatures(mode: 'train' | 'predict') {
-    const that = this;
-    /*const list = this.songs[mode == 'train' ? 'listForTrain' : 'listForPredict'];
+    const list = this.songs[mode == 'train' ? 'listForTrain' : 'listForPredict'];
     await this.tsService.loadModel();
-    console.log('Modelo cargado. Extrayendo características de cada canción...');
     this.songService.extractFeaturesFromSongs(
       list.map((obj) => obj.id).filter((id): id is number => id !== undefined),
       (
@@ -168,135 +143,34 @@ export class TrainingComponent implements OnInit {
       ) => {
         if (!completed) {
           if (!error) {
-            console.log(`Características extraidas para la canción con id ${idSong}. Ajustando su espectrograma...`);
             this.songService.customizeSpectrogram(features.mel_spectrogram, features.tempo, false).then(async (customized) => {
               const spectrogram = customized.resized;
-              console.log(`Espectrograma ajustado`);
               if (mode == 'train') {
                 const actualSong = list.find((obj) => obj.id == idSong);
-                console.log(`Iniciando entrenamiento...`);
                 try {
                   await this.tsService.trainSong(spectrogram, actualSong?.userScore as number);
-                  console.log(`Entrenamiento completado.`);
                   if (actualSong)
                     actualSong.tsStatus = 'trained';
-                  console.log('Siguiente...');
                   next();
                 } catch (error) {
-                  console.log(`Error al entrenar la canción con ID: ${idSong}`, error);
                   if (actualSong)
                     actualSong.tsStatus = 'error';
-                  console.log('Siguiente...');
                   next();
                 }
               } else {
-
+                next();
               }
-              next();
             }).catch((error) => {
-              console.log('Error al personalizar espectrograma:', error);
-              console.log('Siguiente...');
+              console.error(error);
               next();
             })
           } else {
-            console.log('Error al extraer características:', features);
-            console.log('Siguiente...');
+            console.error('Error al extraer características:', features);
             next();
           }
-        } else
-          console.log('El pool de extracción de características marca como completado');
-      }
-    )*/
-    const songsRated: Array<{
-      id: number,
-      userScore: number
-    }> = this.songs[mode == 'train' ? 'listForTrain' : 'listForPredict'].filter(
-      (obj) => (mode == 'train' && (obj.userScore !== null &&
-        obj.userScore > 0 &&
-        obj.tsFeaturesDimensions === undefined &&
-        obj.id)) || (mode == 'predict' &&
-          obj.id && obj.userScore === null)
-    ).map((obj) => ({ id: obj.id as number, userScore: obj.userScore as number }));
-
-    this.tsFeatures.poolSongs = songsRated;
-
-    if (!this.tsFeatures.busy) {
-      this.tsFeatures.iterator = this.tsFeatures.poolSongs[Symbol.iterator]();
-      this.tsFeatures.busy = true;
-      trigger();
-    }
-
-    function trigger() {
-      let item = that.tsFeatures.iterator.next();
-      if (item.done)
-        return checkPool(item);
-      let songIndex = that.songs[mode == 'train' ? 'listForTrain' : 'listForPredict'].findIndex((obj) => obj.id == item.value.id);
-      let songTarget = that.songs[mode == 'train' ? 'listForTrain' : 'listForPredict'][songIndex];
-      that.http.get(`download/tsfeatures?value=${item.value.id}`, true).subscribe({
-        next: (res) => {
-          const tensorResources = {
-            features: res,
-            songId: item.value.id,
-            userScore: item.value.userScore
-          }
-
-          that.songService.customizeSpectrogram(
-            tensorResources.features.mel_spectrogram,
-            tensorResources.features.tempo,
-            false
-          ).then(async (data) => {
-            songTarget.tsFeaturesDimensions = data.lastIndex - data.firstIndex;
-            const mel_spectrogram_resized = data.resized;
-            if (mode == 'train') {
-              console.info('Iniciando entrenamiento para la canción con ID:', tensorResources.songId);
-              const inputTensor = tf.tensor2d(mel_spectrogram_resized);
-              const outputTensor = tf.tensor1d([tensorResources.userScore]);
-              await that.model?.fit(inputTensor.expandDims(0), outputTensor, { epochs: [1, 16, 81][tensorResources.userScore - 1], batchSize: 1 });
-              inputTensor.dispose();
-              outputTensor.dispose();
-              checkPool(item);
-
-            } else {
-              console.info('Iniciando predicción para la canción con ID:', tensorResources.songId);
-
-              const inputTensor = tf.tensor2d(mel_spectrogram_resized);
-              const prediction = that.model?.predict(inputTensor.expandDims(0)) as tf.Tensor;
-              const predictedScore = prediction.dataSync()[0];
-
-              songTarget.tsPrediction = predictedScore;
-              that.http.post('upload/prediction', { id: tensorResources.songId, prediction: predictedScore }).subscribe({
-                next: (res) => {
-                  inputTensor.dispose();
-                  prediction.dispose();
-                  checkPool(item);
-                }, error: (error) => {
-                  console.error('Error al enviar la predicción:', error);
-                  inputTensor.dispose();
-                  prediction.dispose();
-                  checkPool(item);
-                }
-              })
-            }
-          });
-        },
-        error: (error) => {
-          console.error('Error al obtener características:', error);
-          that.songs.listForTrain[songIndex].tsFeaturesDimensions = 'error';
-          that.songs.listForTrain[songIndex].tsFeaturesErrReason = 'other';
-          checkPool(item);
         }
-      });
-    }
-
-    function checkPool(item: any) {
-      if (!item.done)
-        trigger();
-      else {
-        that.tsFeatures.poolSongs = [];
-        that.tsFeatures.busy = false;
-        console.info('Pool finalizado');
       }
-    }
+    );
   }
 
   stopTsFeaturesPool() {

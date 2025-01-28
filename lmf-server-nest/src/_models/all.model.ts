@@ -5,8 +5,8 @@ export class Song {
     public file: File | null,
     public userScore: number | null,
     public tsPrediction: number | null,
-    public storageStatus: 'local' | 'uploaded' | 'error',
-    public tsStatus: 'trained' | 'predicted' | 'retrained' | 'error' | null,
+    public storageStatus: 'local' | 'uploading' | 'uploaded' | 'downloading' | 'downloaded' | 'error',
+    public tsStatus: 'training' | 'trained' | 'predicting' | 'predicted' | 'retrained' | 'error' | null,
     public tsInitStatus: 'train' | 'predict' | 'retrain',
     public listIndex: number | null,
     public id?: number,
@@ -20,15 +20,16 @@ export class Playlist {
   constructor(
     public name: string,
     public songs: Array<Song>,
-    public model: Model,
+    public model: TsModel,
     public isDefault: boolean,
     public id?: number
   ) { }
 }
 
-export class Model {
+export class TsModel {
   constructor(
     public id: number,
+    public type: 'tensorflow',
     public global: boolean,
     public trainCount: number
   ) { }

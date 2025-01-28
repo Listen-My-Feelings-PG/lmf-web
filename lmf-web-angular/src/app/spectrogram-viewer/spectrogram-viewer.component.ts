@@ -106,7 +106,7 @@ export class SpectrogramViewerComponent implements AfterViewInit, OnDestroy {
     let x = Math.floor(this.currentTime * step);
     this.overlayCtx.clearRect(0, 0, this.overlayCanvas.nativeElement.width, this.overlayCanvas.nativeElement.height); // Limpia el canvas de la línea
 
-    let gradient1 = this.overlayCtx.createLinearGradient(x, 0, x + lineWidth, 0);
+    const gradient1 = this.overlayCtx.createLinearGradient(x, 0, x + lineWidth, 0);
     gradient1.addColorStop(1, colorFade);
     gradient1.addColorStop(0, 'rgba(0, 0, 0, 0)');
 
@@ -121,7 +121,7 @@ export class SpectrogramViewerComponent implements AfterViewInit, OnDestroy {
 
     x += lineWidth;
 
-    let gradient2 = this.overlayCtx.createLinearGradient(x, 0, x + lineWidth, 0);
+    const gradient2 = this.overlayCtx.createLinearGradient(x, 0, x + lineWidth, 0);
     gradient2.addColorStop(1, 'rgba(0, 0, 0, 0)');
     gradient2.addColorStop(0, colorFade);
 
@@ -174,11 +174,11 @@ export class SpectrogramViewerComponent implements AfterViewInit, OnDestroy {
           }
 
           function triggerRow() {
-            let row = that.loader.iterator.next();
+            const row = that.loader.iterator.next();
             that.loader.indexY++;
             if (row.done)
               return checkPoolRow(row);
-            let columns: {
+            const columns: {
               pool: Array<number>,
               busy: boolean,
               iterator: any
@@ -194,7 +194,7 @@ export class SpectrogramViewerComponent implements AfterViewInit, OnDestroy {
             }
 
             function triggerColumn() {
-              let column = columns.iterator.next();
+              const column = columns.iterator.next();
               that.loader.indexX++;
               if (column.done)
                 return checkPoolColumn(column);

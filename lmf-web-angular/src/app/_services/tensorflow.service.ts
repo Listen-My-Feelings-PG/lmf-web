@@ -46,20 +46,20 @@ export class TensorflowService {
   }
 
   init(): void {
-    console.info('Inicializando tensorflow...');
+    console.info('Inicializando Tensorflow...');
     tf.engine().startScope();
     tf.disposeVariables();
     tf.engine().endScope();
     tf.engine().reset();
+    if (this.model) {
+      this.model.dispose();
+      this.model = null;
+    }
     console.info(`Tensorflow inicializado. Variables activas: ${tf.memory().numTensors}`);
   }
 
   loadModel(): Promise<string> {
     return new Promise((resolve) => {
-      if (this.model) {
-        this.model.dispose();
-        this.model = null;
-      }
       this.model = tf.sequential();
       this.model.add(tf.layers.dense({ units: 64, activation: 'relu', inputShape: [129, 20000] }));
       this.model.add(tf.layers.flatten());
@@ -83,20 +83,24 @@ export class TensorflowService {
     mel_spectrogram: Array<Array<number>>,
     score: number,
   ) {
-    return new Promise(async (resolve, reject) => {
-      if (!this.model)
-        return reject('Modelo no cargado');
-      try {
-        const inputTensor = tf.tensor2d(mel_spectrogram);
-        const outputTensor = tf.tensor1d([score]);
-        await this.model.fit(inputTensor.expandDims(0), outputTensor, { epochs: [1, 16, 81][score - 1], batchSize: 1 });
+    return new Promise<void>((resolve, reject) => {
+      if (!this.model) {
+        reject({ message: 'Modelo no cargado' });
+        return;
+      }
+
+      const inputTensor = tf.tensor2d(mel_spectrogram);
+      const outputTensor = tf.tensor1d([score]);
+
+      this.model.fit(inputTensor.expandDims(0), outputTensor, { epochs: 1, batchSize: 1 }).then(() => {
         inputTensor.dispose();
         outputTensor.dispose();
-        resolve('Entrenamiento completado');
-      } catch (e) {
-        console.error('Error al entrenar canción:', e);
-        reject('Error al entrenar');
-      }
+        resolve();
+      }).catch((error) => {
+        inputTensor.dispose();
+        outputTensor.dispose();
+        reject({ message: 'Error en el entrenamiento', error });
+      });
     });
   }
 }
