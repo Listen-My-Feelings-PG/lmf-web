@@ -4,7 +4,6 @@ import { ButtonModule } from 'primeng/button';
 import { FileUploadModule } from 'primeng/fileupload';
 import { LibrosaTsFeatures, Song } from '../../_models/all.model';
 import { HttpService } from '../../_services/http.service';
-import { PlayerComponent } from "../../player/player.component";
 import { SongService } from '../../_services/song.service';
 import { TensorflowService } from '../../_services/tensorflow.service';
 import { ChipModule } from 'primeng/chip';
@@ -17,7 +16,6 @@ import { BadgeModule } from 'primeng/badge';
     FileUploadModule,
     ButtonModule,
     CommonModule,
-    PlayerComponent,
     ChipModule,
     BadgeModule
   ],

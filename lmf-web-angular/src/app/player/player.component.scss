@@ -1,28 +1,16 @@
+$bg: var(--base-color-5);
+
 .audio-player {
   display: flex;
   align-items: center;
   gap: 10px;
-  border-radius: 5px;
   padding: 10px;
+  background-color: var(--player-bg-color);
+  opacity: 0.6;
+  transition: opacity 500ms;
 
-  .play-pause-btn {
-    border: none;
-    border-radius: 50%;
-    width: 50px;
-    height: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: background 0.3s;
-
-    i {
-      font-size: 20px;
-    }
-
-    &.playing {
-      background: var(--color-primary);
-    }
+  &:hover {
+    opacity: 1;
   }
 
   .progress-container {
