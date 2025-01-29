@@ -1,57 +1,25 @@
-@import '../node_modules/primeng/resources/themes/bootstrap4-dark-blue/theme.css';
-@import '../node_modules/primeicons/primeicons.css';
-@import '../node_modules/@fortawesome/fontawesome-free/css/all.css';
-@import '../node_modules/bootstrap/dist/css/bootstrap.min.css';
+/*Colores distintivos de la apliación*/
+$base-color1: #46f0be;
+$base-color2: #f0c81e;
+$base-color3: #8278e6;
+$base-color4: #f0fafa;
 
-/*@import '../node_modules/bootstrap/scss/functions';
-@import '../node_modules/bootstrap/scss/variables';
-@import '../node_modules/bootstrap/scss/variables-dark';
-@import '../node_modules/bootstrap/scss/maps';
-@import '../node_modules/bootstrap/scss/mixins';
-@import '../node_modules/bootstrap/scss/utilities';
-@import '../node_modules/bootstrap/scss/utilities/api';*/
-//@import '../node_modules/bootstrap/dist/css/bootstrap-utilities.css';
+$base-color5: #0032c8;
+$base-color6: #00b400;
+$base-color7: #fadc00;
+$base-color8: #fa6400;
 
-$base-color: #00bfda;
-$base-text-color: #ffffff;
-$base-bg-color: #121212;
+/*Sobreescritura de los colores en Bootstrap*/
+$body-bg: darken($base-color3, 64%);
+$body-color: $base-color4;
+$primary: $base-color5;
+$success: $base-color6;
+$info: $base-color1;
+$warning: $base-color7;
+$danger: $base-color8;
 
-$body-bg: $base-bg-color;
-$body-color: $base-text-color;
-$link-color: $base-color;
-$link-hover-color: lighten($base-color, 10%);
-$btn-primary-bg: $base-color;
-$btn-primary-border: $base-color;
+/*Sobreescritura de las fuentes de Bootstrap*/
+$font-family-base: 'Calibri', sans-serif;
 
-:root {
-  --surface-ground: $base-bg-color;
-  --surface-card: lighten($base-bg-color, 10%);
-  --text-color: $base-text-color;
-  --primary-color: $base-color;
-  --primary-color-text: $base-text-color;
-  --button-bg: $base-color;
-  --button-text-color: $base-text-color;
-  --menubar-bg: #00c4df; // Color de fondo de la barra
-  --menubar-text-color: #ffffff; // Color del texto
-  --color-secondary: $secondary;
-  --color-accent: $accent;
-  --color-primary: $base-color;
-}
-
-html,
-body,
-.app-container {
-  background-color: $base-bg-color; // Fondo oscuro
-  color: $base-text-color; // Texto claro
-}
-
-.main-container {
-  .p-menubar {
-    background-color: var(--menubar-bg);
-    color: var(--menubar-text-color);
-  }
-
-  .p-menubar-root .p-menuitem-link {
-    color: var(--menubar-text-color);
-  }
-}
+/*Importación de variables de Bootstrap para su sobreescritura*/
+@import "../node_modules/bootstrap/scss/bootstrap";

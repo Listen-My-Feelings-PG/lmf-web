@@ -2,12 +2,10 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  background: var(--surface-ground);
   border-radius: 5px;
   padding: 10px;
 
   .play-pause-btn {
-    background: var(--color-secondary);
     border: none;
     border-radius: 50%;
     width: 50px;
@@ -20,11 +18,10 @@
 
     i {
       font-size: 20px;
-      color: var(--text-color);
     }
 
     &.playing {
-      background: var(--color-accent);
+      background: var(--color-primary);
     }
   }
 
@@ -36,7 +33,6 @@
     .progress-bar {
       width: 100%;
       appearance: none;
-      background: var(--surface-ground);
       height: 5px;
       border-radius: 5px;
       outline: none;
@@ -46,7 +42,6 @@
         appearance: none;
         width: 10px;
         height: 10px;
-        background: var(--color-primary);
         border-radius: 50%;
         cursor: pointer;
       }
@@ -56,7 +51,6 @@
       display: flex;
       justify-content: space-between;
       font-size: 12px;
-      color: var(--text-color);
     }
   }
 }
