@@ -1,9 +1,28 @@
-$bg: var(--base-color-5);
+.row {
+  padding-left: 15px;
+  padding-right: 15px;
+}
+
+.col,
+.col-1 {
+  padding: 0;
+  align-items: center;
+}
+
+.star-rated {
+  font-size: 24px;
+  cursor: pointer;
+  margin-right: 8px;
+  color: #FFD700;
+}
+
+.star-disabled {
+  font-size: 24px;
+  margin-right: 8px;
+  color: #a8a8a8;
+}
 
 .audio-player {
-  display: flex;
-  align-items: center;
-  gap: 10px;
   padding: 10px;
   background-color: var(--player-bg-color);
   opacity: 0.6;

@@ -1,4 +1,24 @@
 <div class="audio-player">
+  <div class="row">
+    <div class="col-1 text-nowrap">
+      <p-buttonGroup>
+        <p-button severity="warning"
+          (onClick)="togglePlayPause()"
+          icon="pi pi-angle-left"></p-button>
+        <p-button severity="warning"
+          (onClick)="togglePlayPause()"
+          icon="pi pi-play"></p-button>
+        <p-button severity="warning"
+          (onClick)="togglePlayPause()"
+          icon="pi pi-angle-right"></p-button>
+      </p-buttonGroup>
+    </div>
+    <div class="col">
+
+    </div>
+  </div>
+</div>
+<!--<div class="audio-player">
   <p-button severity="warning"
     (onClick)="togglePlayPause()"
     icon="pi pi-play"></p-button>
@@ -13,7 +33,7 @@
       <span>{{ formatTime(duration) }}</span>
     </div>
   </div>
-</div>
+</div>-->
 <audio #audioPlayer
   (timeupdate)="updateProgress()"
   (loadedmetadata)="updateMetadata()">

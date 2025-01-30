@@ -1,11 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { Component, ElementRef, Input, OnChanges, SimpleChanges, ViewChild } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
+import { ButtonGroupModule } from 'primeng/buttongroup';
 
 @Component({
   selector: 'app-player',
   standalone: true,
-  imports: [CommonModule,ButtonModule],
+  imports: [CommonModule, ButtonModule, ButtonGroupModule],
   templateUrl: './player.component.html',
   styleUrl: './player.component.scss'
 })
