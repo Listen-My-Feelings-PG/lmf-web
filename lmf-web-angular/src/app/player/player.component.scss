@@ -1,12 +1,9 @@
-.row {
-  padding-left: 15px;
-  padding-right: 15px;
-}
+.row-caption {
+  max-width: 90.5vw;
 
-.col,
-.col-1 {
-  padding: 0;
-  align-items: center;
+  &:hover {
+    padding-bottom: 10px;
+  }
 }
 
 .star-rated {

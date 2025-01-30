@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import * as tf from '@tensorflow/tfjs';
+//import * as tf from '@tensorflow/tfjs';
 
 @Injectable({
   providedIn: 'root'
@@ -28,7 +28,7 @@ export class TensorflowService {
     forPredict: any
   }
 
-  private model!: tf.Sequential | null;
+  //private model!: tf.Sequential | null;
 
   constructor() {
     this.pools = {
@@ -46,7 +46,7 @@ export class TensorflowService {
   }
 
   init(): void {
-    console.info('Inicializando Tensorflow...');
+    /*console.info('Inicializando Tensorflow...');
     tf.engine().startScope();
     tf.disposeVariables();
     tf.engine().endScope();
@@ -55,12 +55,12 @@ export class TensorflowService {
       this.model.dispose();
       this.model = null;
     }
-    console.info(`Tensorflow inicializado. Variables activas: ${tf.memory().numTensors}`);
+    console.info(`Tensorflow inicializado. Variables activas: ${tf.memory().numTensors}`);*/
   }
 
   loadModel(): Promise<string> {
     return new Promise((resolve) => {
-      this.model = tf.sequential();
+      /*this.model = tf.sequential();
       this.model.add(tf.layers.dense({ units: 64, activation: 'relu', inputShape: [129, 20000] }));
       this.model.add(tf.layers.flatten());
       this.model.add(tf.layers.dense({ units: 32, activation: 'relu' }));
@@ -70,7 +70,7 @@ export class TensorflowService {
         optimizer: tf.train.adam(),
         loss: 'meanSquaredError',
         metrics: ['mae']
-      });
+      });*/
       resolve('Modelo cargado');
     });
   }
@@ -84,7 +84,7 @@ export class TensorflowService {
     score: number,
   ) {
     return new Promise<void>((resolve, reject) => {
-      if (!this.model) {
+      /*if (!this.model) {
         reject({ message: 'Modelo no cargado' });
         return;
       }
@@ -98,9 +98,12 @@ export class TensorflowService {
         resolve();
       }).catch((error) => {
         inputTensor.dispose();
-        outputTensor.dispose();
-        reject({ message: 'Error en el entrenamiento', error });
+        outputTensor.dispose();*/
+      reject({
+        message: 'Error en el entrenamiento',
+        //error 
       });
+      //});
     });
   }
 }

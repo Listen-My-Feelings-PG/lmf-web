@@ -1,6 +1,6 @@
 <div class="audio-player">
   <div class="row">
-    <div class="col-1 text-nowrap">
+    <div class="col-1 d-flex justify-content-center align-items-center">
       <p-buttonGroup>
         <p-button severity="warning"
           (onClick)="togglePlayPause()"
@@ -14,7 +14,33 @@
       </p-buttonGroup>
     </div>
     <div class="col">
-
+      <div class="row">
+        <div class="col">
+          <div class="progress-container">
+            <input type="range"
+              class="progress-bar"
+              [value]="currentTime"
+              [max]="duration"
+              (input)="onSeek($event)" />
+            <div class="time-display">
+              <span>{{ formatTime(currentTime) }}</span>
+              <span>{{ formatTime(duration) }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-1 d-flex justify-content-center align-items-center">
+          <i class="star-rated pi pi-star"></i>
+          <i class="star-rated pi pi-star"></i>
+          <i class="star-rated pi pi-star"></i>
+          <i class="star-rated pi pi-star"></i>
+        </div>
+      </div>
+      <div class="row text-nowrap overflow-auto row-caption">
+        Dolor anim ipsum minim nostrud cillum sunt eiusmod officia mollit tempor consequat. Culpa do ea mollit laborum
+        esse laborum dolore tempor. Pariatur eiusmod nisi ut labore consequat id minim culpa. Ad eu officia excepteur
+        cillum et sunt. Id et ad reprehenderit consectetur. Aute non consectetur velit consequat excepteur non dolor
+        anim ad ea aliquip velit.
+      </div>
     </div>
   </div>
 </div>
