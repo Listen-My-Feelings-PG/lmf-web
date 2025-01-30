@@ -49,12 +49,14 @@ export class SongsController {
       result[0].playlist_pl_nombre,
       result.map((s: any) => new Song(
         s.song_ca_nombre,
-        'file', null,
+        'file',
+        null,
         s.song_ca_calif_usuario,
         s.song_ca_ts_prediccion,
-        'uploaded', s.song_ca_ts_status,
+        'uploaded',
+        s.song_ca_ts_status,
         s.song_ca_ts_init_status,
-        null, s.song_ca_id
+        s.song_ca_id
       )),
       result[0].pl_id_modelo,
       result[0].playlist_pl_default,
