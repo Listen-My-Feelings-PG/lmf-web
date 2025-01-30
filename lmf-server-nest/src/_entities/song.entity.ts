@@ -20,7 +20,7 @@ export class SongEntity {
   @Column({ name: 'ca_ts_init_status', type: 'text' })
   tsInitStatus: string;
 
-  @OneToMany(() => SongsPlaylistsEntity, songsPlaylists => songsPlaylists.song)
+  @OneToMany(() => SongsPlaylistsEntity, songsPlaylists => songsPlaylists.idSong)
   songsPlaylists: SongsPlaylistsEntity[];
 
   @Column({ name: 'ca_activo', type: 'boolean', default: true })

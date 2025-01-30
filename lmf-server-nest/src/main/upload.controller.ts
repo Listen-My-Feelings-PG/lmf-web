@@ -19,8 +19,9 @@ import { Mp3ValidationPipe } from 'src/_pipes/mp3-validation.pipe';
 import * as fs from 'fs';
 import * as path from 'path';
 import { ConfigService } from '@nestjs/config';
-import { Song } from 'src/_models/all.model';
 import { BooleanDto } from 'src/_pipes/dtos.pipe';
+import { SongsPlaylistsEntity } from 'src/_entities/songs-playlists.entity';
+import { PlaylistEntity } from 'src/_entities/playlist.entity';
 
 
 @Controller('upload')
@@ -28,46 +29,69 @@ export class UploadController {
   constructor(
     @InjectRepository(SongEntity)
     private readonly songsTable: Repository<SongEntity>,
+    @InjectRepository(SongsPlaylistsEntity)
+    private readonly songsPlaylistsTable: Repository<SongsPlaylistsEntity>,
     private readonly cf: ConfigService
   ) { }
 
   @Post('file')
-  @UseInterceptors(
-    FileInterceptor('file', {
-      storage: diskStorage({
-        destination: (req, file, cb) => {
-          const cf: ConfigService = new ConfigService();
-          cb(null, cf.get<string>('TS_PATH_UPLOADS'))
-        },
-        filename: ((req, file, cb) => {
-          const uniqueSuffix = new Date().getTime();
-          const sanitizedFilename = Buffer.from(file.originalname, 'latin1').toString('utf8');
-          cb(null, `${uniqueSuffix}_${sanitizedFilename}`);
-        })
+  @UseInterceptors(FileInterceptor('file', {
+    storage: diskStorage({
+      destination: (req, file, cb) => {
+        const cf: ConfigService = new ConfigService();
+        cb(null, cf.get<string>('TS_PATH_UPLOADS'))
+      },
+      filename: ((req, file, cb) => {
+        const uniqueSuffix = new Date().getTime();
+        const sanitizedFilename = Buffer.from(file.originalname, 'latin1').toString('utf8');
+        cb(null, `${uniqueSuffix}_${sanitizedFilename}`);
       })
     })
-  )
+  }))
   async uploadHandler(
     @UploadedFile(new Mp3ValidationPipe()) file: Express.Multer.File,
-    @Body() body: Song
+    @Body() body: any
   ) {
-    const existingSong = await this.songsTable.findOne({
+    const idExistingSong = await this.songsTable.findOne({
+      select: ['id'],
       where: {
         name: file.originalname,
         fileSize: file.size,
         active: true
       }
     });
+
     const filePath = path.resolve(this.cf.get<string>('TS_PATH_UPLOADS'), file.filename);
-    if (existingSong) {
+    if (idExistingSong) {
       if (fs.existsSync(filePath))
         await fs.unlinkSync(filePath);
-      console.error('Canción duplicada:', file.filename);
-      throw new HttpException('Duplicated song', HttpStatus.FORBIDDEN);
+      console.info('Canción duplicada. Borrada del servidor:', file.filename);
+
+      const plsRow = await this.songsPlaylistsTable.findOne({
+        where: { idSong: { id: idExistingSong.id }, idPlaylist: { id: body.idPlaylist } }
+      });
+
+      if (!plsRow) {
+        await this.songsPlaylistsTable.save(
+          this.songsPlaylistsTable.create({
+            idSong: { id: idExistingSong.id } as SongEntity,
+            idPlaylist: { id: body.idPlaylist } as PlaylistEntity
+          })
+        );
+
+        return {
+          message: 'song added to playlist',
+          sRow: { id: idExistingSong.id },
+        }
+
+      } else {
+        console.error('Canción duplicada en playlist:', idExistingSong.id, body.idPlaylist);
+        throw new HttpException('Duplicated song', HttpStatus.FORBIDDEN);
+      }
     } else {
       const name = body.name;
       try {
-        const row = await this.songsTable.save(this.songsTable.create({
+        const sRow = await this.songsTable.save(this.songsTable.create({
           name: name,
           idDataType: 1,
           tsStatus: null,
@@ -78,9 +102,14 @@ export class UploadController {
           tsPrediction: body.tsPrediction !== undefined ? body.tsPrediction : null
         }));/*Regla: Todo lo que sea 'undefined' es porque en el front es NULL (un valor 0 es válido). 
        Cuando sea necesario en la operación, este debe permitir nulos, o tener un valor por default*/
+        const plsRow = await this.songsPlaylistsTable.save(this.songsPlaylistsTable.create({
+          idSong: { id: sRow.id } as SongEntity,
+          idPlaylist: { id: body.idPlaylist } as PlaylistEntity
+        }));
         return {
           message: 'uploaded successful',
-          row
+          sRow,
+          plsRow
         }
       } catch (error) {
         await fs.unlinkSync(filePath);

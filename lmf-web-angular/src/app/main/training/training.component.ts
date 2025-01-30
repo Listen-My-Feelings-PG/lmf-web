@@ -147,14 +147,13 @@ export class TrainingComponent implements OnInit {
       this.songService.addToPoolSongsForUpload({ ...song });
     });
 
-    this.songService.uploadSongsToServer((error: boolean, data: any) => {
-      let idx = this.songService.getIndexFromList(list, data.id);
+    this.songService.uploadSongsToServer(this.playlists.selected?.id as number, (error: boolean, data: any, index: number) => {
       if (error) {
-        list[idx].storageStatus = 'error';
-        list[idx].storageStatusErrReason = data.storageStatusErrReason;
+        list[index].storageStatus = 'error';
+        list[index].storageStatusErrReason = data.storageStatusErrReason;
       } else if (!data.completed) {
-        list[idx].id = data.id;
-        list[idx].storageStatus = 'uploaded';
+        list[index].id = data.id;
+        list[index].storageStatus = 'uploaded';
       }
     });
   }

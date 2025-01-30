@@ -22,13 +22,22 @@ export class SongService {
     idSongsForFeatures: any,
     songsForUpload: any
   }
+  private indexes: {
+    idSongsForFeatures: number,
+    songsForUpload: number
+  }
   busyFlags: {
     idSongsForFeatures: boolean,
     songsForUpload: boolean
   }
+
   constructor(
     private http: HttpService
   ) {
+    this.indexes = {
+      idSongsForFeatures: -1,
+      songsForUpload: -1
+    }
     this.pools = {
       idSongsForFeatures: [],
       songsForUpload: []
@@ -137,30 +146,31 @@ export class SongService {
     this.pools.songsForUpload.push(song);
   }
 
-  uploadSongsToServer(taskCallback: Function): void {
+  uploadSongsToServer(idPlaylist: number, taskCallback: Function): void {
     const that = this;
     if (!this.busyFlags.songsForUpload) {
       this.iterators.songsForUpload = this.pools.songsForUpload[Symbol.iterator]();
       this.busyFlags.songsForUpload = true;
       trigger();
     } else if (this.pools.songsForUpload.length == 0)
-      return taskCallback(true, 'Pool is empty');
+      return taskCallback(true, 'Pool is empty', null);
     else
-      return taskCallback(true, 'Pool is busy');
+      return taskCallback(true, 'Pool is busy', null);
 
     function trigger() {
       let item = that.iterators.songsForUpload.next();
+      that.indexes.songsForUpload++;
       if (item.done)
         return checkPool(item);
       item.value.userScore = 0;
       item.value.tsPrediction = null;
-      that.http.post('upload/file', item.value).subscribe({
-        next: (data: any) => {
-          taskCallback(false, { completed: false, storageStatus: 'uploaded', id: data.row.id });
+      that.http.post('upload/file', { ...item.value, idPlaylist }).subscribe({
+        next: (res: any) => {
+          taskCallback(false, { completed: false, storageStatus: 'uploaded', id: res.sRow.id }, that.indexes.songsForUpload);
           checkPool(item);
         },
         error: (error: { status: number; }) => {
-          taskCallback(true, { completed: false, storageStatus: 'error', storageStatusErrReason: error.status == 403 ? 'duplicated' : 'other' });
+          taskCallback(true, { completed: false, storageStatus: 'error', storageStatusErrReason: error.status == 403 ? 'duplicated' : 'other' }, that.indexes.songsForUpload);
           checkPool(item);
         }
       });
@@ -172,7 +182,8 @@ export class SongService {
       else {
         that.pools.songsForUpload = [];
         that.busyFlags.songsForUpload = false;
-        taskCallback(false, { completed: true });
+        that.indexes.songsForUpload = -1;
+        taskCallback(false, { completed: true }, null);
       }
     }
 

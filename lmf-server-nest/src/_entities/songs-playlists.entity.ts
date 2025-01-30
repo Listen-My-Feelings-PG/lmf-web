@@ -9,9 +9,9 @@ export class SongsPlaylistsEntity {
 
     @ManyToOne(() => SongEntity, song => song.songsPlaylists)
     @JoinColumn({ name: 'cp_ca_id' })
-    song: SongEntity;
+    idSong: SongEntity;
 
     @ManyToOne(() => PlaylistEntity, playlist => playlist.songsPlaylists)
     @JoinColumn({ name: 'cp_pl_id' })
-    playlist: PlaylistEntity;
+    idPlaylist: PlaylistEntity;
 }

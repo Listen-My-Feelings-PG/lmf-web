@@ -23,7 +23,7 @@ export class PlaylistEntity {
     @JoinColumn({ name: 'pl_id_modelo' })
     idModel: ModelEntity;
 
-    @OneToMany(() => SongsPlaylistsEntity, songsPlaylist => songsPlaylist.playlist)
+    @OneToMany(() => SongsPlaylistsEntity, songsPlaylist => songsPlaylist.idPlaylist)
     songsPlaylists: SongsPlaylistsEntity[];
 
 }

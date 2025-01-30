@@ -28,7 +28,7 @@ export class SongsController {
 
     const query = this.playlistTable.createQueryBuilder('playlist')
       .leftJoinAndSelect('playlist.songsPlaylists', 'songsPlaylists')
-      .leftJoinAndSelect('songsPlaylists.song', 'song', 'song.active = :active', { active: true })
+      .leftJoinAndSelect('songsPlaylists.idSong', 'song', 'song.active = :active', { active: true })
       .select([
         'playlist.id',
         'playlist.name',
