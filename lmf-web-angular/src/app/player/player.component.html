@@ -1,6 +1,6 @@
 <div class="audio-player">
-  <div class="row">
-    <div class="col-1 d-flex justify-content-center align-items-center">
+  <div class="d-flex w-100 flex-nowrap">
+    <div class="text-nowrap d-flex align-items-center p-1">
       <p-buttonGroup>
         <p-button severity="warning"
           (onClick)="togglePlayPause()"
@@ -13,29 +13,27 @@
           icon="pi pi-angle-right"></p-button>
       </p-buttonGroup>
     </div>
-    <div class="col">
-      <div class="row">
-        <div class="col">
-          <div class="progress-container">
-            <input type="range"
-              class="progress-bar"
-              [value]="currentTime"
-              [max]="duration"
-              (input)="onSeek($event)" />
-            <div class="time-display">
-              <span>{{ formatTime(currentTime) }}</span>
-              <span>{{ formatTime(duration) }}</span>
-            </div>
+    <div class="p-1">
+      <div class="d-flex w-100 flex-nowrap justify-content-between">
+        <div class="progress-container">
+          <input type="range"
+            class="progress-bar"
+            [value]="currentTime"
+            [max]="duration"
+            (input)="onSeek($event)" />
+          <div class="time-display">
+            <span>{{ formatTime(currentTime) }}</span>
+            <span>{{ formatTime(duration) }}</span>
           </div>
         </div>
-        <div class="col-1 d-flex justify-content-center align-items-center">
+        <div class="text-nowrap justify-content-center pl-1">
           <i class="star-rated pi pi-star"></i>
           <i class="star-rated pi pi-star"></i>
           <i class="star-rated pi pi-star"></i>
           <i class="star-rated pi pi-star"></i>
         </div>
       </div>
-      <div class="row text-nowrap overflow-auto row-caption">
+      <div class="d-flex text-nowrap overflow-auto row-caption">
         Dolor anim ipsum minim nostrud cillum sunt eiusmod officia mollit tempor consequat. Culpa do ea mollit laborum
         esse laborum dolore tempor. Pariatur eiusmod nisi ut labore consequat id minim culpa. Ad eu officia excepteur
         cillum et sunt. Id et ad reprehenderit consectetur. Aute non consectetur velit consequat excepteur non dolor

@@ -22,7 +22,6 @@ export class PlaylistController {
       query.where['id'] = body.id;
 
     const list = await this.playlistTable.find(query);
-    console.log('list', list);
     return {
       message: 'Query successful',
       data: list

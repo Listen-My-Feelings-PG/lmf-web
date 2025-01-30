@@ -2,32 +2,80 @@
   <h1>Entrenamiento</h1>
   <div class="row">
     <div class="col-md-3">
-      <div *ngIf="playlists.list.length === 0; else notEmpty">
-        <span>(No hay listas de reproducción)</span><br><br>
-        <button pButton
-          type="button"
-          label="Crear lista"
-          icon="pi pi-plus"
-          severity="success"
-          [outlined]="true"
-          class="p-button-sm"></button>
-      </div>
-
+      <span *ngIf="playlists.list.length === 0; else notEmpty">(No hay listas de reproducción)</span>
       <ng-template #notEmpty>
-        <label for="">Selecciona una lista de reproducción:</label>
+        <label>Selecciona una lista de reproducción:</label>
         <p-listbox [options]="playlists.list"
           optionLabel="name"
           [(ngModel)]="playlists.selected" />
       </ng-template>
-
-
+      <div class="mt-3 text-nowrap">
+        <p-buttonGroup>
+          <button pButton
+            type="button"
+            label="Crear lista"
+            icon="pi pi-plus"
+            severity="success"
+            [outlined]="true"
+            size="small"></button>
+          <p-fileUpload mode="basic"
+            chooseLabel="Cargar canciones"
+            chooseIcon="pi pi-plus"
+            name="file"
+            accept="audio/mpeg,audio/mpg,audio/mpeg3,audio/mp3,"
+            maxFileSize="100000000"
+            (onSelect)="uploadSongs($event)"
+            [auto]="true"
+            [multiple]="true"
+            styleClass="p-fu p-button-outlined"
+            [style]="{'border-radius':'0px'}" />
+        </p-buttonGroup>
+      </div>
     </div>
     <div class="col-md">
-      Ipsum minim laborum exercitation labore occaecat excepteur velit dolore quis laborum consectetur nulla
-      adipisicing. Tempor et ipsum irure cupidatat deserunt. Voluptate est eu ex elit enim dolore reprehenderit
-      voluptate aliqua ex ipsum. Dolor id nulla incididunt incididunt proident do officia ex eu in. Proident
-      reprehenderit eu qui ex qui cillum est excepteur incididunt esse voluptate culpa culpa. Lorem velit quis culpa
-      laborum aute consectetur.
+      <div class="card">
+        <p-table [value]="playlists.selected?.songs || []"
+          [styleClass]="'p-datatable-sm'">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>#</th>
+              <th>Nombre</th>
+              <th>Tipo</th>
+              <th></th>
+              <th>Calificación</th>
+              <th>Opciones</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body"
+            let-song
+            let-i="rowIndex">
+            <tr>
+              <td>{{i + 1}}</td>
+              <td>{{song.name}}</td>
+              <td><span class="badge text-bg-primary">Archivo MP3</span></td>
+              <td>
+                <button pButton
+                  type="button"
+                  size="small"
+                  [outlined]="true"
+                  icon="fa-solid fa-circle-play"
+                  severity="success"
+                  (click)="play(i,'train')"></button>
+              </td>
+              <td>
+                <div *ngIf="song.tsInitStatus=='train'">
+                  <ng-container *ngFor="let star of rating.stars; let ist = index">
+                    <i class="star-rated pi"
+                      [ngClass]="song.userScore !== null && ist < song.userScore! ? 'pi-star-fill' : 'pi-star'"
+                      (click)="rate(i,ist + 1)"></i>
+                  </ng-container>
+                </div>
+              </td>
+              <td>--</td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
     </div>
   </div>
 

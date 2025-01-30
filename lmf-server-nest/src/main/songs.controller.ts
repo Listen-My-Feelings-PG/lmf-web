@@ -18,8 +18,6 @@ export class SongsController {
     private readonly songsTable: Repository<SongEntity>,
     @InjectRepository(PlaylistEntity)
     private readonly playlistTable: Repository<PlaylistEntity>,
-    @InjectRepository(SongsPlaylistsEntity)
-    private readonly songsPlaylistsTable: Repository<SongsPlaylistsEntity>,
     private readonly cf: ConfigService
   ) { }
 
@@ -47,8 +45,7 @@ export class SongsController {
       .where('playlist.id = :playlistId', { playlistId })
       .andWhere('playlist.active = :active', { active: true });
     const result = await query.getRawMany();
-
-    const playlist = result.length ? new Playlist(
+    const playlist = result.length && result[0].song_ca_id ? new Playlist(
       result[0].playlist_pl_nombre,
       result.map((s: any) => new Song(
         s.song_ca_nombre,
@@ -63,7 +60,6 @@ export class SongsController {
       result[0].playlist_pl_default,
       result[0].playlist_pl_id
     ) : null;
-
     return {
       message: 'Query successful',
       data: playlist

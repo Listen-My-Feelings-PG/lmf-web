@@ -10,6 +10,8 @@ import { ChipModule } from 'primeng/chip';
 import { BadgeModule } from 'primeng/badge';
 import { ListboxModule } from 'primeng/listbox';
 import { FormsModule } from '@angular/forms';
+import { TableModule } from 'primeng/table';
+import { ButtonGroupModule } from 'primeng/buttongroup';
 
 @Component({
   selector: 'app-training',
@@ -21,7 +23,9 @@ import { FormsModule } from '@angular/forms';
     ChipModule,
     BadgeModule,
     ListboxModule,
-    FormsModule
+    FormsModule,
+    TableModule,
+    ButtonGroupModule
   ],
   templateUrl: './training.component.html',
   styleUrl: './training.component.scss'
@@ -96,7 +100,8 @@ export class TrainingComponent implements OnInit {
       next: (res) => {
         const dl = res.data.find((obj: any) => obj.isDefault);
         if (dl) {
-          this.playlists.default = new Playlist(dl.name, [], null, true, dl.id)
+          this.playlists.default = new Playlist(dl.name, [], null, true, dl.id);
+          this.playlists.selected = this.playlists.default;
           this.loadPlaylist(this.playlists.default.id as number, true);
         }
 
@@ -118,14 +123,14 @@ export class TrainingComponent implements OnInit {
               pl.name, pl.songs, pl.model ?
               pl.model : null, false, pl.id
             ));
-          console.log('this.playlists', this.playlists);
         }
+        console.log('playlist:', this.playlists.selected);
       }
     });
   }
 
-  uploadSongsProcess(evt: any, mode: 'train' | 'predict') {
-    const mainList = this.songs[mode == 'train' ? 'listForTrain' : 'listForPredict'];
+  uploadSongs(evt: any) {
+    const list = this.playlists.selected?.songs as Array<Song>;
     evt.currentFiles.forEach((item: any) => {
       const song: Song = {
         name: item.name,
@@ -135,33 +140,30 @@ export class TrainingComponent implements OnInit {
         tsPrediction: null,
         storageStatus: 'local',
         tsStatus: null,
-        tsInitStatus: mode,
+        tsInitStatus: 'train',
         listIndex: null
       }
-      mainList.push(song);
-      this.songService.addToPoolSongsForUpload({ ...song, listIndex: mainList.length - 1 });
+      list.push(song);
+      this.songService.addToPoolSongsForUpload({ ...song, listIndex: list.length - 1 });
     });
 
     this.songService.uploadSongsToServer((error: boolean, data: any) => {
       if (error) {
-        mainList[data.listIndex].storageStatus = 'error';
-        mainList[data.listIndex].storageStatusErrReason = data.storageStatusErrReason;
+        list[data.listIndex].storageStatus = 'error';
+        list[data.listIndex].storageStatusErrReason = data.storageStatusErrReason;
       } else if (!data.completed) {
-        mainList[data.listIndex].id = data.id;
-        mainList[data.listIndex].storageStatus = 'uploaded';
+        list[data.listIndex].id = data.id;
+        list[data.listIndex].storageStatus = 'uploaded';
       }
     });
   }
 
-  rate(indexSong: number, rate: number, mode: 'train' | 'predict'): void {
-    const song = this.songs[mode == 'train' ? 'listForTrain' : 'listForPredict'][indexSong];
-    if (!this.rating.blocked || song.userScore != rate) {
+  rate(indexSong: number, rate: number): void {
+    const song = this.playlists.selected?.songs[indexSong];
+    if (song && (!this.rating.blocked || song.userScore != rate))
       this.http.post('rate/song', { id: song.id, score: rate }, true).subscribe({
-        next: (res) => {
-          song.userScore = res.score;
-        }
+        next: (res) => song.userScore = res.score
       });
-    }
   }
 
   play(listIndex: number, mode: 'train' | 'predict') {

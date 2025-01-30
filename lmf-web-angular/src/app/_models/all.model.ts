@@ -3,7 +3,7 @@ export class Song {
     public name: string,
     public type: 'file' | 'link',
     public file: File | null,
-    public userScore: number | null,
+    public userScore: number | null, //Dentro de cualquier playlist, se aceptará una calificación de 0
     public tsPrediction: number | null,
     public storageStatus: 'local' | 'uploading' | 'uploaded' | 'downloading' | 'downloaded' | 'error', //Sólo se manipulará en el frontend
     public tsStatus: 'training' | 'trained' | 'predicting' | 'predicted' | 'retrained' | 'error' | null, //Sólo se manipulará en el frontend

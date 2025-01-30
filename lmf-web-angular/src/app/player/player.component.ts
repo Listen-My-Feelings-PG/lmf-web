@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, Input, OnChanges, SimpleChanges, ViewChild } from '@angular/core';
+import { Component, ElementRef, ViewChild } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { ButtonGroupModule } from 'primeng/buttongroup';
+import { Song } from '../_models/all.model';
 
 @Component({
   selector: 'app-player',
@@ -10,28 +11,27 @@ import { ButtonGroupModule } from 'primeng/buttongroup';
   templateUrl: './player.component.html',
   styleUrl: './player.component.scss'
 })
-export class PlayerComponent implements OnChanges {
-  @Input() songUrl: string = ''; // URL de la canción recibida del componente padre
+export class PlayerComponent {
   @ViewChild('audioPlayer') audioPlayer!: ElementRef<HTMLAudioElement>;
-
+  urlSongPlaying: string;
   isPlaying = false;
   currentTime = 0;
   duration = 0;
 
-  ngOnChanges(changes: SimpleChanges): void {
+  constructor() {
+    this.urlSongPlaying = '';
+  }
+
+  /*ngOnChanges(changes: SimpleChanges): void {
     if (changes['songUrl'] && changes['songUrl'].currentValue) {
       this.playNewSong();
     }
-  }
+  }*/
 
   playNewSong(): void {
     const audio = this.audioPlayer.nativeElement;
-
-    // Detener cualquier reproducción en curso
     audio.pause();
-
-    // Cargar la nueva URL y reproducir
-    audio.src = this.songUrl;
+    audio.src = this.urlSongPlaying;
     audio.load();
     audio.play().then(() => {
       this.isPlaying = true;
