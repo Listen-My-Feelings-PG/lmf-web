@@ -3,13 +3,13 @@
     <div class="text-nowrap d-flex align-items-center p-1">
       <p-buttonGroup>
         <p-button severity="warning"
-          (onClick)="togglePlayPause()"
+          (onClick)="previous()"
           icon="pi pi-angle-left"></p-button>
         <p-button severity="warning"
-          (onClick)="togglePlayPause()"
-          icon="pi pi-play"></p-button>
+          (onClick)="isPlaying? pause() : play()"
+          icon="pi {{isPlaying ? 'pi-pause':'pi-play'}}"></p-button>
         <p-button severity="warning"
-          (onClick)="togglePlayPause()"
+          (onClick)="next()"
           icon="pi pi-angle-right"></p-button>
       </p-buttonGroup>
     </div>
@@ -34,10 +34,7 @@
         </div>
       </div>
       <div class="d-flex text-nowrap overflow-auto row-caption">
-        Dolor anim ipsum minim nostrud cillum sunt eiusmod officia mollit tempor consequat. Culpa do ea mollit laborum
-        esse laborum dolore tempor. Pariatur eiusmod nisi ut labore consequat id minim culpa. Ad eu officia excepteur
-        cillum et sunt. Id et ad reprehenderit consectetur. Aute non consectetur velit consequat excepteur non dolor
-        anim ad ea aliquip velit.
+        {{caption}}
       </div>
     </div>
   </div>
@@ -45,7 +42,7 @@
 <audio #audioPlayer
   (timeupdate)="updateProgress()"
   (loadedmetadata)="updateMetadata()">
-  <source [src]="songUrl"
+  <source [src]="urlSong"
     type="audio/mpeg" />
   Your browser does not support the audio element.
 </audio>

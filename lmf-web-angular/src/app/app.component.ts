@@ -13,7 +13,7 @@ import { TensorflowService } from './_services/tensorflow.service';
   styleUrl: './app.component.scss',
   providers: [MessageService]
 })
-export class AppComponent implements OnInit, AfterViewInit {
+export class AppComponent implements OnInit {
   title = 'lmf-web-angular';
   constructor(
     private toast: MessageService,
@@ -26,8 +26,5 @@ export class AppComponent implements OnInit, AfterViewInit {
       if (props.key)
         this.toast.add(props as any)
     });
-  }
-
-  ngAfterViewInit(): void {
   }
 }

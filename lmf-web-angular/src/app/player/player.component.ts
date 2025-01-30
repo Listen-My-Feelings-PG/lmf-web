@@ -3,6 +3,7 @@ import { Component, ElementRef, ViewChild } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { ButtonGroupModule } from 'primeng/buttongroup';
 import { Song } from '../_models/all.model';
+import { PlayerService } from '../_services/player.service';
 
 @Component({
   selector: 'app-player',
@@ -12,43 +13,140 @@ import { Song } from '../_models/all.model';
   styleUrl: './player.component.scss'
 })
 export class PlayerComponent {
-  @ViewChild('audioPlayer') audioPlayer!: ElementRef<HTMLAudioElement>;
-  urlSongPlaying: string;
-  isPlaying = false;
-  currentTime = 0;
-  duration = 0;
+  @ViewChild('audioPlayer', { static: true }) audioPlayer!: ElementRef<HTMLAudioElement>;
+  urlSong: string;
+  baseUrl: string;
+  isPlaying: boolean;
+  currentTime: number;
+  pauseTime: number;
+  duration: number;
+  caption: string;
 
-  constructor() {
-    this.urlSongPlaying = '';
+  constructor(private playerService: PlayerService) {
+    this.urlSong = '';
+    this.baseUrl = 'http://localhost:3000/songs/song/mp3?value=';
+    this.caption = '(Seleccione una canción)';
+    this.isPlaying = false;
+    this.currentTime = 0;
+    this.pauseTime = 0;
+    this.duration = 0;
   }
 
-  /*ngOnChanges(changes: SimpleChanges): void {
-    if (changes['songUrl'] && changes['songUrl'].currentValue) {
-      this.playNewSong();
-    }
-  }*/
-
-  playNewSong(): void {
-    const audio = this.audioPlayer.nativeElement;
-    audio.pause();
-    audio.src = this.urlSongPlaying;
-    audio.load();
-    audio.play().then(() => {
-      this.isPlaying = true;
-    }).catch((error) => {
-      console.error('Error al reproducir la canción:', error);
-      this.isPlaying = false;
+  ngOnInit(): void {
+    this.playerService.getPlayerEvent().subscribe({
+      next: (event) => {
+        switch (event.action) {
+          case 'play':
+            if (event.song)
+              this.play(event.song);
+            break;
+          case 'pause':
+            this.pause();
+            break;
+          case 'stop':
+            this.stop();
+            break;
+          case 'next':
+            this.next();
+            break;
+          case 'previous':
+            this.previous();
+            break;
+          case 'rate':
+            this.rate(event.song?.userScore || 0);
+            break;
+        }
+      }
     });
   }
 
-  togglePlayPause(): void {
+  play(song?: Song): void {
     const audio = this.audioPlayer.nativeElement;
-    if (this.isPlaying) {
+    const actualSong = this.playerService.getActualSong();
+    let canPlay = false;
+    if (this.isPlaying)
       audio.pause();
-    } else {
-      audio.play();
+    this.urlSong = '';
+    if (song) {
+      this.urlSong = this.baseUrl + song.id;
+      canPlay = true;
+    } else if (actualSong && actualSong.id) {
+      this.urlSong = this.baseUrl + actualSong.id.toString();
+      canPlay = true;
     }
-    this.isPlaying = !this.isPlaying;
+
+    if (canPlay) {
+      audio.src = this.urlSong;
+      if (this.pauseTime) {
+        audio.currentTime = this.pauseTime;
+        audio.play().then(() => {
+          this.isPlaying = true;
+        }).catch((error) => {
+          console.error('Error al reproducir la canción:', error);
+          this.isPlaying = false;
+        });
+      } else {
+        audio.load();
+        audio.play().then(() => {
+          if (song)
+            this.playerService.setActualSong(song); //Aquí es el único lugar donde se debe escribir la canción actual, ya que aquí se está reproduciendo
+          this.isPlaying = true;
+        }).catch((error) => {
+          console.error('Error al reproducir la canción:', error);
+          this.isPlaying = false;
+        });
+      }
+    }
+
+  }
+
+  pause(): void {
+    const audio = this.audioPlayer.nativeElement;
+    this.pauseTime = audio.currentTime;
+    audio.pause();
+    this.isPlaying = false;
+  }
+
+  stop(): void {
+    const audio = this.audioPlayer.nativeElement;
+    audio.pause();
+    audio.currentTime = 0;
+    this.isPlaying = false;
+  }
+
+  next(): void {
+    const listQueue = this.playerService.getListQueue();
+    let actualSongIdx = this.playerService.getActualSong()?.listIndex;
+    console.log('actualSongIdx', actualSongIdx);
+    if (actualSongIdx !== undefined && actualSongIdx !== null) {
+      actualSongIdx++;
+      if (actualSongIdx >= listQueue.length) {
+        actualSongIdx = 0;
+      }
+      this.play(listQueue[actualSongIdx]);
+    }
+  }
+
+  previous(): void {
+    const listQueue = this.playerService.getListQueue();
+    let actualSongIdx = this.playerService.getActualSong()?.listIndex;
+    if (actualSongIdx !== undefined && actualSongIdx !== null) {
+      actualSongIdx--;
+      if (actualSongIdx < 0) {
+        actualSongIdx = listQueue.length - 1;
+      }
+      this.playerService.setActualSong(listQueue[actualSongIdx]);
+      this.play(listQueue[actualSongIdx]);
+    }
+  }
+
+  rate(rate: number): void {
+    const song = this.playerService.getActualSong();
+    if (song) {
+      // this.http.post('rate/song', { id: song.id, score: rate }, true).subscribe({
+      //   next: (res) => song.userScore = res.score
+      // });
+    }
   }
 
   updateProgress(): void {

@@ -12,6 +12,7 @@ import { ListboxModule } from 'primeng/listbox';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
 import { ButtonGroupModule } from 'primeng/buttongroup';
+import { PlayerService } from '../../_services/player.service';
 
 @Component({
   selector: 'app-training',
@@ -64,7 +65,8 @@ export class TrainingComponent implements OnInit {
   constructor(
     private http: HttpService,
     private songService: SongService,
-    private tsService: TensorflowService
+    private tsService: TensorflowService,
+    private playerService: PlayerService
   ) {
     this.playlists = {
       list: [],
@@ -124,7 +126,6 @@ export class TrainingComponent implements OnInit {
               pl.model : null, false, pl.id
             ));
         }
-        console.log('playlist:', this.playlists.selected);
       }
     });
   }
@@ -166,9 +167,11 @@ export class TrainingComponent implements OnInit {
       });
   }
 
-  play(listIndex: number, mode: 'train' | 'predict') {
-    const s = mode == 'train' ? this.songs.listForTrain[listIndex] : this.songs.listForPredict[listIndex];
-    this.urlSongPlaying = `http://localhost:3000/songs/song/mp3?value=${s.id}`;
+  play(listIndex: number) {
+    const song = this.playlists.selected?.songs[listIndex] || null;
+    const listForQueue = this.playlists.selected?.songs?.map((song, index) => ({ ...song, listIndex: index })) || [];
+    this.playerService.addToListQueue(listForQueue);
+    this.playerService.setPlayerEvent('play', song);
   }
 
   async getSongTsFeatures(mode: 'train' | 'predict') {
