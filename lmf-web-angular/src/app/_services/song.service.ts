@@ -156,11 +156,11 @@ export class SongService {
       item.value.tsPrediction = null;
       that.http.post('upload/file', item.value).subscribe({
         next: (data: any) => {
-          taskCallback(false, { completed: false, listIndex: item.value.listIndex, storageStatus: 'uploaded', id: data.row.id });
+          taskCallback(false, { completed: false, storageStatus: 'uploaded', id: data.row.id });
           checkPool(item);
         },
         error: (error: { status: number; }) => {
-          taskCallback(true, { completed: false, listIndex: item.value.listIndex, storageStatus: 'error', storageStatusErrReason: error.status == 403 ? 'duplicated' : 'other' });
+          taskCallback(true, { completed: false, storageStatus: 'error', storageStatusErrReason: error.status == 403 ? 'duplicated' : 'other' });
           checkPool(item);
         }
       });
@@ -182,5 +182,9 @@ export class SongService {
     this.pools.songsForUpload = [];
     this.iterators.songsForUpload = this.pools.songsForUpload[Symbol.iterator]();
     this.busyFlags.songsForUpload = false;
+  }
+
+  getIndexFromList(list: Array<Song>, idSong: number): number {
+    return list.findIndex((obj) => obj.id == idSong);
   }
 }

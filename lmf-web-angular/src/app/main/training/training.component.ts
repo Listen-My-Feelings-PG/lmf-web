@@ -141,20 +141,20 @@ export class TrainingComponent implements OnInit {
         tsPrediction: null,
         storageStatus: 'local',
         tsStatus: null,
-        tsInitStatus: 'train',
-        listIndex: null
+        tsInitStatus: 'train'
       }
       list.push(song);
-      this.songService.addToPoolSongsForUpload({ ...song, listIndex: list.length - 1 });
+      this.songService.addToPoolSongsForUpload({ ...song });
     });
 
     this.songService.uploadSongsToServer((error: boolean, data: any) => {
+      let idx = this.songService.getIndexFromList(list, data.id);
       if (error) {
-        list[data.listIndex].storageStatus = 'error';
-        list[data.listIndex].storageStatusErrReason = data.storageStatusErrReason;
+        list[idx].storageStatus = 'error';
+        list[idx].storageStatusErrReason = data.storageStatusErrReason;
       } else if (!data.completed) {
-        list[data.listIndex].id = data.id;
-        list[data.listIndex].storageStatus = 'uploaded';
+        list[idx].id = data.id;
+        list[idx].storageStatus = 'uploaded';
       }
     });
   }
@@ -169,7 +169,7 @@ export class TrainingComponent implements OnInit {
 
   play(listIndex: number) {
     const song = this.playlists.selected?.songs[listIndex] || null;
-    const listForQueue = this.playlists.selected?.songs?.map((song, index) => ({ ...song, listIndex: index })) || [];
+    const listForQueue = this.playlists.selected?.songs || [];
     this.playerService.addToListQueue(listForQueue);
     this.playerService.setPlayerEvent('play', song);
   }

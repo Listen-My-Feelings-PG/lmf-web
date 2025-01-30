@@ -8,7 +8,6 @@ export class Song {
     public storageStatus: 'local' | 'uploading' | 'uploaded' | 'downloading' | 'downloaded' | 'error', //Sólo se manipulará en el frontend
     public tsStatus: 'training' | 'trained' | 'predicting' | 'predicted' | 'retrained' | 'error' | null, //Sólo se manipulará en el frontend
     public tsInitStatus: 'train' | 'predict' | 'retrain', //Sólo se manipulará en el frontend
-    public listIndex: number | null,
     public id?: number,
     public storageStatusErrReason?: 'duplicated' | 'other' | null, //Sólo se manipulará en el frontend
     public tsFeaturesDimensions?: number | 'error',

@@ -4,6 +4,7 @@ import { ButtonModule } from 'primeng/button';
 import { ButtonGroupModule } from 'primeng/buttongroup';
 import { Song } from '../_models/all.model';
 import { PlayerService } from '../_services/player.service';
+import { SongService } from '../_services/song.service';
 
 @Component({
   selector: 'app-player',
@@ -22,7 +23,7 @@ export class PlayerComponent {
   duration: number;
   caption: string;
 
-  constructor(private playerService: PlayerService) {
+  constructor(private playerService: PlayerService, private songService: SongService) {
     this.urlSong = '';
     this.baseUrl = 'http://localhost:3000/songs/song/mp3?value=';
     this.caption = '(Seleccione una canción)';
@@ -116,8 +117,8 @@ export class PlayerComponent {
 
   next(): void {
     const listQueue = this.playerService.getListQueue();
-    let actualSongIdx = this.playerService.getActualSong()?.listIndex;
-    console.log('actualSongIdx', actualSongIdx);
+    const actualSongId = this.playerService.getActualSong()?.id;
+    let actualSongIdx = actualSongId !== undefined ? this.songService.getIndexFromList(listQueue, actualSongId) : -1;
     if (actualSongIdx !== undefined && actualSongIdx !== null) {
       actualSongIdx++;
       if (actualSongIdx >= listQueue.length) {
@@ -129,7 +130,8 @@ export class PlayerComponent {
 
   previous(): void {
     const listQueue = this.playerService.getListQueue();
-    let actualSongIdx = this.playerService.getActualSong()?.listIndex;
+    const actualSongId = this.playerService.getActualSong()?.id;
+    let actualSongIdx = actualSongId !== undefined ? this.songService.getIndexFromList(listQueue, actualSongId) : -1;
     if (actualSongIdx !== undefined && actualSongIdx !== null) {
       actualSongIdx--;
       if (actualSongIdx < 0) {
