@@ -2,10 +2,25 @@
   <h1>Entrenamiento</h1>
   <div class="row">
     <div class="col-md-3">
-      <label for="">Selecciona una lista de reproducción:</label>
-      <p-listbox [options]="playlists.list"
-        optionLabel="name"
-        [(ngModel)]="playlists.selected" />
+      <div *ngIf="playlists.list.length === 0; else notEmpty">
+        <span>(No hay listas de reproducción)</span><br><br>
+        <button pButton
+          type="button"
+          label="Crear lista"
+          icon="pi pi-plus"
+          severity="success"
+          [outlined]="true"
+          class="p-button-sm"></button>
+      </div>
+
+      <ng-template #notEmpty>
+        <label for="">Selecciona una lista de reproducción:</label>
+        <p-listbox [options]="playlists.list"
+          optionLabel="name"
+          [(ngModel)]="playlists.selected" />
+      </ng-template>
+
+
     </div>
     <div class="col-md">
       Ipsum minim laborum exercitation labore occaecat excepteur velit dolore quis laborum consectetur nulla

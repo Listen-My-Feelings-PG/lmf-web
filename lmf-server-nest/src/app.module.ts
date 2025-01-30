@@ -13,6 +13,7 @@ import { SongsController } from './main/songs.controller';
 import { DownloadController } from './main/download.controller';
 import { PlaylistController } from './main/playlist.controller';
 import { PlaylistEntity } from './_entities/playlist.entity';
+import { SongsPlaylistsEntity } from './_entities/songs-playlists.entity';
 
 @Module({
   imports: [
@@ -37,6 +38,8 @@ import { PlaylistEntity } from './_entities/playlist.entity';
       }
     }),
     TypeOrmModule.forFeature([SongEntity]),
+    TypeOrmModule.forFeature([PlaylistEntity]),
+    TypeOrmModule.forFeature([SongsPlaylistsEntity]),
     TypeOrmModule.forFeature([PlaylistEntity])
   ],
   controllers: [

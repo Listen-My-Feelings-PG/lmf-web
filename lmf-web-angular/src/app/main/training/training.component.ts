@@ -30,7 +30,8 @@ export class TrainingComponent implements OnInit {
   playlists: {
     list: Array<Playlist>,
     selected: Playlist | null,
-    default: Playlist | null
+    default: Playlist | null,
+    loaded: boolean
   }
   ////////////////////////////////////////////
   urlSongPlaying: string;
@@ -64,7 +65,8 @@ export class TrainingComponent implements OnInit {
     this.playlists = {
       list: [],
       selected: null,
-      default: null
+      default: null,
+      loaded: false
     }
     ////////////////////////////////////////////
     this.tsFeatures = {
@@ -92,15 +94,32 @@ export class TrainingComponent implements OnInit {
   async ngOnInit(): Promise<void> {
     this.http.post('playlist/get-list', { all: true }, true).subscribe({
       next: (res) => {
-        this.playlists.list = res.data.map((obj: any) => new Playlist(obj.name, [], obj.isDefault, obj.id));
-        console.log('res:', res);
+        const dl = res.data.find((obj: any) => obj.isDefault);
+        if (dl) {
+          this.playlists.default = new Playlist(dl.name, [], null, true, dl.id)
+          this.loadPlaylist(this.playlists.default.id as number, true);
+        }
+
+        this.playlists.loaded = true;
       }
     });
     ////////////////////////////////////////////
-    this.http.get('songs/list').subscribe({
-      next: (res) => {
-        this.songs.listForTrain = res.data.filter((obj: any) => obj.tsInitStatus === 'train' || obj.tsInitStatus === 'retrain');
-        this.songs.listForPredict = res.data.filter((obj: any) => obj.tsInitStatus === 'predict');
+  }
+
+  loadPlaylist(id: number, isDefault: boolean): void {
+    this.http.get(`songs/list?value=${id}`, true).subscribe({
+      next: (res: any) => {
+        if (res.data) {
+          const pl = res.data;
+          if (isDefault && this.playlists.default)
+            this.playlists.default.songs = pl.songs;
+          else
+            this.playlists.list.push(new Playlist(
+              pl.name, pl.songs, pl.model ?
+              pl.model : null, false, pl.id
+            ));
+          console.log('this.playlists', this.playlists);
+        }
       }
     });
   }
