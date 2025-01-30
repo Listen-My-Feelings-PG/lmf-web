@@ -11,6 +11,8 @@ import { RateController } from './main/rate.controller';
 import { FeatureExtractorService } from './_services/feature-extractor.service';
 import { SongsController } from './main/songs.controller';
 import { DownloadController } from './main/download.controller';
+import { PlaylistController } from './main/playlist.controller';
+import { PlaylistEntity } from './_entities/playlist.entity';
 
 @Module({
   imports: [
@@ -34,7 +36,8 @@ import { DownloadController } from './main/download.controller';
         };
       }
     }),
-    TypeOrmModule.forFeature([SongEntity])
+    TypeOrmModule.forFeature([SongEntity]),
+    TypeOrmModule.forFeature([PlaylistEntity])
   ],
   controllers: [
     AppController,
@@ -42,7 +45,8 @@ import { DownloadController } from './main/download.controller';
     UploadExampleController,
     RateController,
     SongsController,
-    DownloadController
+    DownloadController,
+    PlaylistController
   ],
   providers: [
     AppService,

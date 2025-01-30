@@ -44,22 +44,6 @@
     </div>
   </div>
 </div>
-<!--<div class="audio-player">
-  <p-button severity="warning"
-    (onClick)="togglePlayPause()"
-    icon="pi pi-play"></p-button>
-  <div class="progress-container">
-    <input type="range"
-      class="progress-bar"
-      [value]="currentTime"
-      [max]="duration"
-      (input)="onSeek($event)" />
-    <div class="time-display">
-      <span>{{ formatTime(currentTime) }}</span>
-      <span>{{ formatTime(duration) }}</span>
-    </div>
-  </div>
-</div>-->
 <audio #audioPlayer
   (timeupdate)="updateProgress()"
   (loadedmetadata)="updateMetadata()">

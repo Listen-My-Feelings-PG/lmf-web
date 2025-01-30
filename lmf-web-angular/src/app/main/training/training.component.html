@@ -1,5 +1,23 @@
-<div class="container mb-5">
-  <h1>Prueba 1</h1>
+<div class="container-xxl mb-5">
+  <h1>Entrenamiento</h1>
+  <div class="row">
+    <div class="col-md-3">
+      <label for="">Selecciona una lista de reproducción:</label>
+      <p-listbox [options]="playlists.list"
+        optionLabel="name"
+        [(ngModel)]="playlists.selected" />
+    </div>
+    <div class="col-md">
+      Ipsum minim laborum exercitation labore occaecat excepteur velit dolore quis laborum consectetur nulla
+      adipisicing. Tempor et ipsum irure cupidatat deserunt. Voluptate est eu ex elit enim dolore reprehenderit
+      voluptate aliqua ex ipsum. Dolor id nulla incididunt incididunt proident do officia ex eu in. Proident
+      reprehenderit eu qui ex qui cillum est excepteur incididunt esse voluptate culpa culpa. Lorem velit quis culpa
+      laborum aute consectetur.
+    </div>
+  </div>
+
+
+  <!--<h1>Prueba 1</h1>
   <div class="row">
     <div class="col-md-6">
       <h3>Entrenamiento:</h3>
@@ -121,5 +139,5 @@
         Detener extracción
       </button>
     </div>
-  </div>
+  </div>-->
 </div>

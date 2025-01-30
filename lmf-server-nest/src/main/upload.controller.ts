@@ -130,9 +130,6 @@ export class UploadController {
     @Body() body: any,
     @Query() isGlobal: BooleanDto
   ) {
-    console.log('file:', file);
-    console.log('isGlobal:', isGlobal);
-    console.log('body:', body);
     return {
       message: 'model uploaded'
     }

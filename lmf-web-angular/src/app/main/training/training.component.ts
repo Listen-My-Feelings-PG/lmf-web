@@ -2,12 +2,14 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { FileUploadModule } from 'primeng/fileupload';
-import { LibrosaTsFeatures, Song } from '../../_models/all.model';
+import { LibrosaTsFeatures, Playlist, Song } from '../../_models/all.model';
 import { HttpService } from '../../_services/http.service';
 import { SongService } from '../../_services/song.service';
 import { TensorflowService } from '../../_services/tensorflow.service';
 import { ChipModule } from 'primeng/chip';
 import { BadgeModule } from 'primeng/badge';
+import { ListboxModule } from 'primeng/listbox';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-training',
@@ -17,12 +19,20 @@ import { BadgeModule } from 'primeng/badge';
     ButtonModule,
     CommonModule,
     ChipModule,
-    BadgeModule
+    BadgeModule,
+    ListboxModule,
+    FormsModule
   ],
   templateUrl: './training.component.html',
   styleUrl: './training.component.scss'
 })
 export class TrainingComponent implements OnInit {
+  playlists: {
+    list: Array<Playlist>,
+    selected: Playlist | null,
+    default: Playlist | null
+  }
+  ////////////////////////////////////////////
   urlSongPlaying: string;
   songs: {
     listForTrain: Array<Song>, //Lista principal
@@ -51,6 +61,12 @@ export class TrainingComponent implements OnInit {
     private songService: SongService,
     private tsService: TensorflowService
   ) {
+    this.playlists = {
+      list: [],
+      selected: null,
+      default: null
+    }
+    ////////////////////////////////////////////
     this.tsFeatures = {
       poolSongs: [],
       busy: false,
@@ -74,6 +90,13 @@ export class TrainingComponent implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
+    this.http.post('playlist/get-list', { all: true }, true).subscribe({
+      next: (res) => {
+        this.playlists.list = res.data.map((obj: any) => new Playlist(obj.name, [], obj.isDefault, obj.id));
+        console.log('res:', res);
+      }
+    });
+    ////////////////////////////////////////////
     this.http.get('songs/list').subscribe({
       next: (res) => {
         this.songs.listForTrain = res.data.filter((obj: any) => obj.tsInitStatus === 'train' || obj.tsInitStatus === 'retrain');

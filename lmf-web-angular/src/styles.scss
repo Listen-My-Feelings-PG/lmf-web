@@ -28,3 +28,14 @@ $font-family-base: 'Calibri', sans-serif;
 :root {
   --player-bg-color: #{darken($base-color5, 30%)};
 }
+
+.p-listbox-list,
+.p-listbox-item {
+  padding: 0px;
+  margin: 0px;
+}
+
+.p-listbox-item {
+  padding-left: 10px;
+  padding-bottom: 5px;
+}

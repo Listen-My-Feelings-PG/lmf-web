@@ -5,14 +5,14 @@ export class Song {
     public file: File | null,
     public userScore: number | null,
     public tsPrediction: number | null,
-    public storageStatus: 'local' | 'uploading' | 'uploaded' | 'downloading' | 'downloaded' | 'error',
-    public tsStatus: 'training' | 'trained' | 'predicting' | 'predicted' | 'retrained' | 'error' | null,
-    public tsInitStatus: 'train' | 'predict' | 'retrain',
+    public storageStatus: 'local' | 'uploading' | 'uploaded' | 'downloading' | 'downloaded' | 'error', //Sólo se manipulará en el frontend
+    public tsStatus: 'training' | 'trained' | 'predicting' | 'predicted' | 'retrained' | 'error' | null, //Sólo se manipulará en el frontend
+    public tsInitStatus: 'train' | 'predict' | 'retrain', //Sólo se manipulará en el frontend
     public listIndex: number | null,
     public id?: number,
-    public storageStatusErrReason?: 'duplicated' | 'other' | null,
+    public storageStatusErrReason?: 'duplicated' | 'other' | null, //Sólo se manipulará en el frontend
     public tsFeaturesDimensions?: number | 'error',
-    public tsFeaturesErrReason?: 'overload' | 'other'
+    public tsFeaturesErrReason?: 'overload' | 'other' //Sólo se manipulará en el frontend
   ) { }
 }
 
