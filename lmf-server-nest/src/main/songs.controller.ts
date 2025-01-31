@@ -9,62 +9,61 @@ import * as path from 'path';
 import { ConfigService } from '@nestjs/config';
 import { Response } from 'express';
 import { PlaylistEntity } from 'src/_entities/playlist.entity';
+import { SongsPlaylistsEntity } from 'src/_entities/songs-playlists.entity';
 
 @Controller('songs')
 export class SongsController {
   constructor(
+
     @InjectRepository(SongEntity)
     private readonly songsTable: Repository<SongEntity>,
-    @InjectRepository(PlaylistEntity)
-    private readonly playlistTable: Repository<PlaylistEntity>,
     private readonly cf: ConfigService
   ) { }
 
   @Get('list-by-id-playlist')
   @UsePipes(new ValidationPipe({ transform: true }))
   async getSongsList(@Query() idPlaylist: IntegerDto) {
-    const playlistId = idPlaylist.value;
+    const songs = await this.songsTable.find({
+      select: {
+        id: true,
+        name: true,
+        tsStatus: true,
+        tsInitStatus: true,
+        userScore: true,
+        tsPrediction: true,
+        songsPlaylists: {
+          idPlaylist: {
+            id: true,
+            name: true,
+            isDefault: true,
+            idModel: {
+              id: true,
+              trainCount: true,
+              isGlobal: true
+            }
+          }
+        }
+      },
+      relations: [
+        'songsPlaylists',
+        'idDataType',
+        'songsPlaylists.idPlaylist',
+        'songsPlaylists.idPlaylist.idModel'
+      ],
+      where: {
+        active: true,
+        songsPlaylists: {
+          idPlaylist: {
+            id: idPlaylist.value, active: true, idModel: { active: true }
+          }
+        }
+      }
+    });
 
-    const query = this.playlistTable.createQueryBuilder('playlist')
-      .leftJoinAndSelect('playlist.songsPlaylists', 'songsPlaylists')
-      .leftJoinAndSelect('songsPlaylists.idSong', 'song', 'song.active = :active', { active: true })
-      .select([
-        'playlist.id',
-        'playlist.name',
-        'playlist.idModel',
-        'playlist.isDefault',
-        'song.id',
-        'song.name',
-        'song.idDataType',
-        'song.tsStatus',
-        'song.tsInitStatus',
-        'song.userScore',
-        'song.tsPrediction'
-      ])
-      .where('playlist.id = :playlistId', { playlistId })
-      .andWhere('playlist.active = :active', { active: true });
-    const result = await query.getRawMany();
-    const playlist = result.length && result[0].song_ca_id ? new Playlist(
-      result[0].playlist_pl_nombre,
-      result.map((s: any) => new Song(
-        s.song_ca_nombre,
-        'file',
-        null,
-        s.song_ca_calif_usuario,
-        s.song_ca_ts_prediccion,
-        'downloaded',
-        s.song_ca_ts_status,
-        s.song_ca_ts_init_status,
-        s.song_ca_id
-      )),
-      result[0].pl_id_modelo,
-      result[0].playlist_pl_default,
-      result[0].playlist_pl_id
-    ) : null;
     return {
       message: 'Query successful',
-      data: playlist
-    }
+      data: songs
+    };
   }
 
   @Get('song/mp3')
