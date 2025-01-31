@@ -9,13 +9,16 @@ export class DataTypeEntity {
     @Column({ name: 'td_tipo', type: 'text', nullable: true })
     name: 'file' | 'link';
 
-    @Column({ name: 'td_tipo_modelo', type: 'text' })
+    @Column({ name: 'td_tipo_modelo', type: 'text', nullable: true })
     typeModel: 'tensorflow';
 
     @Column({ name: 'td_descripcion', type: 'text', nullable: true })
     description: string;
 
-    @OneToMany(() => SongEntity, song => song.idDataType)
+    @Column({ name: 'td_activo', type: 'boolean' })
+    active: boolean;
+
+    @OneToMany(() => SongEntity, child => child.idDataType)
     songs: SongEntity[];
 
 }

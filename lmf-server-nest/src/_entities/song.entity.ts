@@ -10,7 +10,7 @@ export class SongEntity {
   @Column({ name: 'ca_nombre', type: 'text' })
   name: string;
 
-  @ManyToOne(() => DataTypeEntity)
+  @ManyToOne(() => DataTypeEntity, parent => parent.id)
   @Column({ name: 'ca_id_tipodato', type: 'int' })
   idDataType: number;
 
@@ -20,7 +20,7 @@ export class SongEntity {
   @Column({ name: 'ca_ts_init_status', type: 'text' })
   tsInitStatus: string;
 
-  @OneToMany(() => SongsPlaylistsEntity, songsPlaylists => songsPlaylists.idSong)
+  @OneToMany(() => SongsPlaylistsEntity, child => child.idSong)
   songsPlaylists: SongsPlaylistsEntity[];
 
   @Column({ name: 'ca_activo', type: 'boolean', default: true })

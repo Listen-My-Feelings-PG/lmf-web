@@ -21,6 +21,9 @@ export class CalibrationEntity {
     @Column({ name: 'cl_estatus_calibracion', type: 'text', nullable: true })
     calibrationStatus: string;
 
+    @Column({ name: 'cl_activo', type: 'boolean' })
+    active: boolean;
+
     @ManyToOne(() => ModelEntity)
     @JoinColumn({ name: 'cl_id_modelo' })
     idModel: ModelEntity;
