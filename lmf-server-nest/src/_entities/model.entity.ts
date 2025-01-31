@@ -22,6 +22,9 @@ export class ModelEntity {
 	@Column({ name: 'mo_global', type: 'boolean' })
 	isGlobal: string;
 
+	@Column({ name: 'mo_activo', type: 'boolean' })
+	active: string;
+
 	@OneToMany(() => CalibrationEntity, calibration => calibration.idModel)
 	calibrations: CalibrationEntity[];
 

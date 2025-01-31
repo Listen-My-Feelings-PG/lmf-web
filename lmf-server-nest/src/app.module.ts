@@ -14,6 +14,7 @@ import { DownloadController } from './main/download.controller';
 import { PlaylistController } from './main/playlist.controller';
 import { PlaylistEntity } from './_entities/playlist.entity';
 import { SongsPlaylistsEntity } from './_entities/songs-playlists.entity';
+import { ModelEntity } from './_entities/model.entity';
 
 @Module({
   imports: [
@@ -37,10 +38,13 @@ import { SongsPlaylistsEntity } from './_entities/songs-playlists.entity';
         };
       }
     }),
-    TypeOrmModule.forFeature([SongEntity]),
-    TypeOrmModule.forFeature([PlaylistEntity]),
-    TypeOrmModule.forFeature([SongsPlaylistsEntity]),
-    TypeOrmModule.forFeature([PlaylistEntity])
+    TypeOrmModule.forFeature([
+      SongEntity,
+      PlaylistEntity,
+      SongsPlaylistsEntity,
+      PlaylistEntity,
+      ModelEntity
+    ]),
   ],
   controllers: [
     AppController,

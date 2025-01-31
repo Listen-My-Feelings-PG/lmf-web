@@ -5,13 +5,13 @@ export class Song {
     public file: File | null,
     public userScore: number | null, //Dentro de cualquier playlist, se aceptará una calificación de 0
     public tsPrediction: number | null,
-    public storageStatus: 'local' | 'uploading' | 'uploaded' | 'downloading' | 'downloaded' | 'error', //Sólo se manipulará en el frontend
-    public tsStatus: 'training' | 'trained' | 'predicting' | 'predicted' | 'retrained' | 'error' | null, //Sólo se manipulará en el frontend
-    public tsInitStatus: 'train' | 'predict' | 'retrain', //Sólo se manipulará en el frontend
+    public storageStatus: 'local' | 'uploading' | 'uploaded' | 'downloading' | 'downloaded' | 'error',
+    public tsStatus: 'training' | 'trained' | 'predicting' | 'predicted' | 'retrained' | 'error' | null,
+    public tsInitStatus: 'train' | 'predict' | 'retrain',
     public id?: number,
-    public storageStatusErrReason?: 'duplicated' | 'other' | null, //Sólo se manipulará en el frontend
+    public storageStatusErrReason?: 'duplicated' | 'other' | null,
     public tsFeaturesDimensions?: number | 'error' | null,
-    public tsFeaturesErrReason?: 'overload' | 'other' | null //Sólo se manipulará en el frontend
+    public tsFeaturesErrReason?: 'overload' | 'other' | null
   ) { }
 }
 
@@ -31,7 +31,8 @@ export class TsModel {
     public id: number,
     public type: 'tensorflow',
     public global: boolean,
-    public trainCount: number
+    public trainCount: number,
+    public data: any
   ) { }
 }
 

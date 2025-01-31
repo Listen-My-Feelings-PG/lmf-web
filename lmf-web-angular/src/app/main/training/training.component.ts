@@ -106,8 +106,14 @@ export class TrainingComponent implements OnInit {
     this.playerService.getPlayerEmmitterIdSong().subscribe({ next: (id) => this.idSongPlaying = id });
     this.http.post('playlist/get-all', { all: true }, true).subscribe({
       next: (res) => {
-        const dl = res.data.find((obj: any) => obj.isDefault);
-
+        console.log('res', res);
+        /*const list: Array<any> = res.data;
+        if (list.length > 0) {
+          const defaultPlaylist = list.find((obj) => obj.isDefault);
+          if (defaultPlaylist)
+            this.playlists.default = new Playlist(defaultPlaylist.name, [], [], null, true, defaultPlaylist.id);
+          this.playlists.list = list.filter((obj) => !obj.isDefault).map((obj) => new Playlist(obj.name, [], [], null, false, obj.id));
+        }*/
       }
     });
     ////////////////////////////////////////////
