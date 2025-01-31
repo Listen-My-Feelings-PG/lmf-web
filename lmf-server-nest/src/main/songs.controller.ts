@@ -8,8 +8,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { ConfigService } from '@nestjs/config';
 import { Response } from 'express';
-import { PlaylistEntity } from 'src/_entities/playlist.entity';
-import { SongsPlaylistsEntity } from 'src/_entities/songs-playlists.entity';
 
 @Controller('songs')
 export class SongsController {
@@ -20,10 +18,10 @@ export class SongsController {
     private readonly cf: ConfigService
   ) { }
 
-  @Get('list-by-id-playlist')
+  @Get('list-by-idPlaylist')
   @UsePipes(new ValidationPipe({ transform: true }))
   async getSongsList(@Query() idPlaylist: IntegerDto) {
-    const songs = await this.songsTable.find({
+    const list = await this.songsTable.find({
       select: {
         id: true,
         name: true,
@@ -31,6 +29,7 @@ export class SongsController {
         tsInitStatus: true,
         userScore: true,
         tsPrediction: true,
+        idDataType: true,
         songsPlaylists: {
           idPlaylist: {
             id: true,
@@ -46,7 +45,6 @@ export class SongsController {
       },
       relations: [
         'songsPlaylists',
-        'idDataType',
         'songsPlaylists.idPlaylist',
         'songsPlaylists.idPlaylist.idModel'
       ],
@@ -59,10 +57,23 @@ export class SongsController {
         }
       }
     });
-
+    const dataTypes = {
+      'file': this.cf.get<string>('TS_DATAYPE_FILE'),
+      'link': this.cf.get<string>('TS_DATAYPE_LINK')
+    }
     return {
       message: 'Query successful',
-      data: songs
+      data: list.map((s) => new Song(
+        s.name,
+        dataTypes[s.idDataType],
+        null,
+        s.userScore,
+        s.tsPrediction,
+        'downloaded',
+        s.tsStatus as Song["tsStatus"],
+        s.tsInitStatus as Song["tsInitStatus"],
+        s.id
+      ))
     };
   }
 

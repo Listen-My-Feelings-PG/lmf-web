@@ -106,25 +106,33 @@ export class TrainingComponent implements OnInit {
     this.playerService.getPlayerEmmitterIdSong().subscribe({ next: (id) => this.idSongPlaying = id });
     this.http.post('playlist/get-all', { all: true }, true).subscribe({
       next: (res) => {
-        console.log('res', res);
-        /*const list: Array<any> = res.data;
+        const list: Array<any> = res.data;
         if (list.length > 0) {
           const defaultPlaylist = list.find((obj) => obj.isDefault);
-          if (defaultPlaylist)
+          if (defaultPlaylist) {
             this.playlists.default = new Playlist(defaultPlaylist.name, [], [], null, true, defaultPlaylist.id);
+            this.playlists.selected = this.playlists.default;
+            this.loadPlaylist(defaultPlaylist.id, true);
+          } else {
+            console.error('Defualt playlist not found');
+            this.http.setToast('error', 'Error al cargar listas', 'Default playlist not found');
+          }
           this.playlists.list = list.filter((obj) => !obj.isDefault).map((obj) => new Playlist(obj.name, [], [], null, false, obj.id));
-        }*/
+        } else {
+          console.error('Default playlist not found');
+          this.http.setToast('error', 'No se encontraron listas de reproducción', 'Default playlist not found');
+        }
       }
     });
     ////////////////////////////////////////////
   }
 
   loadPlaylist(idPlaylist: number, isDefault: boolean): void {
-    this.http.get(`songs/list-by-id-playlist?value=${idPlaylist}`, true).subscribe({
+    this.http.get(`songs/list-by-idPlaylist?value=${idPlaylist}`, true).subscribe({
       next: (res: any) => {
-        if (res.data) {
-
-        }
+        const list: Array<Song> = res.data
+        if (this.playlists.selected)
+          this.playlists.selected.songs = list;
       }
     });
   }
