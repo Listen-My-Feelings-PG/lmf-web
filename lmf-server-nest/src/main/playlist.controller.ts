@@ -11,15 +11,12 @@ export class PlaylistController {
     @InjectRepository(PlaylistEntity)
     private readonly playlistTable: Repository<PlaylistEntity>
   ) { }
-  @Post('get-list')
+  @Post('get-all')
   async getPlaylist(@Body() body: any) {
     const query: FindManyOptions<PlaylistEntity> = {
       select: ['id', 'name', 'isDefault'],
       where: { active: true }
     }
-
-    if (body.all == true)
-      query.where['id'] = body.id;
 
     const list = await this.playlistTable.find(query);
     return {

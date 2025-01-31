@@ -13,6 +13,8 @@ import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
 import { ButtonGroupModule } from 'primeng/buttongroup';
 import { PlayerService } from '../../_services/player.service';
+import { InputSwitchModule } from 'primeng/inputswitch';
+import { TooltipModule } from 'primeng/tooltip';
 
 @Component({
   selector: 'app-training',
@@ -26,7 +28,8 @@ import { PlayerService } from '../../_services/player.service';
     ListboxModule,
     FormsModule,
     TableModule,
-    ButtonGroupModule
+    ButtonGroupModule,
+    InputSwitchModule
   ],
   templateUrl: './training.component.html',
   styleUrl: './training.component.scss'
@@ -38,6 +41,7 @@ export class TrainingComponent implements OnInit {
     default: Playlist | null,
     loaded: boolean
   }
+  idSongPlaying: number;
   ////////////////////////////////////////////
   urlSongPlaying: string;
   songs: {
@@ -68,6 +72,7 @@ export class TrainingComponent implements OnInit {
     private tsService: TensorflowService,
     private playerService: PlayerService
   ) {
+    this.idSongPlaying = 0;
     this.playlists = {
       list: [],
       selected: null,
@@ -98,33 +103,21 @@ export class TrainingComponent implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
-    this.http.post('playlist/get-list', { all: true }, true).subscribe({
+    this.playerService.getPlayerEmmitteridSong().subscribe({ next: (id) => this.idSongPlaying = id });
+    this.http.post('playlist/get-all', { all: true }, true).subscribe({
       next: (res) => {
         const dl = res.data.find((obj: any) => obj.isDefault);
-        if (dl) {
-          this.playlists.default = new Playlist(dl.name, [], null, true, dl.id);
-          this.playlists.selected = this.playlists.default;
-          this.loadPlaylist(this.playlists.default.id as number, true);
-        }
 
-        this.playlists.loaded = true;
       }
     });
     ////////////////////////////////////////////
   }
 
-  loadPlaylist(id: number, isDefault: boolean): void {
-    this.http.get(`songs/list?value=${id}`, true).subscribe({
+  loadPlaylist(idPlaylist: number, isDefault: boolean): void {
+    this.http.get(`songs/list-by-id-playlist?value=${idPlaylist}`, true).subscribe({
       next: (res: any) => {
         if (res.data) {
-          const pl = res.data;
-          if (isDefault && this.playlists.default)
-            this.playlists.default.songs = pl.songs;
-          else
-            this.playlists.list.push(new Playlist(
-              pl.name, pl.songs, pl.model ?
-              pl.model : null, false, pl.id
-            ));
+
         }
       }
     });
@@ -221,6 +214,29 @@ export class TrainingComponent implements OnInit {
     this.tsFeatures.poolSongs = [];
     this.tsFeatures.iterator = this.tsFeatures.poolSongs[Symbol.iterator]();
   }
+
+
+  getStatusTraduction(storageStatus: string, tsStatus: string, tsInitStatus: string): string {
+    return `${{
+      'local': 'Carga',
+      'uploading': 'Cargando',
+      'uploaded': 'Cargado',
+      'downloading': 'Descargando',
+      'downloaded': 'Descargado',
+      'error': 'Error'
+    }[storageStatus]}|${{
+      'training': 'Entrenando',
+      'trained': 'Entrenado',
+      'predicting': 'Prediciendo',
+      'predicted': 'Predicho',
+      'retrained': 'Reentrenado',
+      'error': 'Error'
+    }[tsStatus] || ''}|${{
+      'train': 'Entrenar',
+      'predict': 'Predecir',
+      'retrain': 'Reentrenar'
+    }[tsInitStatus]}`
+  };
 
 
 }

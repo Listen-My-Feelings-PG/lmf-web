@@ -5,13 +5,13 @@ export class Song {
     public file: File | null,
     public userScore: number | null, //Dentro de cualquier playlist, se aceptará una calificación de 0
     public tsPrediction: number | null,
-    public storageStatus: 'local' | 'uploading' | 'uploaded' | 'downloading' | 'downloaded' | 'error', //Sólo se manipulará en el frontend
-    public tsStatus: 'training' | 'trained' | 'predicting' | 'predicted' | 'retrained' | 'error' | null, //Sólo se manipulará en el frontend
-    public tsInitStatus: 'train' | 'predict' | 'retrain', //Sólo se manipulará en el frontend
+    public storageStatus: 'local' | 'uploading' | 'uploaded' | 'downloading' | 'downloaded' | 'error',
+    public tsStatus: 'training' | 'trained' | 'predicting' | 'predicted' | 'retrained' | 'error' | null,
+    public tsInitStatus: 'train' | 'predict' | 'retrain',
     public id?: number,
-    public storageStatusErrReason?: 'duplicated' | 'other' | null, //Sólo se manipulará en el frontend
-    public tsFeaturesDimensions?: number | 'error',
-    public tsFeaturesErrReason?: 'overload' | 'other' //Sólo se manipulará en el frontend
+    public storageStatusErrReason?: 'duplicated' | 'other' | null,
+    public tsFeaturesDimensions?: number | 'error' | null,
+    public tsFeaturesErrReason?: 'overload' | 'other' | null
   ) { }
 }
 
@@ -19,6 +19,7 @@ export class Playlist {
   constructor(
     public name: string,
     public songs: Array<Song>,
+    public songsForPredict: Array<Song>,
     public model: TsModel | null,
     public isDefault: boolean,
     public id?: number

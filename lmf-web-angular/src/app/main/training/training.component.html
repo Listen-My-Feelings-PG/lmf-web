@@ -42,7 +42,9 @@
               <th>Nombre</th>
               <th>Tipo</th>
               <th></th>
+              <th>Status</th>
               <th>Calificación</th>
+              <th>Predicción</th>
               <th>Opciones</th>
             </tr>
           </ng-template>
@@ -50,8 +52,8 @@
             let-song
             let-i="rowIndex">
             <tr>
-              <td>{{i + 1}}</td>
-              <td>{{song.name}}</td>
+              <td [ngClass]="{'text-info':idSongPlaying==song.id}">{{i + 1}}</td>
+              <td [ngClass]="{'text-info':idSongPlaying==song.id}">{{song.name}}</td>
               <td><span class="badge text-bg-primary">Archivo MP3</span></td>
               <td>
                 <button pButton
@@ -61,6 +63,10 @@
                   icon="fa-solid fa-circle-play"
                   severity="success"
                   (click)="play(i)"></button>
+              </td>
+              <td class="text-center">
+                <span
+                  class="badge text-bg-info">{{getStatusTraduction(song.storageStatus,song.tsStatus,song.tsInitStatus)}}</span>
               </td>
               <td>
                 <div *ngIf="song.tsInitStatus=='train'">

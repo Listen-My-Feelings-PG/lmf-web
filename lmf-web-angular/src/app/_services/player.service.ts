@@ -9,13 +9,15 @@ export class PlayerService {
   private actualSong: Song | null;
   private listQueue: Array<Song>;
   private playerEvent: BehaviorSubject<PlayerEvent>;
+  private playerEmmitteridSong: BehaviorSubject<number>;
   constructor() {
     this.actualSong = null;
     this.listQueue = [];
     this.playerEvent = new BehaviorSubject<PlayerEvent>({
       action: 'stop',
       song: null
-    })
+    });
+    this.playerEmmitteridSong = new BehaviorSubject<number>(0);
   }
 
   getListQueue() {
@@ -50,6 +52,14 @@ export class PlayerService {
 
   getPlayerEvent() {
     return this.playerEvent.asObservable();
+  }
+
+  setPlayerEmmitteridSong(idSong: number) {
+    this.playerEmmitteridSong.next(idSong);
+  }
+
+  getPlayerEmmitteridSong() {
+    return this.playerEmmitteridSong.asObservable();
   }
 }
 

@@ -9,7 +9,6 @@ import * as path from 'path';
 import { ConfigService } from '@nestjs/config';
 import { Response } from 'express';
 import { PlaylistEntity } from 'src/_entities/playlist.entity';
-import { SongsPlaylistsEntity } from 'src/_entities/songs-playlists.entity';
 
 @Controller('songs')
 export class SongsController {
@@ -21,7 +20,7 @@ export class SongsController {
     private readonly cf: ConfigService
   ) { }
 
-  @Get('list')
+  @Get('list-by-id-playlist')
   @UsePipes(new ValidationPipe({ transform: true }))
   async getSongsList(@Query() idPlaylist: IntegerDto) {
     const playlistId = idPlaylist.value;
@@ -53,7 +52,7 @@ export class SongsController {
         null,
         s.song_ca_calif_usuario,
         s.song_ca_ts_prediccion,
-        'uploaded',
+        'downloaded',
         s.song_ca_ts_status,
         s.song_ca_ts_init_status,
         s.song_ca_id

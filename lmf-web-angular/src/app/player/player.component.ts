@@ -70,9 +70,13 @@ export class PlayerComponent {
     this.urlSong = '';
     if (song) {
       this.urlSong = this.baseUrl + song.id;
+      this.playerService.setPlayerEmmitteridSong(song.id as number);
+      this.setCaption(song);
       canPlay = true;
     } else if (actualSong && actualSong.id) {
       this.urlSong = this.baseUrl + actualSong.id.toString();
+      this.playerService.setPlayerEmmitteridSong(actualSong.id);
+      this.setCaption(actualSong);
       canPlay = true;
     }
 
@@ -80,9 +84,7 @@ export class PlayerComponent {
       audio.src = this.urlSong;
       if (this.pauseTime) {
         audio.currentTime = this.pauseTime;
-        audio.play().then(() => {
-          this.isPlaying = true;
-        }).catch((error) => {
+        audio.play().then(() => this.isPlaying = true).catch((error) => {
           console.error('Error al reproducir la canción:', error);
           this.isPlaying = false;
         });
@@ -98,7 +100,10 @@ export class PlayerComponent {
         });
       }
     }
+  }
 
+  setCaption(song: Song): void {
+    this.caption = song.name;
   }
 
   pause(): void {

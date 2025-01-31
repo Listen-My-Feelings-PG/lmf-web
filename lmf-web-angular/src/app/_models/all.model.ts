@@ -10,8 +10,8 @@ export class Song {
     public tsInitStatus: 'train' | 'predict' | 'retrain', //Sólo se manipulará en el frontend
     public id?: number,
     public storageStatusErrReason?: 'duplicated' | 'other' | null, //Sólo se manipulará en el frontend
-    public tsFeaturesDimensions?: number | 'error',
-    public tsFeaturesErrReason?: 'overload' | 'other' //Sólo se manipulará en el frontend
+    public tsFeaturesDimensions?: number | 'error' | null,
+    public tsFeaturesErrReason?: 'overload' | 'other' | null //Sólo se manipulará en el frontend
   ) { }
 }
 
@@ -19,6 +19,7 @@ export class Playlist {
   constructor(
     public name: string,
     public songs: Array<Song>,
+    public songsForPredict: Array<Song>,
     public model: TsModel | null,
     public isDefault: boolean,
     public id?: number
