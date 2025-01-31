@@ -17,6 +17,29 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
+ALTER TABLE ONLY public.canciones_playlists DROP CONSTRAINT "FK_eae80d3fc22b6ff0311a167d115";
+ALTER TABLE ONLY public.calibracion DROP CONSTRAINT "FK_c086e6a11a8dded8d67c9d35b8d";
+ALTER TABLE ONLY public.canciones DROP CONSTRAINT "FK_9739bcd488328c0acc993252665";
+ALTER TABLE ONLY public.canciones_playlists DROP CONSTRAINT "FK_6e0e4f8b7d0a3e539a0aad74e71";
+ALTER TABLE ONLY public.playlists DROP CONSTRAINT "FK_07efb6da311257f07e7b26102c2";
+ALTER TABLE ONLY public.tipos_datos DROP CONSTRAINT "PK_td_id";
+ALTER TABLE ONLY public.playlists DROP CONSTRAINT "PK_pl_id";
+ALTER TABLE ONLY public.modelos DROP CONSTRAINT "PK_mo_id";
+ALTER TABLE ONLY public.canciones_playlists DROP CONSTRAINT "PK_cp_id";
+ALTER TABLE ONLY public.calibracion DROP CONSTRAINT "PK_cl_id";
+ALTER TABLE ONLY public.canciones DROP CONSTRAINT "PK_ca_id";
+ALTER TABLE public.playlists ALTER COLUMN pl_id DROP DEFAULT;
+ALTER TABLE public.modelos ALTER COLUMN mo_id DROP DEFAULT;
+ALTER TABLE public.canciones_playlists ALTER COLUMN cp_id DROP DEFAULT;
+DROP TABLE public.tipos_datos;
+DROP SEQUENCE public.playlists_pl_id_seq;
+DROP TABLE public.playlists;
+DROP SEQUENCE public.modelos_mo_id_seq;
+DROP TABLE public.modelos;
+DROP SEQUENCE public.canciones_playlists_cp_id_seq;
+DROP TABLE public.canciones_playlists;
+DROP TABLE public.canciones;
+DROP TABLE public.calibracion;
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
@@ -32,7 +55,8 @@ CREATE TABLE public.calibracion (
     cl_ts_prediccion numeric,
     cl_fecha_calibracion timestamp with time zone DEFAULT now() NOT NULL,
     cl_estatus_calibracion text,
-    cl_id_modelo integer
+    cl_id_modelo integer,
+    cl_activo boolean NOT NULL
 );
 
 
@@ -63,12 +87,13 @@ CREATE TABLE public.canciones (
     ca_file_size integer,
     ca_file_name text,
     ca_train_level_global integer DEFAULT 0 NOT NULL,
-    ca_id_tipodato integer,
+    ca_id_tipodato integer NOT NULL,
     ca_activo boolean DEFAULT true NOT NULL,
     ca_ts_features text,
     ca_ts_prediccion numeric,
     ca_ts_init_status text NOT NULL,
-    ca_ts_status text
+    ca_ts_status text,
+    "idDataTypeId" integer
 );
 
 
@@ -168,7 +193,7 @@ CREATE TABLE public.playlists (
     pl_id integer NOT NULL,
     pl_nombre text,
     pl_id_modelo integer,
-    pl_activo boolean DEFAULT true NOT NULL,
+    pl_activo boolean NOT NULL,
     pl_fecha_creacion timestamp with time zone DEFAULT now() NOT NULL,
     pl_default boolean NOT NULL
 );
@@ -205,7 +230,8 @@ CREATE TABLE public.tipos_datos (
     td_id integer NOT NULL,
     td_tipo text,
     td_descripcion text,
-    td_activo boolean DEFAULT true NOT NULL
+    td_activo boolean NOT NULL,
+    td_tipo_modelo text
 );
 
 
@@ -286,7 +312,7 @@ INSERT INTO public.modelos VALUES
 --
 
 INSERT INTO public.tipos_datos OVERRIDING SYSTEM VALUE VALUES
-	(1, 'file', 'Archivo local cargado desde el ordenador', true);
+	(1, 'file', 'Archivo local cargado desde el ordenador', true, NULL);
 
 
 --
@@ -384,7 +410,7 @@ ALTER TABLE ONLY public.tipos_datos
 --
 
 ALTER TABLE ONLY public.playlists
-    ADD CONSTRAINT "FK_07efb6da311257f07e7b26102c2" FOREIGN KEY (pl_id_modelo) REFERENCES public.modelos(mo_id) ON DELETE SET NULL;
+    ADD CONSTRAINT "FK_07efb6da311257f07e7b26102c2" FOREIGN KEY (pl_id_modelo) REFERENCES public.modelos(mo_id);
 
 
 --
@@ -392,7 +418,15 @@ ALTER TABLE ONLY public.playlists
 --
 
 ALTER TABLE ONLY public.canciones_playlists
-    ADD CONSTRAINT "FK_6e0e4f8b7d0a3e539a0aad74e71" FOREIGN KEY (cp_pl_id) REFERENCES public.playlists(pl_id) ON DELETE SET NULL;
+    ADD CONSTRAINT "FK_6e0e4f8b7d0a3e539a0aad74e71" FOREIGN KEY (cp_pl_id) REFERENCES public.playlists(pl_id);
+
+
+--
+-- Name: canciones FK_9739bcd488328c0acc993252665; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.canciones
+    ADD CONSTRAINT "FK_9739bcd488328c0acc993252665" FOREIGN KEY ("idDataTypeId") REFERENCES public.tipos_datos(td_id);
 
 
 --
@@ -400,7 +434,7 @@ ALTER TABLE ONLY public.canciones_playlists
 --
 
 ALTER TABLE ONLY public.calibracion
-    ADD CONSTRAINT "FK_c086e6a11a8dded8d67c9d35b8d" FOREIGN KEY (cl_id_modelo) REFERENCES public.modelos(mo_id) ON DELETE SET NULL;
+    ADD CONSTRAINT "FK_c086e6a11a8dded8d67c9d35b8d" FOREIGN KEY (cl_id_modelo) REFERENCES public.modelos(mo_id);
 
 
 --
@@ -408,7 +442,7 @@ ALTER TABLE ONLY public.calibracion
 --
 
 ALTER TABLE ONLY public.canciones_playlists
-    ADD CONSTRAINT "FK_eae80d3fc22b6ff0311a167d115" FOREIGN KEY (cp_ca_id) REFERENCES public.canciones(ca_id) ON DELETE SET NULL;
+    ADD CONSTRAINT "FK_eae80d3fc22b6ff0311a167d115" FOREIGN KEY (cp_ca_id) REFERENCES public.canciones(ca_id);
 
 
 --
