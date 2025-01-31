@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { ButtonGroupModule } from 'primeng/buttongroup';
 import { Song } from '../_models/all.model';
@@ -13,8 +13,8 @@ import { SongService } from '../_services/song.service';
   templateUrl: './player.component.html',
   styleUrl: './player.component.scss'
 })
-export class PlayerComponent {
-  @ViewChild('audioPlayer', { static: true }) audioPlayer!: ElementRef<HTMLAudioElement>;
+export class PlayerComponent implements OnInit {
+  @ViewChild('audioPlayer', { static: true }) audioPlayer!: ElementRef;
   urlSong: string;
   baseUrl: string;
   isPlaying: boolean;
@@ -38,14 +38,14 @@ export class PlayerComponent {
       next: (event) => {
         switch (event.action) {
           case 'play':
-            if (event.song)
-              this.play(event.song);
+            this.play(event.song ? event.song : undefined);
             break;
           case 'pause':
             this.pause();
             break;
           case 'stop':
-            this.stop();
+            if (this.isPlaying)
+              this.stop();
             break;
           case 'next':
             this.next();
@@ -70,12 +70,12 @@ export class PlayerComponent {
     this.urlSong = '';
     if (song) {
       this.urlSong = this.baseUrl + song.id;
-      this.playerService.setPlayerEmmitteridSong(song.id as number);
+      this.playerService.setPlayerEmmitterIdSong(song.id as number);
       this.setCaption(song);
       canPlay = true;
     } else if (actualSong && actualSong.id) {
       this.urlSong = this.baseUrl + actualSong.id.toString();
-      this.playerService.setPlayerEmmitteridSong(actualSong.id);
+      this.playerService.setPlayerEmmitterIdSong(actualSong.id);
       this.setCaption(actualSong);
       canPlay = true;
     }
@@ -84,7 +84,7 @@ export class PlayerComponent {
       audio.src = this.urlSong;
       if (this.pauseTime) {
         audio.currentTime = this.pauseTime;
-        audio.play().then(() => this.isPlaying = true).catch((error) => {
+        audio.play().then(() => this.isPlaying = true).catch((error: any) => {
           console.error('Error al reproducir la canción:', error);
           this.isPlaying = false;
         });
@@ -94,7 +94,7 @@ export class PlayerComponent {
           if (song)
             this.playerService.setActualSong(song); //Aquí es el único lugar donde se debe escribir la canción actual, ya que aquí se está reproduciendo
           this.isPlaying = true;
-        }).catch((error) => {
+        }).catch((error: any) => {
           console.error('Error al reproducir la canción:', error);
           this.isPlaying = false;
         });
@@ -115,7 +115,8 @@ export class PlayerComponent {
 
   stop(): void {
     const audio = this.audioPlayer.nativeElement;
-    audio.pause();
+    if (audio)
+      audio.pause();
     audio.currentTime = 0;
     this.isPlaying = false;
   }

@@ -103,7 +103,7 @@ export class TrainingComponent implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
-    this.playerService.getPlayerEmmitteridSong().subscribe({ next: (id) => this.idSongPlaying = id });
+    this.playerService.getPlayerEmmitterIdSong().subscribe({ next: (id) => this.idSongPlaying = id });
     this.http.post('playlist/get-all', { all: true }, true).subscribe({
       next: (res) => {
         const dl = res.data.find((obj: any) => obj.isDefault);

@@ -54,11 +54,11 @@ export class PlayerService {
     return this.playerEvent.asObservable();
   }
 
-  setPlayerEmmitteridSong(idSong: number) {
+  setPlayerEmmitterIdSong(idSong: number) {
     this.playerEmmitteridSong.next(idSong);
   }
 
-  getPlayerEmmitteridSong() {
+  getPlayerEmmitterIdSong() {
     return this.playerEmmitteridSong.asObservable();
   }
 }
