@@ -17,6 +17,7 @@
             icon="pi pi-plus"
             severity="success"
             [outlined]="true"
+            [disabled]="true"
             size="small"></button>
           <p-fileUpload mode="basic"
             chooseLabel="Cargar canciones"
@@ -24,10 +25,21 @@
             name="file"
             accept="audio/mpeg,audio/mpg,audio/mpeg3,audio/mp3,"
             maxFileSize="100000000"
-            (onSelect)="uploadSongs($event)"
+            (onSelect)="uploadSongs($event,'train')"
             [auto]="true"
             [multiple]="true"
             styleClass="p-fu p-button-outlined"
+            [style]="{'border-radius':'0px'}" />
+          <p-fileUpload mode="basic"
+            chooseLabel="Cargar canciones para predecir"
+            chooseIcon="pi pi-plus"
+            name="file"
+            accept="audio/mpeg,audio/mpg,audio/mpeg3,audio/mp3,"
+            maxFileSize="100000000"
+            (onSelect)="uploadSongs($event,'predict')"
+            [auto]="true"
+            [multiple]="true"
+            styleClass="p-fu p-button-outlined p-button-warning"
             [style]="{'border-radius':'0px'}" />
         </p-buttonGroup>
       </div>
@@ -65,8 +77,7 @@
                   (click)="play(i)"></button>
               </td>
               <td class="text-center">
-                <span
-                  class="badge text-bg-info">{{getStatusTraduction(song.storageStatus,song.tsStatus,song.tsInitStatus)}}</span>
+                <span class="badge text-bg-info">{{song.storageStatus+'|'+song.tsStatus+'|'+song.tsInitStatus}}</span>
               </td>
               <td>
                 <div *ngIf="song.tsInitStatus=='train'">

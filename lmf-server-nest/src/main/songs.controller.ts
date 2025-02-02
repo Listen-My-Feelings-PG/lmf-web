@@ -8,6 +8,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { ConfigService } from '@nestjs/config';
 import { Response } from 'express';
+import { SongsPlaylistsEntity } from 'src/_entities/songs-playlists.entity';
 
 @Controller('songs')
 export class SongsController {
@@ -15,65 +16,55 @@ export class SongsController {
 
     @InjectRepository(SongEntity)
     private readonly songsTable: Repository<SongEntity>,
+    @InjectRepository(SongsPlaylistsEntity)
+    private readonly songsPlaylistsTable: Repository<SongsPlaylistsEntity>,
     private readonly cf: ConfigService
   ) { }
 
   @Get('list-by-idPlaylist')
   @UsePipes(new ValidationPipe({ transform: true }))
   async getSongsList(@Query() idPlaylist: IntegerDto) {
-    const list = await this.songsTable.find({
+    console.log('idPlaylist:', idPlaylist);
+    const list = await this.songsPlaylistsTable.find({
       select: {
-        id: true,
-        name: true,
-        tsStatus: true,
-        tsInitStatus: true,
-        userScore: true,
-        tsPrediction: true,
-        idDataType: true,
-        songsPlaylists: {
-          idPlaylist: {
+        idSong: {
+          id: true,
+          name: true,
+          tsStatus: true,
+          tsInitStatus: true,
+          userScore: true,
+          tsPrediction: true,
+          idDataType: true
+        },
+        idPlaylist: {
+          name: true,
+          isDefault: true,
+          idModel: {
             id: true,
-            name: true,
-            isDefault: true,
-            idModel: {
-              id: true,
-              trainCount: true,
-              isGlobal: true
-            }
+            trainCount: true,
+            isGlobal: true
           }
         }
       },
-      relations: [
-        'songsPlaylists',
-        'songsPlaylists.idPlaylist',
-        'songsPlaylists.idPlaylist.idModel'
-      ],
+      relations: ['idSong', 'idPlaylist', 'idPlaylist.idModel'],
       where: {
-        active: true,
-        songsPlaylists: {
-          idPlaylist: {
-            id: idPlaylist.value, active: true, idModel: { active: true }
-          }
+        idSong: { active: true },
+        idPlaylist: {
+          id: idPlaylist.value,
+          active: true
         }
       }
     });
+
+    console.log('list:', list);
+
     const dataTypes = {
       'file': this.cf.get<string>('TS_DATAYPE_FILE'),
       'link': this.cf.get<string>('TS_DATAYPE_LINK')
     }
     return {
       message: 'Query successful',
-      data: list.map((s) => new Song(
-        s.name,
-        dataTypes[s.idDataType],
-        null,
-        s.userScore,
-        s.tsPrediction,
-        'downloaded',
-        s.tsStatus as Song["tsStatus"],
-        s.tsInitStatus as Song["tsInitStatus"],
-        s.id
-      ))
+      //data: list.map((s) => new Song('', s.idSong.idDataType, null, s.idSong.userScore, s.idSong.tsPrediction,))
     };
   }
 
@@ -90,7 +81,7 @@ export class SongsController {
         });
         return res.sendFile(filePath);
       } else {
-        console.error('La cancion no existe en el servidor');
+        console.error('Archivo no encontrado');
         throw new HttpException('Cancion no encontrada en el servidor', HttpStatus.NOT_FOUND);
       }
     } else {

@@ -130,14 +130,17 @@ export class TrainingComponent implements OnInit {
   loadPlaylist(idPlaylist: number, isDefault: boolean): void {
     this.http.get(`songs/list-by-idPlaylist?value=${idPlaylist}`, true).subscribe({
       next: (res: any) => {
-        const list: Array<Song> = res.data
-        if (this.playlists.selected)
+        const list: Array<Song> = res.data;
+        console.log('list', list, idPlaylist);
+        if (isDefault && this.playlists.default)
+          this.playlists.default.songs = list;
+        else if (this.playlists.selected)
           this.playlists.selected.songs = list;
       }
     });
   }
 
-  uploadSongs(evt: any) {
+  uploadSongs(evt: any, mode: 'train' | 'predict'): void {
     const list = this.playlists.selected?.songs as Array<Song>;
     evt.currentFiles.forEach((item: any) => {
       const song: Song = {
@@ -148,7 +151,7 @@ export class TrainingComponent implements OnInit {
         tsPrediction: null,
         storageStatus: 'local',
         tsStatus: null,
-        tsInitStatus: 'train'
+        tsInitStatus: mode
       }
       list.push(song);
       this.songService.addToPoolSongsForUpload({ ...song });
