@@ -131,7 +131,6 @@ export class TrainingComponent implements OnInit {
     this.http.get(`songs/list-by-idPlaylist?value=${idPlaylist}`, true).subscribe({
       next: (res: any) => {
         const list: Array<Song> = res.data;
-        console.log('list', list, idPlaylist);
         if (isDefault && this.playlists.default)
           this.playlists.default.songs = list;
         else if (this.playlists.selected)

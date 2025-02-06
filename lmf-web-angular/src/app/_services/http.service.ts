@@ -34,6 +34,7 @@ export class HttpService {
     return this.http.get(this.baseUrl + url)
       .pipe(
         finalize(() => {
+          console.info('url:', url);
           this.busy = false;
           if (toastSuccess !== undefined)
             this.setToast(
@@ -61,6 +62,7 @@ export class HttpService {
     return this.http.post(this.baseUrl + url, body)
       .pipe(
         finalize(() => {
+          console.info('url:', url);
           this.busy = false;
           if (toastSuccess !== undefined)
             this.setToast(

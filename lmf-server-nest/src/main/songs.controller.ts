@@ -1,7 +1,6 @@
 import { Controller, Get, HttpException, HttpStatus, Query, Res, UsePipes, ValidationPipe } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { SongEntity } from 'src/_entities/song.entity';
-import { Playlist, Song } from '../_models/all.model';
 import { IntegerDto } from 'src/_pipes/dtos.pipe';
 import { Repository } from 'typeorm';
 import * as fs from 'fs';
@@ -9,11 +8,11 @@ import * as path from 'path';
 import { ConfigService } from '@nestjs/config';
 import { Response } from 'express';
 import { SongsPlaylistsEntity } from 'src/_entities/songs-playlists.entity';
+import { Song } from 'src/_models/all.model';
 
 @Controller('songs')
 export class SongsController {
   constructor(
-
     @InjectRepository(SongEntity)
     private readonly songsTable: Repository<SongEntity>,
     @InjectRepository(SongsPlaylistsEntity)
@@ -64,7 +63,7 @@ export class SongsController {
     }
     return {
       message: 'Query successful',
-      //data: list.map((s) => new Song('', s.idSong.idDataType, null, s.idSong.userScore, s.idSong.tsPrediction,))
+      data: list.map((s) => new Song(s.idSong.name, dataTypes[s.idSong.idDataType], null, s.idSong.userScore, s.idSong.tsPrediction, 'downloaded', s.idSong.tsStatus as Song['tsStatus'], s.idSong.tsInitStatus as Song['tsInitStatus'], s.idSong.id))
     };
   }
 
