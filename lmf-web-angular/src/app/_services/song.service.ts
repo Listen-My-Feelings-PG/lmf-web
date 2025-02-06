@@ -146,7 +146,8 @@ export class SongService {
     this.pools.songsForUpload.push(song);
   }
 
-  uploadSongsToServer(idPlaylist: number, taskCallback: Function): void {
+  uploadSongsToServer(fullList: Array<Song>, idPlaylist: number, taskCallback: Function): void {
+    this.indexes.songsForUpload = fullList.length - this.pools.songsForUpload.length - 1;
     const that = this;
     if (!this.busyFlags.songsForUpload) {
       this.iterators.songsForUpload = this.pools.songsForUpload[Symbol.iterator]();

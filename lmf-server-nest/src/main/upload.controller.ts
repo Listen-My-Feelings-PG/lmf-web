@@ -55,7 +55,7 @@ export class UploadController {
     const idExistingSong = await this.songsTable.findOne({
       select: ['id'],
       where: {
-        name: file.originalname,
+        name: body.name,
         fileSize: file.size,
         active: true
       }

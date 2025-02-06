@@ -28,6 +28,8 @@
             (onSelect)="uploadSongs($event,'train')"
             [auto]="true"
             [multiple]="true"
+            [disabled]="songService.busyFlags.songsForUpload"
+            url="https://www.primefaces.org/cdn/api/upload.php"
             styleClass="p-fu p-button-outlined"
             [style]="{'border-radius':'0px'}" />
           <p-fileUpload mode="basic"
@@ -55,6 +57,7 @@
           <ng-template pTemplate="header">
             <tr>
               <th>#</th>
+              <th>Id</th>
               <th>Nombre</th>
               <th>Tipo</th>
               <th></th>
@@ -69,6 +72,7 @@
             let-i="rowIndex">
             <tr>
               <td [ngClass]="{'text-info':idSongPlaying==song.id}">{{i + 1}}</td>
+              <td>{{song.id ? song.id:'--'}}</td>
               <td [ngClass]="{'text-info':idSongPlaying==song.id}">{{song.name}}</td>
               <td><span class="badge text-bg-primary">Archivo MP3</span></td>
               <td>
@@ -93,7 +97,32 @@
                 </div>
               </td>
               <td>--</td>
-              <td>--</td>
+              <td>
+                <p-buttonGroup class="text-nowrap">
+                  <button pButton
+                    title="Entrenar"
+                    type="button"
+                    icon="fa-solid fa-hexagon-nodes"
+                    severity="success"
+                    [outlined]="true"
+                    [disabled]="!song.userScore"
+                    size="small"></button>
+                  <button pButton
+                    type="button"
+                    icon="pi pi-plus"
+                    title="Asignar a lista de reproducción"
+                    severity="info"
+                    [outlined]="true"
+                    size="small"></button>
+                  <button pButton
+                    type="button"
+                    title="Borrar"
+                    icon="pi pi-trash"
+                    severity="danger"
+                    [outlined]="true"
+                    size="small"></button>
+                </p-buttonGroup>
+              </td>
             </tr>
           </ng-template>
         </p-table>

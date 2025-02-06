@@ -74,7 +74,7 @@ export class TrainingComponent implements OnInit {
 
   constructor(
     private http: HttpService,
-    private songService: SongService,
+    public songService: SongService,
     private tsService: TensorflowService,
     private playerService: PlayerService
   ) {
@@ -181,7 +181,7 @@ export class TrainingComponent implements OnInit {
       this.songService.addToPoolSongsForUpload({ ...song });
     });
 
-    this.songService.uploadSongsToServer(this.playlists.selected?.id as number, (error: boolean, data: any, index: number) => {
+    this.songService.uploadSongsToServer(list, this.playlists.selected?.id as number, (error: boolean, data: any, index: number) => {
       if (error) {
         list[index].storageStatus = 'error';
         list[index].storageStatusErrReason = data.storageStatusErrReason;

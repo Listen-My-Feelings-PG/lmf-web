@@ -32,7 +32,7 @@ export class FeatureExtractorService {
     if (!this.poolBusy) {
       const songs = await this.tableSongs.find({ where: { tsFeatures: IsNull() } });
       if (songs.length > 0)
-        console.info('Songs queried:', songs.length, 'Loading pool...', new Date().toLocaleString());
+        console.info('Songs features extraction queried:', songs.length, 'Loading pool...', new Date().toLocaleString());
       songs.forEach(async (item, index) => {
         this.pool.push({ idSong: item.id, filename: item.fileName });
       });
@@ -105,7 +105,7 @@ export class FeatureExtractorService {
       this.poolCounter = 0;
       this.poolBusy = false;
       if (!hideMessage)
-        console.info('The pool is finished and ready for next extraction');
+        console.info('The songs features extraction pool is finished and ready for next extraction', new Date().toLocaleString());
     }
   }
 
