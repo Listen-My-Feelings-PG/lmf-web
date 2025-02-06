@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, catchError, finalize, Observable, ObservableInput, throwError } from 'rxjs';
+import { BehaviorSubject, catchError, finalize, Observable, ObservableInput, tap, throwError } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -33,6 +33,7 @@ export class HttpService {
     this.busy = true;
     return this.http.get(this.baseUrl + url)
       .pipe(
+        tap(() => console.info('url:', url)),
         finalize(() => {
           console.info('url:', url);
           this.busy = false;
@@ -61,8 +62,8 @@ export class HttpService {
     this.busy = true;
     return this.http.post(this.baseUrl + url, body)
       .pipe(
+        tap(() => console.info('url:', url, 'body:', body)),
         finalize(() => {
-          console.info('url:', url);
           this.busy = false;
           if (toastSuccess !== undefined)
             this.setToast(

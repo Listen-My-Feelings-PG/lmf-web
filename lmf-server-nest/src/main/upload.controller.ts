@@ -52,7 +52,6 @@ export class UploadController {
     @UploadedFile(new Mp3ValidationPipe()) file: Express.Multer.File,
     @Body() body: any
   ) {
-    console.log('uploadHandler:', file, body);
     const idExistingSong = await this.songsTable.findOne({
       select: ['id'],
       where: {

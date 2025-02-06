@@ -23,7 +23,6 @@ export class SongsController {
   @Get('list-by-idPlaylist')
   @UsePipes(new ValidationPipe({ transform: true }))
   async getSongsList(@Query() idPlaylist: IntegerDto) {
-    console.log('idPlaylist:', idPlaylist);
     const list = await this.songsPlaylistsTable.find({
       select: {
         idSong: {
@@ -55,12 +54,11 @@ export class SongsController {
       }
     });
 
-    console.log('list:', list);
-
     const dataTypes = {
       'file': this.cf.get<string>('TS_DATAYPE_FILE'),
       'link': this.cf.get<string>('TS_DATAYPE_LINK')
     }
+
     return {
       message: 'Query successful',
       data: list.map((s) => new Song(s.idSong.name, dataTypes[s.idSong.idDataType], null, s.idSong.userScore, s.idSong.tsPrediction, 'downloaded', s.idSong.tsStatus as Song['tsStatus'], s.idSong.tsInitStatus as Song['tsInitStatus'], s.idSong.id))

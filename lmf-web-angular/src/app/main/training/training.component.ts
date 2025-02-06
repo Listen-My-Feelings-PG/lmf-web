@@ -14,7 +14,7 @@ import { TableModule } from 'primeng/table';
 import { ButtonGroupModule } from 'primeng/buttongroup';
 import { PlayerService } from '../../_services/player.service';
 import { InputSwitchModule } from 'primeng/inputswitch';
-import { TooltipModule } from 'primeng/tooltip';
+import { DialogModule } from 'primeng/dialog';
 
 @Component({
   selector: 'app-training',
@@ -29,7 +29,8 @@ import { TooltipModule } from 'primeng/tooltip';
     FormsModule,
     TableModule,
     ButtonGroupModule,
-    InputSwitchModule
+    InputSwitchModule,
+    DialogModule
   ],
   templateUrl: './training.component.html',
   styleUrl: './training.component.scss'
@@ -42,6 +43,11 @@ export class TrainingComponent implements OnInit {
     loaded: boolean
   }
   idSongPlaying: number;
+  playlistModal: {
+    visible: boolean,
+    name: string,
+    mode: 'new' | 'edit'
+  }
   ////////////////////////////////////////////
   urlSongPlaying: string;
   songs: {
@@ -72,6 +78,11 @@ export class TrainingComponent implements OnInit {
     private tsService: TensorflowService,
     private playerService: PlayerService
   ) {
+    this.playlistModal = {
+      visible: false,
+      name: '',
+      mode: 'new'
+    }
     this.idSongPlaying = 0;
     this.playlists = {
       list: [],
@@ -125,6 +136,20 @@ export class TrainingComponent implements OnInit {
       }
     });
     ////////////////////////////////////////////
+  }
+
+  setPlaylist(confirm: boolean, mode?: 'new' | 'edit'): void {
+    if (confirm) {
+      this.http.post('playlist/create', { name: this.playlistModal.name }, true).subscribe({
+        next: (res) => {
+          this.playlists.list.push(new Playlist(this.playlistModal.name, [], [], null, false, res.data.id));
+          this.playlistModal.visible = false;
+        }
+      });
+    } else {
+      this.playlistModal.mode = mode || 'new';
+      this.playlistModal.visible = true;
+    }
   }
 
   loadPlaylist(idPlaylist: number, isDefault: boolean): void {
@@ -230,29 +255,4 @@ export class TrainingComponent implements OnInit {
     this.tsFeatures.poolSongs = [];
     this.tsFeatures.iterator = this.tsFeatures.poolSongs[Symbol.iterator]();
   }
-
-
-  getStatusTraduction(storageStatus: string, tsStatus: string, tsInitStatus: string): string {
-    return `${{
-      'local': 'Carga',
-      'uploading': 'Cargando',
-      'uploaded': 'Cargado',
-      'downloading': 'Descargando',
-      'downloaded': 'Descargado',
-      'error': 'Error'
-    }[storageStatus]}|${{
-      'training': 'Entrenando',
-      'trained': 'Entrenado',
-      'predicting': 'Prediciendo',
-      'predicted': 'Predicho',
-      'retrained': 'Reentrenado',
-      'error': 'Error'
-    }[tsStatus] || ''}|${{
-      'train': 'Entrenar',
-      'predict': 'Predecir',
-      'retrain': 'Reentrenar'
-    }[tsInitStatus]}`
-  };
-
-
 }

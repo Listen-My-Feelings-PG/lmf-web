@@ -17,7 +17,7 @@
             icon="pi pi-plus"
             severity="success"
             [outlined]="true"
-            [disabled]="true"
+            (click)="setPlaylist(false,'new')"
             size="small"></button>
           <p-fileUpload mode="basic"
             chooseLabel="Cargar canciones"
@@ -221,3 +221,24 @@
     </div>
   </div>-->
 </div>
+
+
+<p-dialog header="Nueva lista de reproducción"
+  [modal]="true"
+  [(visible)]="playlistModal.visible"
+  [style]="{ width: '25rem' }">
+  <div class="form-group">
+    <label for="playlistName">Nombre de la lista de reproducción:</label>
+    <input type="text"
+      class="form-control"
+      id="playlistName"
+      [(ngModel)]="playlistModal.name" />
+  </div><br>
+  <div class="flex justify-content-end gap-2">
+    <p-button label="Cancelar"
+      severity="secondary"
+      (onClick)="playlistModal.visible = false" />
+    <p-button label="Guardar"
+      (onClick)="setPlaylist(true)" />
+  </div>
+</p-dialog>

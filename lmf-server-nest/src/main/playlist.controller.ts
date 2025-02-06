@@ -15,7 +15,7 @@ export class PlaylistController {
     private readonly modelTable: Repository<ModelEntity>
   ) { }
   @Post('get-all')
-  async getPlaylist(@Body() body: any) {
+  async getPlaylist() {
     const options: FindManyOptions<PlaylistEntity> = {
       select: {
         id: true,
@@ -32,14 +32,22 @@ export class PlaylistController {
       where: {
         active: true
       }
-    };/**
-     * SELECT pl_id,pl_nombre,pl_default,mo_id,mo_descripcion,mo_train_count,mo_globa FROM public.playlists LEFT JOIN public.modelos ON mo_id=pl_id_modelo AND mo_activo=TRUE WHERE pl_activo=TRUE
-     */
+    };
 
     const playlists = await this.playlistTable.find(options);
     return {
       message: 'Query successful',
       data: playlists
+    };
+  }
+
+  @Post('create')
+  async createPlaylist(@Body() body: any) {
+    const newPlaylist = this.playlistTable.create({ name: body.name });
+    await this.playlistTable.save(newPlaylist);
+    return {
+      message: 'Query successful',
+      data: { id: newPlaylist.id }
     };
   }
 }

@@ -10,13 +10,13 @@ export class PlaylistEntity {
     @Column({ name: 'pl_nombre', type: 'text', nullable: true })
     name: string;
 
-    @Column({ name: 'pl_activo', type: 'boolean' })
+    @Column({ name: 'pl_activo', type: 'boolean', default: true })
     active: boolean;
 
     @Column({ name: 'pl_fecha_creacion', type: 'timestamp with time zone', default: () => 'CURRENT_TIMESTAMP' })
     creationDate: string;
 
-    @Column({ name: 'pl_default', type: 'boolean' })
+    @Column({ name: 'pl_default', type: 'boolean', default: false })
     isDefault: boolean;
 
     @ManyToOne(() => ModelEntity)

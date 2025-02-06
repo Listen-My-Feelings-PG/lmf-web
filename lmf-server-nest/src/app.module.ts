@@ -5,7 +5,6 @@ import { UploadController } from './main/upload.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SongEntity } from './_entities/song.entity';
 import { GzipConverterService } from './_services/gzip-converter.service';
-import { UploadExampleController } from './main/upload-example.controller';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { RateController } from './main/rate.controller';
 import { FeatureExtractorService } from './_services/feature-extractor.service';
@@ -49,7 +48,6 @@ import { ModelEntity } from './_entities/model.entity';
   controllers: [
     AppController,
     UploadController,
-    UploadExampleController,
     RateController,
     SongsController,
     DownloadController,
