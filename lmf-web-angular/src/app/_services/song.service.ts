@@ -52,7 +52,7 @@ export class SongService {
     }
   }
 
-  extractFeaturesFromSongs(idSongs: Array<number>, taskCallback: Function): void {
+  extractFeaturesFromSongs(idSongs: Array<number>, taskCallback: (error: boolean, data: any, done: boolean, idSong?: number, Callback?: Function) => void): void {
     const that = this;
     this.pools.idSongsForFeatures = Object.assign([], idSongs);
     if (!this.busyFlags.idSongsForFeatures) {
@@ -60,7 +60,7 @@ export class SongService {
       this.busyFlags.idSongsForFeatures = true;
       trigger();
     } else
-      taskCallback(true, 'Pool is busy');
+      taskCallback(true, 'Pool is busy', true);
 
     function trigger() {
       const item = that.iterators.idSongsForFeatures.next();

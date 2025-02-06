@@ -207,8 +207,17 @@ export class TrainingComponent implements OnInit {
     this.playerService.setPlayerEvent('play', song);
   }
 
+  async trainModel(mode: 'single' | 'all', index?: number): Promise<void> {
+    await this.tsService.newModel();
+    if (mode == 'single') {
+      //this.songService.extractFeaturesFromSongs([this.playlists.selected?.songs[index as number].id as number],())
+    } else {
+
+    }
+  }
+
   async getSongTsFeatures(mode: 'train' | 'predict') {
-    const list = this.songs[mode == 'train' ? 'listForTrain' : 'listForPredict'];
+    /*const list = this.songs[mode == 'train' ? 'listForTrain' : 'listForPredict'];
     await this.tsService.loadModel();
     this.songService.extractFeaturesFromSongs(
       list.map((obj) => obj.id).filter((id): id is number => id !== undefined),
@@ -248,7 +257,7 @@ export class TrainingComponent implements OnInit {
           }
         }
       }
-    );
+    );*/
   }
 
   stopTsFeaturesPool() {
