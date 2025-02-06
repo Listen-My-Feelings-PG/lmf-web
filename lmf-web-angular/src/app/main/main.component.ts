@@ -6,6 +6,7 @@ import { MenubarModule } from 'primeng/menubar';
 import { AvatarModule } from 'primeng/avatar';
 import { MenuModule } from 'primeng/menu';
 import { PlayerComponent } from '../player/player.component';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-main',
@@ -17,6 +18,7 @@ import { PlayerComponent } from '../player/player.component';
     AvatarModule,
     MenuModule,
     PlayerComponent,
+    CommonModule
   ],
   templateUrl: './main.component.html',
   styleUrl: './main.component.scss'
@@ -24,9 +26,14 @@ import { PlayerComponent } from '../player/player.component';
 export class MainComponent implements OnInit {
   menuItems: MenuItem[] | undefined;
   profileItems: MenuItem[] | undefined;
+  menubarVisible: boolean;
+  timer: any;
   constructor(
-  ) { }
+  ) {
+    this.menubarVisible = true;
+  }
   ngOnInit(): void {
+    this.hideMenubar();
     this.menuItems = [
       {
         label: 'Listen my Feelings',
@@ -63,5 +70,20 @@ export class MainComponent implements OnInit {
         ]
       }
     ];
+  }
+
+  showMenuBar(): void {
+    this.menubarVisible = true;
+  }
+
+  clearTimer() {
+    clearTimeout(this.timer);
+  }
+
+  hideMenubar(): void {
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => {
+      this.menubarVisible = false;
+    }, 500);
   }
 }

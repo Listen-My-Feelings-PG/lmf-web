@@ -27,6 +27,7 @@ $font-family-base: 'Calibri', sans-serif;
 //#{darken($base-color5, 50%)};
 :root {
   --player-bg-color: #{darken($base-color5, 30%)};
+  --base-color:#{$info};
 }
 
 .p-listbox-list,

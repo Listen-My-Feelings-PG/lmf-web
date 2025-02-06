@@ -47,6 +47,10 @@
     <div class="col-md">
       <div class="card">
         <p-table [value]="playlists.selected?.songs || []"
+          [paginator]="true"
+          [paginatorPosition]="'both'"
+          [rows]="5"
+          [rowsPerPageOptions]="[5,10,100]"
           [styleClass]="'p-datatable-sm'">
           <ng-template pTemplate="header">
             <tr>
@@ -88,6 +92,7 @@
                   </ng-container>
                 </div>
               </td>
+              <td>--</td>
               <td>--</td>
             </tr>
           </ng-template>
