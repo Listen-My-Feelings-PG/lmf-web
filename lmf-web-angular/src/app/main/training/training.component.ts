@@ -180,15 +180,21 @@ export class TrainingComponent implements OnInit {
 
   async trainModel(mode: 'single' | 'all', index?: number): Promise<void> {
     await this.tsService.newModel();
-    const list: Array<number> = mode == 'single' ?
-      [this.playlists.selected?.songs[index as number].id as number] : (
+    let list: Array<number> = [];
+    if (mode == 'single') {
+      this.playlists.selected!.songs[index as number].tsStatus = 'training';
+      list = [this.playlists.selected?.songs[index as number].id as number];
+    } else {
+      list = (
         this.playlists.selected?.songs.filter(
           (obj) => (obj.tsInitStatus == 'train' || obj.tsInitStatus == 'retrain') && obj.tsStatus === null
         ).map((obj) => {
           obj.tsStatus = 'training';
           return obj.id;
         }) || []
-      ).filter((id): id is number => id !== undefined);
+      ).filter((id): id is number => id !== undefined)
+    }
+
     this.songService.extractFeaturesFromSongs(
       list, (error, data, done, idSong, next) => {
         if (!done) {
@@ -197,7 +203,8 @@ export class TrainingComponent implements OnInit {
             if (data.error) {
               switch (data.error.status) {
                 case 501:
-                  this.http.setToast('warn', 'Fallo en la extración de características', `Las características de la canción con id ${idSong} aun no han sido extraídas. Porfavor, espere hasta que el servidor haya completado la extracción.`, 7000);
+                  this.http.setToast('warn', 'Extracción de características en espera', `Las características de la canción con id ${idSong} aun no han sido extraídas. Porfavor, espere hasta que el servidor haya completado la extracción.`, 7000);
+                  song.tsStatus = null;
                   break;
                 case 404:
                   if (mode == 'single')

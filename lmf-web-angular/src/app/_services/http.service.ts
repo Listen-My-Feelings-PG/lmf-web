@@ -35,7 +35,6 @@ export class HttpService {
       .pipe(
         tap(() => console.info('url:', url)),
         finalize(() => {
-          console.info('url:', url);
           this.busy = false;
           if (toastSuccess !== undefined)
             this.setToast(

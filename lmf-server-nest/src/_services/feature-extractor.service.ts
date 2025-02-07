@@ -73,7 +73,7 @@ export class FeatureExtractorService {
             if (row) {
               row.tsFeatures = gzipFilename;
               await this.tableSongs.save(row);
-              console.info('File compressed:', gzipFilename);
+              console.info('File compressed:', gzipFilename, new Date().toLocaleString());
               this.checkPool(item);
             } else {
               console.error('Error al modificar registro: La canción no existe en la base de datos', new Date().toLocaleString())
