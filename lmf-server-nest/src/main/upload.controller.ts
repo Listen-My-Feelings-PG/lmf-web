@@ -65,7 +65,7 @@ export class UploadController {
     if (idExistingSong) {
       if (fs.existsSync(filePath))
         await fs.unlinkSync(filePath);
-      console.info('Canción duplicada. Borrada del servidor:', file.filename);
+      console.info('Canción duplicada. Borrada del servidor:', file.filename, new Date().toLocaleString());
 
       const plsRow = await this.songsPlaylistsTable.findOne({
         where: { idSong: { id: idExistingSong.id }, idPlaylist: { id: body.idPlaylist } }
