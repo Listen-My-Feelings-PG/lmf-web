@@ -1,4 +1,4 @@
-import { Controller, Get, HttpException, HttpStatus, Query, Res, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Get, HttpException, HttpStatus, Post, Query, Res, UseInterceptors, UsePipes, ValidationPipe } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { SongEntity } from 'src/_entities/song.entity';
 import { IntegerDto } from 'src/_pipes/dtos.pipe';
@@ -9,6 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import { Response } from 'express';
 import { SongsPlaylistsEntity } from 'src/_entities/songs-playlists.entity';
 import { Song } from 'src/_models/all.model';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('songs')
 export class SongsController {
@@ -84,6 +85,15 @@ export class SongsController {
     } else {
       console.error('Canción no encontrada');
       throw new HttpException('Cancion no encontrada en bd', HttpStatus.NOT_FOUND);
+    }
+  }
+
+  @Post('update-status')
+  @UseInterceptors(FileInterceptor(''))
+  async updateSongStatus(@Body() body: any) {
+    console.log('body:', body);
+    return {
+      message: 'Query successful'
     }
   }
 }

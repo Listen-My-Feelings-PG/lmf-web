@@ -94,13 +94,19 @@
                 <span class="badge text-bg-info">{{song.storageStatus+'|'+song.tsStatus+'|'+song.tsInitStatus}}</span>
               </td>
               <td>
-                <div *ngIf="song.tsInitStatus=='train'">
+                <div *ngIf="song.tsStatus===null||song.tsStatus=='error'; else scoreDisabled">
                   <ng-container *ngFor="let star of rating.stars; let ist = index">
                     <i class="star-rated pi"
                       [ngClass]="song.userScore !== null && ist < song.userScore! ? 'pi-star-fill' : 'pi-star'"
                       (click)="rate(i,ist + 1)"></i>
                   </ng-container>
                 </div>
+                <ng-template #scoreDisabled>
+                  <ng-container *ngFor="let star of rating.stars; let ist = index">
+                    <i class="star-disabled pi"
+                      [ngClass]="song.userScore!==null && ist < song.userScore ? 'pi-star-fill' : 'pi-star'"></i>
+                  </ng-container>
+                </ng-template>
               </td>
               <td>--</td>
               <td>

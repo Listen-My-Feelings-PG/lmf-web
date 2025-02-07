@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { FileUploadModule } from 'primeng/fileupload';
-import { LibrosaTsFeatures, Playlist, Song } from '../../_models/all.model';
+import { Playlist, Song } from '../../_models/all.model';
 import { HttpService } from '../../_services/http.service';
 import { SongService } from '../../_services/song.service';
 import { TensorflowService } from '../../_services/tensorflow.service';
@@ -180,7 +180,8 @@ export class TrainingComponent implements OnInit {
 
   async trainModel(mode: 'single' | 'all', index?: number): Promise<void> {
     await this.tsService.newModel();
-    let list: Array<number> = [];
+
+    let list: Array<number> = []
     if (mode == 'single') {
       this.playlists.selected!.songs[index as number].tsStatus = 'training';
       list = [this.playlists.selected?.songs[index as number].id as number];
@@ -219,11 +220,20 @@ export class TrainingComponent implements OnInit {
                   song.tsStatusErrReason = 'features-notfound';
                   break;
               }
-              if (next)
-                next();
+              this.updateSongStatusOnServer(
+                song.id as number,
+                song.tsStatus,
+                song.tsInitStatus,
+                song.storageStatus,
+                song.tsPrediction,
+                song.userScore
+              ).then(() => {
+                if (next)
+                  next();
+              });
             }
           } else {
-            this.songService.customizeSpectrogram(data.mel_spectrogram, data.tempo, false).then(async (customized) => {
+            this.songService.customizeSpectrogram(data.mel_spectrogram, data.tempo, false).then((customized) => {
               const spectrogram = customized.resized;
               try {
                 const epochs = this.tsService.epochsNumberTask('get') as { score1: number, score2: number, score3: number };
@@ -231,24 +241,51 @@ export class TrainingComponent implements OnInit {
                 this.tsService.trainSong(spectrogram, song.userScore as number, epochsNum).then(() => {
                   console.info('Canción entrenada:', song);
                   song.tsStatus = 'trained';
-                  if (next)
-                    next();
+                  this.updateSongStatusOnServer(
+                    song.id as number,
+                    song.tsStatus,
+                    song.tsInitStatus,
+                    song.storageStatus,
+                    song.tsPrediction,
+                    song.userScore
+                  ).then(() => {
+                    if (next)
+                      next();
+                  });
                 }).catch((error) => {
                   console.error('Ocurrió un error al entrenar el modelo:', error, song);
                   if (mode == 'single')
                     this.http.setToast('error', 'Error al entrenar la canción', `Error al entrenar la canción con id ${idSong}`);
                   song.tsStatus = 'error';
                   song.tsStatusErrReason = 'training-error';
-                  if (next)
-                    next();
+                  this.updateSongStatusOnServer(
+                    song.id as number,
+                    song.tsStatus,
+                    song.tsInitStatus,
+                    song.storageStatus,
+                    song.tsPrediction,
+                    song.userScore
+                  ).then(() => {
+                    if (next)
+                      next();
+                  });
                 });
               } catch (error) {
                 song.tsStatus = 'error';
                 song.tsStatusErrReason = 'training-error';
                 if (mode == 'single')
                   this.http.setToast('error', 'Error al entrenar la canción', `Error al entrenar la canción con id ${idSong}`);
-                if (next)
-                  next();
+                this.updateSongStatusOnServer(
+                  song.id as number,
+                  song.tsStatus,
+                  song.tsInitStatus,
+                  song.storageStatus,
+                  song.tsPrediction,
+                  song.userScore
+                ).then(() => {
+                  if (next)
+                    next();
+                });
               }
             }).catch((error) => {
               console.error(error);
@@ -256,14 +293,39 @@ export class TrainingComponent implements OnInit {
               song.tsStatusErrReason = 'customize-error';
               if (mode == 'single')
                 this.http.setToast('error', 'Error al personalizar el espectrograma de la canción', `Error al personalizar el espectrograma de la canción con id ${idSong}`);
-              if (next)
-                next();
+              this.updateSongStatusOnServer(
+                song.id as number,
+                song.tsStatus,
+                song.tsInitStatus,
+                song.storageStatus,
+                song.tsPrediction,
+                song.userScore
+              ).then(() => {
+                if (next)
+                  next();
+              });
             });
           }
         } else if (mode == 'all') {
           this.http.setToast('success', 'Entrenamiento completado', 'El modelo ha sido entrenado con éxito');
         }
       });
+  }
+
+  updateSongStatusOnServer(
+    idSong: number,
+    tsStatus: Song['tsStatus'],
+    tsInitStatus: Song['tsInitStatus'],
+    storageStatus: Song['storageStatus'],
+    tsPrediction: Song['tsPrediction'],
+    userScore: Song['userScore']
+  ): Promise<any> {
+    return new Promise((resolve) => {
+      this.http.post('songs/update-status', { idSong, tsStatus, tsInitStatus, storageStatus, tsPrediction, userScore }, true).subscribe({
+        next: () => resolve(false),
+        error: (error) => resolve(true)
+      });
+    })
   }
 
   showTooltipError(tsStatusErrReason: Song['tsStatusErrReason']): string {
