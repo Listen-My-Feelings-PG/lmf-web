@@ -1,4 +1,5 @@
 import { Body, Controller, Post, UseInterceptors } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ModelEntity } from 'src/_entities/model.entity';
@@ -11,8 +12,7 @@ export class PlaylistController {
   constructor(
     @InjectRepository(PlaylistEntity)
     private readonly playlistTable: Repository<PlaylistEntity>,
-    @InjectRepository(ModelEntity)
-    private readonly modelTable: Repository<ModelEntity>
+    private readonly cf: ConfigService,
   ) { }
   @Post('get-all')
   async getPlaylist() {
@@ -37,7 +37,16 @@ export class PlaylistController {
     const playlists = await this.playlistTable.find(options);
     return {
       message: 'Query successful',
-      data: playlists
+      data: {
+        list: playlists,
+        tsConfig: {
+          epochs: {
+            score1: this.cf.get<number>('TS_EPOCHSNUM_SCORE1'),
+            score2: this.cf.get<number>('TS_EPOCHSNUM_SCORE2'),
+            score3: this.cf.get<number>('TS_EPOCHSNUM_SCORE3')
+          }
+        }
+      }
     };
   }
 

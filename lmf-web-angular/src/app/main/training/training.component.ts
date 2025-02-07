@@ -15,6 +15,7 @@ import { ButtonGroupModule } from 'primeng/buttongroup';
 import { PlayerService } from '../../_services/player.service';
 import { InputSwitchModule } from 'primeng/inputswitch';
 import { DialogModule } from 'primeng/dialog';
+import { TooltipModule } from 'primeng/tooltip';
 
 @Component({
   selector: 'app-training',
@@ -30,7 +31,8 @@ import { DialogModule } from 'primeng/dialog';
     TableModule,
     ButtonGroupModule,
     InputSwitchModule,
-    DialogModule
+    DialogModule,
+    TooltipModule
   ],
   templateUrl: './training.component.html',
   styleUrl: './training.component.scss'
@@ -117,7 +119,7 @@ export class TrainingComponent implements OnInit {
     this.playerService.getPlayerEmmitterIdSong().subscribe({ next: (id) => this.idSongPlaying = id });
     this.http.post('playlist/get-all', { all: true }, true).subscribe({
       next: (res) => {
-        const list: Array<any> = res.data;
+        const list: Array<any> = res.data.list;
         if (list.length > 0) {
           const defaultPlaylist = list.find((obj) => obj.isDefault);
           if (defaultPlaylist) {
@@ -129,6 +131,8 @@ export class TrainingComponent implements OnInit {
             this.http.setToast('error', 'Error al cargar listas', 'Default playlist not found');
           }
           this.playlists.list = list.filter((obj) => !obj.isDefault).map((obj) => new Playlist(obj.name, [], [], null, false, obj.id));
+          this.tsService.epochsNumberTask('set', res.data.tsConfig.epochs);
+          this.tsService.init();
         } else {
           console.error('Default playlist not found');
           this.http.setToast('error', 'No se encontraron listas de reproducción', 'Default playlist not found');
@@ -209,11 +213,71 @@ export class TrainingComponent implements OnInit {
 
   async trainModel(mode: 'single' | 'all', index?: number): Promise<void> {
     await this.tsService.newModel();
-    if (mode == 'single') {
-      //this.songService.extractFeaturesFromSongs([this.playlists.selected?.songs[index as number].id as number],())
-    } else {
-
-    }
+    const list: Array<number> = mode == 'single' ?
+      [this.playlists.selected?.songs[index as number].id as number] : (
+        this.playlists.selected?.songs.filter(
+          (obj) => (obj.tsInitStatus == 'train' || obj.tsInitStatus == 'retrain') && obj.tsStatus === null
+        ).map((obj) => {
+          obj.tsStatus = 'training';
+          return obj.id;
+        }) || []
+      ).filter((id): id is number => id !== undefined);
+    this.songService.extractFeaturesFromSongs(
+      list, (error, data, done, idSong, next) => {
+        if (!done) {
+          const song = this.playlists.selected?.songs.find((obj) => obj.id == idSong) as Song;
+          if (error) {
+            if (data.error) {
+              switch (data.error.status) {
+                case 501:
+                  this.http.setToast('warn', 'Fallo en la extración de características', `Las características de la canción con id ${idSong} aun no han sido extraídas. Porfavor, espere hasta que el servidor haya completado la extracción.`, 7000);
+                  break;
+                case 404:
+                  if (mode == 'single')
+                    this.http.setToast('error', 'Características de la canción no encontradas', `El archivo con las características de la canción con id ${idSong} no ha sido encontrado en el servidor.`, 7000);
+                  song.tsStatus = 'error';
+                  song.tsStatusErrReason = 'features-notfound';
+                  break;
+                default:
+                  if (mode == 'single')
+                    this.http.setToast('error', 'Error en la extración de características', `Error al extraer las características de la canción con id ${idSong}.`, 7000);
+                  song.tsStatus = 'error';
+                  song.tsStatusErrReason = 'features-notfound';
+                  break;
+              }
+              if (next)
+                next();
+            }
+          } else {
+            this.songService.customizeSpectrogram(data.mel_spectrogram, data.tempo, false).then(async (customized) => {
+              const spectrogram = customized.resized;
+              try {
+                //El flujo del entrenamiento continúa aquí
+                song.tsStatus = 'trained';
+                if (next)
+                  next();
+              } catch (error) {
+                song.tsStatus = 'error';
+                song.tsStatusErrReason = 'training-error';
+                if (mode == 'single')
+                  this.http.setToast('error', 'Error al entrenar la canción', `Error al entrenar la canción con id ${idSong}`);
+                if (next)
+                  next();
+              }
+            }).catch((error) => {
+              console.error(error);
+              song.tsStatus = 'error';
+              song.tsStatusErrReason = 'customize-error';
+              if (mode == 'single')
+                this.http.setToast('error', 'Error al personalizar el espectrograma de la canción', `Error al personalizar el espectrograma de la canción con id ${idSong}`);
+              if (next)
+                next();
+            });
+          }
+        } else if (mode == 'all') {
+          this.http.setToast('success', 'Entrenamiento completado', 'El modelo ha sido entrenado con éxito');
+        }
+      });
   }
 
   async getSongTsFeatures(mode: 'train' | 'predict') {
@@ -263,5 +327,18 @@ export class TrainingComponent implements OnInit {
   stopTsFeaturesPool() {
     this.tsFeatures.poolSongs = [];
     this.tsFeatures.iterator = this.tsFeatures.poolSongs[Symbol.iterator]();
+  }
+
+  showTooltipError(tsStatusErrReason: Song['tsStatusErrReason']): string {
+    switch (tsStatusErrReason) {
+      case 'features-notfound':
+        return 'El archivo con las características de esta canción no ha sido encontrado en el servidor';
+      case 'customize-error':
+        return 'Error al personalizar el espectrograma de la canción';
+      case 'training-error':
+        return 'Error al entrenar la canción';
+      default:
+        return 'Error desconocido';
+    }
   }
 }

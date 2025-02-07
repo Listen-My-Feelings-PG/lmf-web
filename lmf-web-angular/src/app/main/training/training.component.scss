@@ -4,7 +4,6 @@
   }
 }
 
-
 .star-rated {
   font-size: 19px;
   cursor: pointer;
@@ -29,4 +28,29 @@
 
 .icon-td-size {
   font-size: 24px
+}
+
+.start-79 {
+  left: 79% !important;
+}
+
+.badge-size-55 {
+  font-size: 55rem;
+}
+
+.badge-custom {
+  display: inline-block;
+  padding: 0.29em 0.36em;
+  font-size: 0.55em;
+  font-weight: 700;
+  line-height: 1;
+  color: white;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: baseline;
+  border-radius: var(--bs-border-radius);
+}
+
+.text-black {
+  color: black;
 }

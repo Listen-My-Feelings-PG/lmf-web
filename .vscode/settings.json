@@ -31,7 +31,6 @@
     }
   ],
   "github.copilot.chat.search.semanticTextResults": true,
-  "github.copilot.chat.temporalContext.enabled": true,
   "[typescript]": {
     "editor.defaultFormatter": "vscode.typescript-language-features"
   },
@@ -45,5 +44,6 @@
   "[scss]": {
     "editor.defaultFormatter": "vscode.css-language-features"
   },
-  "editor.stickyScroll.enabled": false
+  "editor.stickyScroll.enabled": false,
+  "github.copilot.chat.editor.temporalContext.enabled": true
 }

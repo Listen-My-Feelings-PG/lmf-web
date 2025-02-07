@@ -28,9 +28,20 @@ export class TensorflowService {
     forPredict: any
   }
 
+  epochsNumber: {
+    score1: number,
+    score2: number,
+    score3: number
+  }
+
   private model!: tf.Sequential | null;
 
   constructor() {
+    this.epochsNumber = {
+      score1: 0,
+      score2: 0,
+      score3: 0
+    }
     this.pools = {
       forTrain: [],
       forPredict: []
@@ -58,6 +69,19 @@ export class TensorflowService {
     console.info(`Tensorflow inicializado. Variables activas: ${tf.memory().numTensors}`);
   }
 
+  epochsNumberTask(mode: 'get' | 'set', epochs?: {
+    score1: number,
+    score2: number,
+    score3: number
+  }): number | { score1: number, score2: number, score3: number } {
+    if (mode == 'set') {
+      if (epochs)
+        this.epochsNumber = epochs;
+      return 0;
+    } else
+      return this.epochsNumber;
+  }
+
   newModel() {
     return new Promise((resolve) => {
       this.model = tf.sequential();
@@ -82,7 +106,7 @@ export class TensorflowService {
       this.model.add(tf.layers.flatten());
       this.model.add(tf.layers.dense({ units: 32, activation: 'relu' }));
       this.model.add(tf.layers.dense({ units: 1, activation: 'linear' }));
-
+ 
       this.model.compile({
         optimizer: tf.train.adam(),
         loss: 'meanSquaredError',
@@ -105,10 +129,10 @@ export class TensorflowService {
         reject({ message: 'Modelo no cargado' });
         return;
       }
-
+ 
       const inputTensor = tf.tensor2d(mel_spectrogram);
       const outputTensor = tf.tensor1d([score]);
-
+ 
       this.model.fit(inputTensor.expandDims(0), outputTensor, { epochs: 1, batchSize: 1 }).then(() => {
         inputTensor.dispose();
         outputTensor.dispose();

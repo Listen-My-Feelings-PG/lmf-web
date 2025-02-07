@@ -30,7 +30,7 @@
             [multiple]="true"
             [disabled]="songService.busyFlags.songsForUpload"
             url="https://www.primefaces.org/cdn/api/upload.php"
-            styleClass="p-fu p-button-outlined"
+            styleClass="p-fu p-button-outlined p-button-info"
             [style]="{'border-radius':'0px'}" />
           <p-fileUpload mode="basic"
             chooseLabel="Cargar canciones para predecir"
@@ -43,6 +43,12 @@
             [multiple]="true"
             styleClass="p-fu p-button-outlined p-button-warning"
             [style]="{'border-radius':'0px'}" />
+          <p-button [severity]="'danger'"
+            icon="fa-solid fa-hexagon-nodes"
+            label="Entrenar canciones faltantes"
+            (onClick)="trainModel('all')"
+            [disabled]="!playlists.selected || songService.busyFlags.idSongsForFeatures"
+            [outlined]="true"></p-button>
         </p-buttonGroup>
       </div>
     </div>
@@ -100,27 +106,35 @@
               <td>
                 <p-buttonGroup class="text-nowrap">
                   <button pButton
-                    title="Entrenar"
                     type="button"
-                    icon="fa-solid fa-hexagon-nodes"
                     severity="success"
                     [outlined]="true"
-                    [disabled]="!song.userScore"
-                    size="small"></button>
+                    pTooltip="{{song.tsStatus=='error' ? showTooltipError(song.tsStatusErrReason):''}}"
+                    tooltipPosition="top"
+                    showDelay="700"
+                    [disabled]="!song.userScore||song.tsStatus=='training'||song.tsStatus=='trained'||songService.busyFlags.idSongsForFeatures"
+                    (click)="trainModel('single',i)">
+                    <i class="fa-solid fa-hexagon-nodes"></i>
+                    <span *ngIf="song.tsStatus!==null"
+                      class="position-absolute start-79 translate-middle badge-custom rounded-pill"
+                      [ngClass]="{'bg-info':song.tsStatus=='training','bg-success':song.tsStatus=='trained','bg-danger':song.tsStatus=='error'}">
+                      <i class="pi"
+                        [ngClass]="{'pi-spin pi-spinner text-black':song.tsStatus=='training','pi-check':song.tsStatus=='trained','pi-exclamation-triangle':song.tsStatus=='error'}"
+                        style="font-size: 1em"></i>
+                    </span>
+                  </button>
                   <button pButton
                     type="button"
-                    icon="pi pi-plus"
-                    title="Asignar a lista de reproducción"
                     severity="info"
-                    [outlined]="true"
-                    size="small"></button>
+                    [outlined]="true">
+                    <i class="pi pi-plus"></i>
+                  </button>
                   <button pButton
                     type="button"
-                    title="Borrar"
-                    icon="pi pi-trash"
                     severity="danger"
-                    [outlined]="true"
-                    size="small"></button>
+                    [outlined]="true">
+                    <i class="pi pi-trash"></i>
+                  </button>
                 </p-buttonGroup>
               </td>
             </tr>

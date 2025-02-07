@@ -8,13 +8,15 @@ import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { SongEntity } from '../_entities/song.entity';
 import { ConfigService } from '@nestjs/config';
+import { FeatureExtractorService } from 'src/_services/feature-extractor.service';
 
 @Controller('download')
 export class DownloadController {
   constructor(
     @InjectRepository(SongEntity)
     private readonly songRepository: Repository<SongEntity>,
-    private readonly cf: ConfigService
+    private readonly cf: ConfigService,
+    private readonly featureExtractor: FeatureExtractorService
   ) { }
 
   @Get('tsfeatures')
@@ -26,14 +28,20 @@ export class DownloadController {
         throw new HttpException('Song not found', HttpStatus.NOT_FOUND);
 
       const tsFeaturesPath = song.tsFeatures;
+      if (!tsFeaturesPath) {
+        this.featureExtractor.runExtraction();
+        throw new HttpException('TS Features not extracted', HttpStatus.NOT_IMPLEMENTED);
+      }
+
       const basePath = this.cf.get<string>('TS_PATH_FEATURES');
 
       if (!basePath)
         throw new HttpException('TS_PATH_FEATURES not configured in .env', HttpStatus.INTERNAL_SERVER_ERROR);
 
       const fullPath = path.join(basePath, tsFeaturesPath);
+      console.log('fullPath', fullPath);
 
-      // Validar existencia del archivo
+
       if (!fs.existsSync(fullPath))
         throw new HttpException('File not found', HttpStatus.NOT_FOUND);
 
