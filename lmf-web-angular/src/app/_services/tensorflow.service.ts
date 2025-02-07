@@ -123,28 +123,29 @@ export class TensorflowService {
   trainSong(
     mel_spectrogram: Array<Array<number>>,
     score: number,
+    epochs: number
   ) {
     return new Promise<void>((resolve, reject) => {
-      /*if (!this.model) {
+      if (!this.model) {
         reject({ message: 'Modelo no cargado' });
         return;
       }
- 
+
       const inputTensor = tf.tensor2d(mel_spectrogram);
       const outputTensor = tf.tensor1d([score]);
- 
-      this.model.fit(inputTensor.expandDims(0), outputTensor, { epochs: 1, batchSize: 1 }).then(() => {
+
+      this.model.fit(inputTensor.expandDims(0), outputTensor, { epochs, batchSize: 1 }).then(() => {
         inputTensor.dispose();
         outputTensor.dispose();
         resolve();
       }).catch((error) => {
         inputTensor.dispose();
-        outputTensor.dispose();*/
-      reject({
-        message: 'Error en el entrenamiento',
-        //error 
+        outputTensor.dispose();
+        reject({
+          message: 'Error en el entrenamiento',
+          error
+        });
       });
-      //});
     });
   }
 }

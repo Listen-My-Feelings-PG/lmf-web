@@ -11,7 +11,7 @@ export class Song {
     public id?: number,
     public storageStatusErrReason?: 'duplicated' | 'other' | null,
     public tsFeaturesDimensions?: number | 'error' | null,
-    public tsStatusErrReason?: 'features-notfound' | 'other'
+    public tsStatusErrReason?: 'features-notfound' | 'training-error' | 'customize-error' | 'other'
   ) { }
 }
 

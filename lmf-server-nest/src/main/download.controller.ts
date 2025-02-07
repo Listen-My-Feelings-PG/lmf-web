@@ -39,8 +39,6 @@ export class DownloadController {
         throw new HttpException('TS_PATH_FEATURES not configured in .env', HttpStatus.INTERNAL_SERVER_ERROR);
 
       const fullPath = path.join(basePath, tsFeaturesPath);
-      console.log('fullPath', fullPath);
-
 
       if (!fs.existsSync(fullPath))
         throw new HttpException('File not found', HttpStatus.NOT_FOUND);

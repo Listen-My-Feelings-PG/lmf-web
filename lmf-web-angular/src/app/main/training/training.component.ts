@@ -50,29 +50,14 @@ export class TrainingComponent implements OnInit {
     name: string,
     mode: 'new' | 'edit'
   }
-  ////////////////////////////////////////////
-  urlSongPlaying: string;
-  songs: {
-    listForTrain: Array<Song>, //Lista principal
-    listForPredict: Array<Song>
-    pool: Array<Song>,
-    busy: boolean,
-    iterator: any
-  }
-
-  tsFeatures: {
-    poolSongs: Array<{
-      id: number,
-      userScore: number | null
-    }>,
-    busy: boolean,
-    iterator: any
-  }
-
   rating: {
     stars: Array<number>,
     blocked: boolean
   }
+  ////////////////////////////////////////////
+
+
+
 
   constructor(
     private http: HttpService,
@@ -92,27 +77,10 @@ export class TrainingComponent implements OnInit {
       default: null,
       loaded: false
     }
-    ////////////////////////////////////////////
-    this.tsFeatures = {
-      poolSongs: [],
-      busy: false,
-      iterator: null
-    }
-
-    this.urlSongPlaying = '';
-    this.songs = {
-      listForTrain: [],
-      listForPredict: [],
-      pool: [],
-      busy: false,
-      iterator: null
-    }
-
     this.rating = {
       stars: [0, 1, 2],
       blocked: false
     }
-
   }
 
   async ngOnInit(): Promise<void> {
@@ -139,7 +107,6 @@ export class TrainingComponent implements OnInit {
         }
       }
     });
-    ////////////////////////////////////////////
   }
 
   setPlaylist(confirm: boolean, mode?: 'new' | 'edit'): void {
@@ -252,10 +219,22 @@ export class TrainingComponent implements OnInit {
             this.songService.customizeSpectrogram(data.mel_spectrogram, data.tempo, false).then(async (customized) => {
               const spectrogram = customized.resized;
               try {
-                //El flujo del entrenamiento continúa aquí
-                song.tsStatus = 'trained';
-                if (next)
-                  next();
+                const epochs = this.tsService.epochsNumberTask('get') as { score1: number, score2: number, score3: number };
+                const epochsNum = epochs['score' + song.userScore as keyof typeof epochs];
+                this.tsService.trainSong(spectrogram, song.userScore as number, epochsNum).then(() => {
+                  console.info('Canción entrenada:', song);
+                  song.tsStatus = 'trained';
+                  if (next)
+                    next();
+                }).catch((error) => {
+                  console.error('Ocurrió un error al entrenar el modelo:', error, song);
+                  if (mode == 'single')
+                    this.http.setToast('error', 'Error al entrenar la canción', `Error al entrenar la canción con id ${idSong}`);
+                  song.tsStatus = 'error';
+                  song.tsStatusErrReason = 'training-error';
+                  if (next)
+                    next();
+                });
               } catch (error) {
                 song.tsStatus = 'error';
                 song.tsStatusErrReason = 'training-error';
@@ -278,55 +257,6 @@ export class TrainingComponent implements OnInit {
           this.http.setToast('success', 'Entrenamiento completado', 'El modelo ha sido entrenado con éxito');
         }
       });
-  }
-
-  async getSongTsFeatures(mode: 'train' | 'predict') {
-    /*const list = this.songs[mode == 'train' ? 'listForTrain' : 'listForPredict'];
-    await this.tsService.loadModel();
-    this.songService.extractFeaturesFromSongs(
-      list.map((obj) => obj.id).filter((id): id is number => id !== undefined),
-      (
-        error: boolean,
-        features: LibrosaTsFeatures,
-        completed: boolean,
-        idSong: number | null,
-        next: Function
-      ) => {
-        if (!completed) {
-          if (!error) {
-            this.songService.customizeSpectrogram(features.mel_spectrogram, features.tempo, false).then(async (customized) => {
-              const spectrogram = customized.resized;
-              if (mode == 'train') {
-                const actualSong = list.find((obj) => obj.id == idSong);
-                try {
-                  await this.tsService.trainSong(spectrogram, actualSong?.userScore as number);
-                  if (actualSong)
-                    actualSong.tsStatus = 'trained';
-                  next();
-                } catch (error) {
-                  if (actualSong)
-                    actualSong.tsStatus = 'error';
-                  next();
-                }
-              } else {
-                next();
-              }
-            }).catch((error) => {
-              console.error(error);
-              next();
-            })
-          } else {
-            console.error('Error al extraer características:', features);
-            next();
-          }
-        }
-      }
-    );*/
-  }
-
-  stopTsFeaturesPool() {
-    this.tsFeatures.poolSongs = [];
-    this.tsFeatures.iterator = this.tsFeatures.poolSongs[Symbol.iterator]();
   }
 
   showTooltipError(tsStatusErrReason: Song['tsStatusErrReason']): string {
