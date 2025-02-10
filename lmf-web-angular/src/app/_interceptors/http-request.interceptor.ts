@@ -10,7 +10,7 @@ export const httpRequestInterceptor: HttpInterceptorFn = (req, next) => {
      *  ...
      * }
      *  
-     * Si existe más de un archivo, se especifican las definiciones del archivo en camnpos con la siguiente nomenclatura: 
+     * Si existe más de un archivo, se especifican las definiciones(campos) del archivo en camnpos con la siguiente nomenclatura: 
      * file_[índice]_[key1], file_[índice]_[key2],... seguido del archivo con el nombre "file_[índice]":
      * { 
      *  ...
