@@ -99,7 +99,7 @@ export class TrainingComponent implements OnInit {
             this.http.setToast('error', 'Error al cargar listas', 'Default playlist not found');
           }
           this.playlists.list = list.filter((obj) => !obj.isDefault).map((obj) => new Playlist(obj.name, [], [], null, false, obj.id));
-          this.tsService.epochsNumberTask('set', res.data.tsConfig.epochs);
+          this.tsService.epochsConfig('set', res.data.tsConfig.epochs);
           this.tsService.init();
         } else {
           console.error('Default playlist not found');
@@ -204,18 +204,34 @@ export class TrainingComponent implements OnInit {
             if (data.error) {
               switch (data.error.status) {
                 case 501:
-                  this.http.setToast('warn', 'Extracción de características en espera', `Las características de la canción con id ${idSong} aun no han sido extraídas. Porfavor, espere hasta que el servidor haya completado la extracción.`, 7000);
+                  this.http.setToast(
+                    'warn',
+                    'Extracción de características en espera',
+                    `Las características de la canción con id ${idSong} aun no han sido extraídas. 
+                     Porfavor, espere hasta que el servidor haya completado la extracción.`,
+                    7000
+                  );
                   song.tsStatus = null;
                   break;
                 case 404:
                   if (mode == 'single')
-                    this.http.setToast('error', 'Características de la canción no encontradas', `El archivo con las características de la canción con id ${idSong} no ha sido encontrado en el servidor.`, 7000);
+                    this.http.setToast(
+                      'error',
+                      'Características de la canción no encontradas',
+                      `El archivo con las características de la canción con id ${idSong} no ha sido encontrado en el servidor.`,
+                      7000
+                    );
                   song.tsStatus = 'error';
                   song.tsStatusErrReason = 'features-notfound';
                   break;
                 default:
                   if (mode == 'single')
-                    this.http.setToast('error', 'Error en la extración de características', `Error al extraer las características de la canción con id ${idSong}.`, 7000);
+                    this.http.setToast(
+                      'error',
+                      'Error en la extración de características',
+                      `Error al extraer las características de la canción con id ${idSong}.`,
+                      7000
+                    );
                   song.tsStatus = 'error';
                   song.tsStatusErrReason = 'features-notfound';
                   break;
@@ -236,10 +252,11 @@ export class TrainingComponent implements OnInit {
             this.songService.customizeSpectrogram(data.mel_spectrogram, data.tempo, false).then((customized) => {
               const spectrogram = customized.resized;
               try {
-                const epochs = this.tsService.epochsNumberTask('get') as { score1: number, score2: number, score3: number };
+                const epochs = this.tsService.epochsConfig('get') as { score1: number, score2: number, score3: number };
                 const epochsNum = epochs['score' + song.userScore as keyof typeof epochs];
                 this.tsService.trainSong(spectrogram, song.userScore as number, epochsNum).then(() => {
-                  this.updateSongStatusOnServer(
+                  song.tsStatus = 'trained';
+                  /*this.updateSongStatusOnServer(
                     song.id as number,
                     song.tsStatus,
                     song.tsInitStatus,
@@ -251,14 +268,12 @@ export class TrainingComponent implements OnInit {
                       song.storageStatus = 'error';
                       song.storageStatusErrReason = 'other';
                     } else {
-                      console.log('res:', res);
-                      song.tsStatus = 'trained';
                       song.storageStatus = 'updated';
                       console.info('Canción entrenada:', song);
-                    }
-                    if (next)
-                      next();
-                  });
+                    }*/
+                  if (next)
+                    next();
+                  //});
                 }).catch((error) => {
                   console.error('Ocurrió un error al entrenar el modelo:', error, song);
                   if (mode == 'single')
@@ -322,7 +337,9 @@ export class TrainingComponent implements OnInit {
             });
           }
         } else if (mode == 'all') {
-          //Aquí se actualizará el modelo en el servidor
+          const weights = this.tsService.getModelWeights();
+          
+          console.log('weights:', weights);
           if (this.playlists.selected?.songs.find((obj) => obj.storageStatus == 'error' || obj.tsStatus == 'error'))
             this.http.setToast('warn', 'Error al entrenar el modelo', 'Algunas canciones no pudieron ser entrenadas');
           else

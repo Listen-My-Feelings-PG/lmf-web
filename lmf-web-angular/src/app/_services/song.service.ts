@@ -88,7 +88,11 @@ export class SongService {
     }
   }
 
-  customizeSpectrogram(mel_spectrogram: Array<Array<number>>, tempo: number, extendTempo: boolean): Promise<SpectrogramSpecs> {
+  customizeSpectrogram(
+    mel_spectrogram: Array<Array<number>>,
+    tempo: number,
+    extendTempo: boolean
+  ): Promise<SpectrogramSpecs> {
     return new Promise((resolve, reject) => {
       let control: { firstIndex: number, lastIndex: number, maxValue: number } = {
         firstIndex: -1, lastIndex: 20000, maxValue: 0

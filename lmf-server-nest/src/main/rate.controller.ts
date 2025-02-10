@@ -9,7 +9,9 @@ import { Repository } from 'typeorm';
 export class RateController {
   constructor(
     @InjectRepository(SongEntity) private readonly songRepository: Repository<SongEntity>,
-    private readonly featureExtractor: FeatureExtractorService
+    private readonly featureExtractor: FeatureExtractorService,
+    @InjectRepository(SongEntity)
+    private readonly songsTable: Repository<SongEntity>,
   ) { }
 
   @Post('song')
@@ -27,6 +29,26 @@ export class RateController {
           score: body.score
         }
 
+      };
+    } else {
+      console.error('Cancion no encontrada:', body.id);
+      throw new HttpException('Song not found', HttpStatus.NOT_FOUND)
+    }
+  }
+
+  @Post('prediction')
+  @UseInterceptors(FileInterceptor(''))
+  async setPrediction(@Body() body: any) {
+    const song = await this.songsTable.findOne({ where: { id: body.id, active: true } });
+    if (song) {
+      song.tsPrediction = body.prediction;
+      await this.songsTable.save(song);
+      return {
+        message: 'prediction set',
+        data: {
+          id: body.id,
+          prediction: body.prediction
+        }
       };
     } else {
       console.error('Cancion no encontrada:', body.id);

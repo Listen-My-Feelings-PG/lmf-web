@@ -71,7 +71,7 @@ export class SpectrogramViewerComponent implements AfterViewInit, OnDestroy {
     this.loadSpectrogram();
   }
 
-  draw(x: number, y: number, v: number) {
+  draw(x: number, y: number, v: number): Promise<number> {
     return new Promise((resolve, reject) => {
       const size = 2;
       const clampedIntensity = Math.max(0, Math.min(1, v));

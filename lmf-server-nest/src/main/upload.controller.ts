@@ -123,51 +123,12 @@ export class UploadController {
     }
   }
 
-  @Post('prediction')
+  @Post('model-weights')
   @UseInterceptors(FileInterceptor(''))
   async setPrediction(@Body() body: any) {
-    const song = await this.songsTable.findOne({ where: { id: body.id, active: true } });
-    if (song) {
-      song.tsPrediction = body.prediction;
-      await this.songsTable.save(song);
-      return {
-        message: 'prediction set',
-        data: {
-          id: body.id,
-          prediction: body.prediction
-        }
-      };
-    } else {
-      console.error('Cancion no encontrada:', body.id);
-      throw new HttpException('Song not found', HttpStatus.NOT_FOUND)
-    }
-  }
-
-  @Post('model')
-  @UsePipes(new ValidationPipe({ transform: true }))
-  @UseInterceptors(
-    FileInterceptor('file', {
-      storage: diskStorage({
-        destination: (req, file, cb) => {
-          const cf: ConfigService = new ConfigService();
-          cb(null, cf.get<string>('TS_PATH_MODELS'))
-        },
-        filename: ((req, file, cb) => {
-          const uniqueSuffix = new Date().getTime();
-          const sanitizedFilename = Buffer.from(file.originalname, 'latin1').toString('utf8');
-          cb(null, `${uniqueSuffix}_${sanitizedFilename}`);
-        })
-      })
-    })
-  )
-  uploadModel(
-    @UploadedFile() file: Express.Multer.File,
-    @Body() body: any,
-    @Query() isGlobal: BooleanDto
-  ) {
+    console.log('body:', body);
     return {
-      message: 'model uploaded',
-      data: null
+      message: 'Query successfull'
     }
   }
 

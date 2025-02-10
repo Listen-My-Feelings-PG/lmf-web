@@ -69,7 +69,7 @@ export class TensorflowService {
     console.info(`Tensorflow inicializado. Variables activas: ${tf.memory().numTensors}`);
   }
 
-  epochsNumberTask(mode: 'get' | 'set', epochs?: {
+  epochsConfig(mode: 'get' | 'set', epochs?: {
     score1: number,
     score2: number,
     score3: number
@@ -82,7 +82,27 @@ export class TensorflowService {
       return this.epochsNumber;
   }
 
-  newModel() {
+  getModelWeights() {
+    const weights = this.model?.getWeights().map(w => w.arraySync());
+    return weights;
+  }
+
+  setModelWeights(weights: Array<Array<number>>): Promise<string> {
+    return new Promise((resolve, reject) => {
+      if (this.model) {
+        try {
+          this.model.setWeights(weights.map(w => tf.tensor(w)));
+          resolve('Pesos cargados');
+        } catch (error) {
+          console.error('Error al cargar los pesos en el modelo', error);
+          reject(error);
+        }
+      } else
+        reject('Modelo no cargado');
+    })
+  }
+
+  newModel(): Promise<string> {
     return new Promise((resolve) => {
       this.model = tf.sequential();
       this.model.add(tf.layers.dense({ units: 64, activation: 'relu', inputShape: [129, 20000] }));
