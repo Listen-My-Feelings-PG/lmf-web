@@ -167,7 +167,7 @@ export class SongService {
       item.value.tsPrediction = null;
       that.http.post('upload/file', { ...item.value, idPlaylist }).subscribe({
         next: (res: any) => {
-          taskCallback(false, { completed: false, storageStatus: 'uploaded', id: res.sRow.id }, that.indexes.songsForUpload);
+          taskCallback(false, { completed: false, storageStatus: 'uploaded', id: res.data.sRow.id }, that.indexes.songsForUpload);
           checkPool(item);
         },
         error: (error: { status: number; }) => {

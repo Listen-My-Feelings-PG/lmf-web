@@ -81,7 +81,9 @@ export class UploadController {
 
         return {
           message: 'song added to playlist',
-          sRow: { id: idExistingSong.id },
+          data: {
+            sRow: { id: idExistingSong.id },
+          }
         }
 
       } else {
@@ -108,8 +110,10 @@ export class UploadController {
         }));
         return {
           message: 'uploaded successful',
-          sRow,
-          plsRow
+          data: {
+            sRow,
+            plsRow
+          }
         }
       } catch (error) {
         await fs.unlinkSync(filePath);
@@ -128,8 +132,10 @@ export class UploadController {
       await this.songsTable.save(song);
       return {
         message: 'prediction set',
-        id: body.id,
-        prediction: body.prediction
+        data: {
+          id: body.id,
+          prediction: body.prediction
+        }
       };
     } else {
       console.error('Cancion no encontrada:', body.id);
@@ -160,7 +166,8 @@ export class UploadController {
     @Query() isGlobal: BooleanDto
   ) {
     return {
-      message: 'model uploaded'
+      message: 'model uploaded',
+      data: null
     }
   }
 

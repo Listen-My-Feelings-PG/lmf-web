@@ -22,8 +22,11 @@ export class RateController {
       await this.featureExtractor.runExtraction();
       return {
         message: 'song rated',
-        id: body.id,
-        score: body.score
+        data: {
+          id: body.id,
+          score: body.score
+        }
+
       };
     } else {
       console.error('Cancion no encontrada:', body.id);

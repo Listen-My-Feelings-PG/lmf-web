@@ -10,14 +10,15 @@ import { Response } from 'express';
 import { SongsPlaylistsEntity } from 'src/_entities/songs-playlists.entity';
 import { Song } from 'src/_models/all.model';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { FeatureExtractorService } from 'src/_services/feature-extractor.service';
 
 @Controller('songs')
 export class SongsController {
   constructor(
-    @InjectRepository(SongEntity)
-    private readonly songsTable: Repository<SongEntity>,
-    @InjectRepository(SongsPlaylistsEntity)
-    private readonly songsPlaylistsTable: Repository<SongsPlaylistsEntity>,
+    @InjectRepository(SongEntity) private readonly songsTable: Repository<SongEntity>,
+    @InjectRepository(SongsPlaylistsEntity) private readonly songsPlaylistsTable: Repository<SongsPlaylistsEntity>,
+    @InjectRepository(SongEntity) private readonly songRepository: Repository<SongEntity>,
+    private readonly featureExtractor: FeatureExtractorService,
     private readonly cf: ConfigService
   ) { }
 
@@ -91,9 +92,20 @@ export class SongsController {
   @Post('update-status')
   @UseInterceptors(FileInterceptor(''))
   async updateSongStatus(@Body() body: any) {
-    console.log('body:', body);
-    return {
-      message: 'Query successful'
+    const song = await this.songRepository.findOneBy({ id: body.idSong, active: true });
+    if (song) {
+      song.tsStatus = body.tsStatus;
+      song.tsInitStatus = body.tsInitStatus;
+      song.userScore = body.score;
+      const result = await this.songRepository.save(song);
+      await this.featureExtractor.runExtraction();
+      return {
+        message: 'Query successful',
+        data: result
+      };
+    } else {
+      console.error('Cancion no encontrada:', body.id);
+      throw new HttpException('Song not found', HttpStatus.NOT_FOUND)
     }
   }
 }

@@ -167,7 +167,7 @@ export class TrainingComponent implements OnInit {
     const song = this.playlists.selected?.songs[indexSong];
     if (song && (!this.rating.blocked || song.userScore != rate))
       this.http.post('rate/song', { id: song.id, score: rate }, true).subscribe({
-        next: (res) => song.userScore = res.score
+        next: (res) => song.userScore = res.data.score
       });
   }
 
@@ -239,8 +239,6 @@ export class TrainingComponent implements OnInit {
                 const epochs = this.tsService.epochsNumberTask('get') as { score1: number, score2: number, score3: number };
                 const epochsNum = epochs['score' + song.userScore as keyof typeof epochs];
                 this.tsService.trainSong(spectrogram, song.userScore as number, epochsNum).then(() => {
-                  console.info('Canción entrenada:', song);
-                  song.tsStatus = 'trained';
                   this.updateSongStatusOnServer(
                     song.id as number,
                     song.tsStatus,
@@ -248,7 +246,16 @@ export class TrainingComponent implements OnInit {
                     song.storageStatus,
                     song.tsPrediction,
                     song.userScore
-                  ).then(() => {
+                  ).then((res) => {
+                    if (res === null) {
+                      song.storageStatus = 'error';
+                      song.storageStatusErrReason = 'other';
+                    } else {
+                      console.log('res:', res);
+                      song.tsStatus = 'trained';
+                      song.storageStatus = 'updated';
+                      console.info('Canción entrenada:', song);
+                    }
                     if (next)
                       next();
                   });
@@ -282,7 +289,11 @@ export class TrainingComponent implements OnInit {
                   song.storageStatus,
                   song.tsPrediction,
                   song.userScore
-                ).then(() => {
+                ).then((res) => {
+                  if (res === null) {
+                    song.storageStatus = 'error';
+                    song.storageStatusErrReason = 'other';
+                  }
                   if (next)
                     next();
                 });
@@ -300,14 +311,22 @@ export class TrainingComponent implements OnInit {
                 song.storageStatus,
                 song.tsPrediction,
                 song.userScore
-              ).then(() => {
+              ).then((res) => {
+                if (res === null) {
+                  song.storageStatus = 'error';
+                  song.storageStatusErrReason = 'other';
+                }
                 if (next)
                   next();
               });
             });
           }
         } else if (mode == 'all') {
-          this.http.setToast('success', 'Entrenamiento completado', 'El modelo ha sido entrenado con éxito');
+          //Aquí se actualizará el modelo en el servidor
+          if (this.playlists.selected?.songs.find((obj) => obj.storageStatus == 'error' || obj.tsStatus == 'error'))
+            this.http.setToast('warn', 'Error al entrenar el modelo', 'Algunas canciones no pudieron ser entrenadas');
+          else
+            this.http.setToast('success', 'Entrenamiento completado', 'El modelo ha sido entrenado con éxito');
         }
       });
   }
@@ -322,8 +341,11 @@ export class TrainingComponent implements OnInit {
   ): Promise<any> {
     return new Promise((resolve) => {
       this.http.post('songs/update-status', { idSong, tsStatus, tsInitStatus, storageStatus, tsPrediction, userScore }, true).subscribe({
-        next: () => resolve(false),
-        error: (error) => resolve(true)
+        next: (res) => resolve(res),
+        error: (error) => {
+          console.error('Error al actualizar el estado de la canción en el servidor:', error);
+          resolve(null);
+        }
       });
     })
   }

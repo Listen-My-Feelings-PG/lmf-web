@@ -121,11 +121,20 @@
                     [disabled]="!song.userScore||song.tsStatus=='training'||song.tsStatus=='trained'||songService.busyFlags.idSongsForFeatures"
                     (click)="trainModel('single',i)">
                     <i class="fa-solid fa-hexagon-nodes"></i>
-                    <span *ngIf="song.tsStatus!==null"
+                    <span *ngIf="song.tsStatus!==null||song.storageStatus=='error'"
                       class="position-absolute start-79 translate-middle badge-custom rounded-pill"
-                      [ngClass]="{'bg-info':song.tsStatus=='training','bg-success':song.tsStatus=='trained','bg-danger':song.tsStatus=='error'}">
+                      [ngClass]="{
+                        'bg-info':song.tsStatus=='training',
+                        'bg-success':song.tsStatus=='trained',
+                        'bg-danger':song.tsStatus=='error'||song.storageStatus=='error'
+                    }">
                       <i class="pi"
-                        [ngClass]="{'pi-spin pi-spinner text-black':song.tsStatus=='training','pi-check':song.tsStatus=='trained','pi-exclamation-triangle':song.tsStatus=='error'}"
+                        [ngClass]="{
+                          'pi-spin pi-spinner text-black':song.tsStatus=='training',
+                          'pi-check':song.tsStatus=='trained',
+                          'pi-exclamation-triangle':song.tsStatus=='error',
+                          'pi-times':song.storageStatus=='error'
+                        }"
                         style="font-size: 1em"></i>
                     </span>
                   </button>

@@ -5,7 +5,7 @@ export class Song {
     public file: File | null,
     public userScore: number | null, //Dentro de cualquier playlist, se aceptará una calificación de 0
     public tsPrediction: number | null,
-    public storageStatus: 'local' | 'uploading' | 'uploaded' | 'downloading' | 'downloaded' | 'error',
+    public storageStatus: 'local' | 'uploading' | 'uploaded' | 'downloading' | 'downloaded' | 'updated' | 'error',
     public tsStatus: 'training' | 'trained' | 'predicting' | 'predicted' | 'retrained' | 'error' | null,
     public tsInitStatus: 'train' | 'predict' | 'retrain',
     public id?: number,
