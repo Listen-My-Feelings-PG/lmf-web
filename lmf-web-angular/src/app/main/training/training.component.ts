@@ -54,10 +54,6 @@ export class TrainingComponent implements OnInit {
     stars: Array<number>,
     blocked: boolean
   }
-  ////////////////////////////////////////////
-
-
-
 
   constructor(
     private http: HttpService,
@@ -85,6 +81,7 @@ export class TrainingComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     this.playerService.getPlayerEmmitterIdSong().subscribe({ next: (id) => this.idSongPlaying = id });
+    //Primero se deben cargar los pesos del modelo global
     this.http.post('playlist/get-all', { all: true }, true).subscribe({
       next: (res) => {
         const list: Array<any> = res.data.list;
@@ -179,7 +176,7 @@ export class TrainingComponent implements OnInit {
   }
 
   async trainModel(mode: 'single' | 'all', index?: number): Promise<void> {
-    await this.tsService.newModel();
+    await this.tsService.newModel(false);
     let actualTrainedIdSongsList: Array<number> = [];
     let list: Array<number> = []
     if (mode == 'single') {
@@ -247,25 +244,10 @@ export class TrainingComponent implements OnInit {
               try {
                 const epochs = this.tsService.epochsConfig('get') as { score1: number, score2: number, score3: number };
                 const epochsNum = epochs['score' + song.userScore as keyof typeof epochs];
-                this.tsService.trainSong(spectrogram, song.userScore as number, epochsNum).then(() => {
+                this.tsService.trainSong(false, spectrogram, song.userScore as number, epochsNum).then(() => {
                   song.tsStatus = 'trained';
-                  /*this.updateSongStatusOnServer(
-                    song.id as number,
-                    song.tsStatus,
-                    song.tsInitStatus,
-                    song.storageStatus,
-                    song.tsPrediction,
-                    song.userScore
-                  ).then((res) => {
-                    if (res === null) {
-                      song.storageStatus = 'error';
-                      song.storageStatusErrReason = 'other';
-                    } else {
-                      actualTrainedIdSongsList.push(song.id as number);
-                      song.storageStatus = 'updated';
-                      console.info('Canción entrenada:', song);
-                    }*/
-                  actualTrainedIdSongsList.push(song.id as number); //Borrar
+                  /*updateStatusTask(song).then(()=>{
+                    actualTrainedIdSongsList.push(song.id as number);*/
                   if (next)
                     next();
                   //});
@@ -311,11 +293,11 @@ export class TrainingComponent implements OnInit {
             });
           }
         } else {
-          const weights = this.tsService.getModelWeights();
-          const blob = new Blob([JSON.stringify(weights)], { type: 'text/plain' });
-          const file = new File([blob], 'model-weights.txt', { type: 'text/plain' });
-
-          this.http.post('upload/model-weights', { file, idPlaylist: this.playlists.selected?.id }, {
+          const weights = this.tsService.getModelWeights(false);
+          const blob = new Blob([JSON.stringify(weights)], { type: 'application/json' });
+          const file = new File([blob], 'model-weights.json', { type: 'application/json' });
+          const plSelected = this.playlists.selected as Playlist;
+          this.http.post('upload/model-weights', { file, idPlaylist: plSelected.id }, {
             key: 'default',
             severity: 'error',
             summary: 'Error al actualizar modelo',

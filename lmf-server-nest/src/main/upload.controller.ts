@@ -21,15 +21,15 @@ import { PlaylistEntity } from 'src/_entities/playlist.entity';
 import { writeFile } from 'fs/promises';
 import * as zlib from 'zlib';
 import { promisify } from 'util';
+import { ModelEntity } from 'src/_entities/model.entity';
 
 
 @Controller('upload')
 export class UploadController {
   constructor(
-    @InjectRepository(SongEntity)
-    private readonly songsTable: Repository<SongEntity>,
-    @InjectRepository(SongsPlaylistsEntity)
-    private readonly songsPlaylistsTable: Repository<SongsPlaylistsEntity>,
+    @InjectRepository(SongEntity) private readonly songsTable: Repository<SongEntity>,
+    @InjectRepository(SongsPlaylistsEntity) private readonly songsPlaylistsTable: Repository<SongsPlaylistsEntity>,
+    @InjectRepository(ModelEntity) private readonly modelTable: Repository<ModelEntity>,
     private readonly cf: ConfigService
   ) { }
 
@@ -138,17 +138,26 @@ export class UploadController {
   }))
   async setModelWeights(@UploadedFile() file: Express.Multer.File, @Body() body: any) {
     const gzip = promisify(zlib.gzip);
-    console.log('body:', body);
-
     const filePath = path.resolve(this.cf.get<string>('TS_PATH_MODELS'), file.filename);
     const gzipFilePath = `${filePath}.gz`;
-
     try {
       const fileContent = await fs.promises.readFile(filePath);
       const compressedContent = await gzip(fileContent);
       await writeFile(gzipFilePath, compressedContent);
       console.info('Compressed file:', gzipFilePath);
       await fs.unlinkSync(filePath);
+      const globalModel = await this.modelTable.findOne({ where: { isGlobal: true } });
+      if (globalModel) {
+
+      } else {
+        const newGlobalModel = await this.modelTable.save(this.modelTable.create({
+          fileName: file.filename,
+          trainCount: 1,
+          isGlobal: true
+        }));
+        console.info('Global model created:', newGlobalModel, new Date().toLocaleString());
+      }
+
       return {
         message: 'Archivo comprimido exitosamente',
         filePath: gzipFilePath

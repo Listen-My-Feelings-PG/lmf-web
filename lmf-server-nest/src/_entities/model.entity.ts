@@ -17,12 +17,12 @@ export class ModelEntity {
 	creationDate: string;
 
 	@Column({ name: 'mo_train_count', type: 'int' })
-	trainCount: string;
+	trainCount: number;
 
 	@Column({ name: 'mo_global', type: 'boolean' })
-	isGlobal: string;
+	isGlobal: boolean;
 
-	@Column({ name: 'mo_activo', type: 'boolean' })
+	@Column({ name: 'mo_activo', type: 'boolean', default: true })
 	active: boolean;
 
 	@OneToMany(() => CalibrationEntity, calibration => calibration.idModel)

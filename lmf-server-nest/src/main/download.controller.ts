@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Res, HttpException, HttpStatus, UsePipes } from '@nestjs/common';
+import { Controller, Get, Query, Res, HttpException, HttpStatus, UsePipes, Post, UseInterceptors, Body } from '@nestjs/common';
 import { Response } from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -9,6 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { SongEntity } from '../_entities/song.entity';
 import { ConfigService } from '@nestjs/config';
 import { FeatureExtractorService } from 'src/_services/feature-extractor.service';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('download')
 export class DownloadController {
@@ -54,6 +55,15 @@ export class DownloadController {
       console.error(error);
       throw new HttpException('Internal Server Error', HttpStatus.INTERNAL_SERVER_ERROR);
     }
+  }
+
+  @Post('ts-weights')
+  @UseInterceptors(FileInterceptor(''))
+  getTsWeights(@Body() body: any) {
+    console.log('body', body);
+    return {
+      message: 'Weights received'
+    };
   }
 }
 

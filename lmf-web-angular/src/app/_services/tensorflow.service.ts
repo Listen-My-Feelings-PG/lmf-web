@@ -34,7 +34,8 @@ export class TensorflowService {
     score3: number
   }
 
-  private model!: tf.Sequential | null;
+  private globalModel!: tf.Sequential | null;
+  private plModel!: tf.Sequential | null;
 
   constructor() {
     this.epochsNumber = {
@@ -62,10 +63,16 @@ export class TensorflowService {
     tf.disposeVariables();
     tf.engine().endScope();
     tf.engine().reset();
-    if (this.model) {
-      this.model.dispose();
-      this.model = null;
+    if (this.globalModel) {
+      this.globalModel.dispose();
+      this.globalModel = null;
     }
+
+    if (this.plModel) {
+      this.plModel.dispose();
+      this.plModel = null;
+    }
+
     console.info(`Tensorflow inicializado. Variables activas: ${tf.memory().numTensors}`);
   }
 
@@ -82,16 +89,19 @@ export class TensorflowService {
       return this.epochsNumber;
   }
 
-  getModelWeights() {
-    const weights = this.model?.getWeights().map(w => w.arraySync());
-    return weights;
+  getModelWeights(global: boolean): Array<Array<number>> | null {
+    if (this[global ? 'globalModel' : 'plModel']) {
+      const weights = this[global ? 'globalModel' : 'plModel']?.getWeights().map(w => w.arraySync());
+      return weights as Array<Array<number>>;
+    } else
+      return null;
   }
 
-  setModelWeights(weights: Array<Array<number>>): Promise<string> {
+  setModelWeights(global: boolean, weights: Array<Array<number>>): Promise<string> {
     return new Promise((resolve, reject) => {
-      if (this.model) {
+      if (this[global ? 'globalModel' : 'plModel']) {
         try {
-          this.model.setWeights(weights.map(w => tf.tensor(w)));
+          this[global ? 'globalModel' : 'plModel']?.setWeights(weights.map(w => tf.tensor(w)));
           resolve('Pesos cargados');
         } catch (error) {
           console.error('Error al cargar los pesos en el modelo', error);
@@ -102,15 +112,15 @@ export class TensorflowService {
     })
   }
 
-  newModel(): Promise<string> {
+  newModel(global: boolean): Promise<string> {
     return new Promise((resolve) => {
-      this.model = tf.sequential();
-      this.model.add(tf.layers.dense({ units: 64, activation: 'relu', inputShape: [129, 20000] }));
-      this.model.add(tf.layers.flatten());
-      this.model.add(tf.layers.dense({ units: 32, activation: 'relu' }));
-      this.model.add(tf.layers.dense({ units: 1, activation: 'linear' }));
+      this[global ? 'globalModel' : 'plModel'] = tf.sequential();
+      this[global ? 'globalModel' : 'plModel']?.add(tf.layers.dense({ units: 64, activation: 'relu', inputShape: [129, 20000] }));
+      this[global ? 'globalModel' : 'plModel']?.add(tf.layers.flatten());
+      this[global ? 'globalModel' : 'plModel']?.add(tf.layers.dense({ units: 32, activation: 'relu' }));
+      this[global ? 'globalModel' : 'plModel']?.add(tf.layers.dense({ units: 1, activation: 'linear' }));
 
-      this.model.compile({
+      this[global ? 'globalModel' : 'plModel']?.compile({
         optimizer: tf.train.adam(),
         loss: 'meanSquaredError',
         metrics: ['mae']
@@ -121,13 +131,13 @@ export class TensorflowService {
 
   /*loadModel(): Promise<string> {
     return new Promise((resolve) => {
-      this.model = tf.sequential();
-      this.model.add(tf.layers.dense({ units: 64, activation: 'relu', inputShape: [129, 20000] }));
-      this.model.add(tf.layers.flatten());
-      this.model.add(tf.layers.dense({ units: 32, activation: 'relu' }));
-      this.model.add(tf.layers.dense({ units: 1, activation: 'linear' }));
+      this[global ? 'globalModel' : 'plModel']? = tf.sequential();
+      this[global ? 'globalModel' : 'plModel']?.add(tf.layers.dense({ units: 64, activation: 'relu', inputShape: [129, 20000] }));
+      this[global ? 'globalModel' : 'plModel']?.add(tf.layers.flatten());
+      this[global ? 'globalModel' : 'plModel']?.add(tf.layers.dense({ units: 32, activation: 'relu' }));
+      this[global ? 'globalModel' : 'plModel']?.add(tf.layers.dense({ units: 1, activation: 'linear' }));
  
-      this.model.compile({
+      this[global ? 'globalModel' : 'plModel']?.compile({
         optimizer: tf.train.adam(),
         loss: 'meanSquaredError',
         metrics: ['mae']
@@ -136,17 +146,18 @@ export class TensorflowService {
     });
   }*/
 
-  predict() {
+  predict(global: boolean) {
 
   }
 
   trainSong(
+    global: boolean,
     mel_spectrogram: Array<Array<number>>,
     score: number,
     epochs: number
   ) {
     return new Promise<void>((resolve, reject) => {
-      if (!this.model) {
+      if (!this[global ? 'globalModel' : 'plModel']) {
         reject({ message: 'Modelo no cargado' });
         return;
       }
@@ -154,7 +165,7 @@ export class TensorflowService {
       const inputTensor = tf.tensor2d(mel_spectrogram);
       const outputTensor = tf.tensor1d([score]);
 
-      this.model.fit(inputTensor.expandDims(0), outputTensor, { epochs, batchSize: 1 }).then(() => {
+      this[global ? 'globalModel' : 'plModel']?.fit(inputTensor.expandDims(0), outputTensor, { epochs, batchSize: 1 }).then(() => {
         inputTensor.dispose();
         outputTensor.dispose();
         resolve();
