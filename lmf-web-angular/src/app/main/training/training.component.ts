@@ -236,14 +236,7 @@ export class TrainingComponent implements OnInit {
                   song.tsStatusErrReason = 'features-notfound';
                   break;
               }
-              this.updateSongStatusOnServer(
-                song.id as number,
-                song.tsStatus,
-                song.tsInitStatus,
-                song.storageStatus,
-                song.tsPrediction,
-                song.userScore
-              ).then(() => {
+              updateStatusTask(song).then(() => {
                 if (next)
                   next();
               });
@@ -282,14 +275,7 @@ export class TrainingComponent implements OnInit {
                     this.http.setToast('error', 'Error al entrenar la canción', `Error al entrenar la canción con id ${idSong}`);
                   song.tsStatus = 'error';
                   song.tsStatusErrReason = 'training-error';
-                  this.updateSongStatusOnServer(
-                    song.id as number,
-                    song.tsStatus,
-                    song.tsInitStatus,
-                    song.storageStatus,
-                    song.tsPrediction,
-                    song.userScore
-                  ).then(() => {
+                  updateStatusTask(song).then(() => {
                     if (next)
                       next();
                   });
@@ -299,14 +285,7 @@ export class TrainingComponent implements OnInit {
                 song.tsStatusErrReason = 'training-error';
                 if (mode == 'single')
                   this.http.setToast('error', 'Error al entrenar la canción', `Error al entrenar la canción con id ${idSong}`);
-                this.updateSongStatusOnServer(
-                  song.id as number,
-                  song.tsStatus,
-                  song.tsInitStatus,
-                  song.storageStatus,
-                  song.tsPrediction,
-                  song.userScore
-                ).then((res) => {
+                updateStatusTask(song).then((res) => {
                   if (res === null) {
                     song.storageStatus = 'error';
                     song.storageStatusErrReason = 'other';
@@ -321,14 +300,7 @@ export class TrainingComponent implements OnInit {
               song.tsStatusErrReason = 'customize-error';
               if (mode == 'single')
                 this.http.setToast('error', 'Error al personalizar el espectrograma de la canción', `Error al personalizar el espectrograma de la canción con id ${idSong}`);
-              this.updateSongStatusOnServer(
-                song.id as number,
-                song.tsStatus,
-                song.tsInitStatus,
-                song.storageStatus,
-                song.tsPrediction,
-                song.userScore
-              ).then((res) => {
+              updateStatusTask(song).then((res) => {
                 if (res === null) {
                   song.storageStatus = 'error';
                   song.storageStatusErrReason = 'other';
@@ -343,7 +315,7 @@ export class TrainingComponent implements OnInit {
           const blob = new Blob([JSON.stringify(weights)], { type: 'text/plain' });
           const file = new File([blob], 'model-weights.txt', { type: 'text/plain' });
 
-          this.http.post('upload/model-weights', { file }, {
+          this.http.post('upload/model-weights', { file, idPlaylist: this.playlists.selected?.id }, {
             key: 'default',
             severity: 'error',
             summary: 'Error al actualizar modelo',
@@ -367,6 +339,17 @@ export class TrainingComponent implements OnInit {
           });
         }
       });
+    const that = this;
+    function updateStatusTask(song: Song) {
+      return that.updateSongStatusOnServer(
+        song.id as number,
+        song.tsStatus,
+        song.tsInitStatus,
+        song.storageStatus,
+        song.tsPrediction,
+        song.userScore
+      )
+    }
   }
 
   updateSongStatusOnServer(

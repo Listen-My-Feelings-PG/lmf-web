@@ -18,7 +18,9 @@ import * as path from 'path';
 import { ConfigService } from '@nestjs/config';
 import { SongsPlaylistsEntity } from 'src/_entities/songs-playlists.entity';
 import { PlaylistEntity } from 'src/_entities/playlist.entity';
+import { writeFile } from 'fs/promises';
 import * as zlib from 'zlib';
+import { promisify } from 'util';
 
 
 @Controller('upload')
@@ -123,35 +125,37 @@ export class UploadController {
   @Post('model-weights')
   @UseInterceptors(FileInterceptor('file', {
     storage: diskStorage({
-      destination: async (req, file, cb) => {
+      destination: (req, file, cb) => {
         const cf: ConfigService = new ConfigService();
-        const destPath = cf.get<string>('TS_PATH_MODELS');
-        const filePath = path.join(destPath, file.filename);
-        const gzip = zlib.createGzip();
-        const source = fs.createReadStream(filePath);
-        const uniqueSuffix = new Date().getTime();
-        const destination = fs.createWriteStream(filePath + '.gz');
-
-        source.pipe(gzip).pipe(destination).on('finish', (err) => {
-          if (err) {
-            console.error('Error compressing file:', err);
-            cb(err, null);
-          } else {
-            cb(null, destPath);
-          }
-        });
+        cb(null, cf.get<string>('TS_PATH_MODELS'))
       },
-      filename: (req, file, cb) => {
+      filename: ((req, file, cb) => {
         const uniqueSuffix = new Date().getTime();
         const sanitizedFilename = Buffer.from(file.originalname, 'latin1').toString('utf8');
         cb(null, `${uniqueSuffix}_${sanitizedFilename}`);
-      }
+      })
     })
   }))
-  async setModelWeights(@Body() body: any) {
+  async setModelWeights(@UploadedFile() file: Express.Multer.File, @Body() body: any) {
+    const gzip = promisify(zlib.gzip);
     console.log('body:', body);
-    return {
-      message: 'Query successful'
+
+    const filePath = path.resolve(this.cf.get<string>('TS_PATH_MODELS'), file.filename);
+    const gzipFilePath = `${filePath}.gz`;
+
+    try {
+      const fileContent = await fs.promises.readFile(filePath);
+      const compressedContent = await gzip(fileContent);
+      await writeFile(gzipFilePath, compressedContent);
+      console.info('Compressed file:', gzipFilePath);
+      await fs.unlinkSync(filePath);
+      return {
+        message: 'Archivo comprimido exitosamente',
+        filePath: gzipFilePath
+      };
+    } catch (error) {
+      console.error('Error al comprimir el archivo:', error);
+      throw new HttpException('Error al comprimir el archivo', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
