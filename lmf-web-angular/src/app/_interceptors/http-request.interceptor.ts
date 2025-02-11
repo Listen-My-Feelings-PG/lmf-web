@@ -24,7 +24,7 @@ export const httpRequestInterceptor: HttpInterceptorFn = (req, next) => {
     */
     const body: any = req.body;
     const formData: FormData = new FormData();
-
+    
     for (let key in body) {
       if (body[key] !== null)
         formData.set(key, (body as any)[key]);

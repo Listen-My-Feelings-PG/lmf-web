@@ -2,7 +2,6 @@ import { Body, Controller, Post, UseInterceptors } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ModelEntity } from 'src/_entities/model.entity';
 import { PlaylistEntity } from 'src/_entities/playlist.entity';
 import { FindManyOptions, Repository } from 'typeorm';
 

@@ -180,7 +180,7 @@ export class TrainingComponent implements OnInit {
 
   async trainModel(mode: 'single' | 'all', index?: number): Promise<void> {
     await this.tsService.newModel();
-
+    let actualTrainedIdSongsList: Array<number> = [];
     let list: Array<number> = []
     if (mode == 'single') {
       this.playlists.selected!.songs[index as number].tsStatus = 'training';
@@ -188,7 +188,7 @@ export class TrainingComponent implements OnInit {
     } else {
       list = (
         this.playlists.selected?.songs.filter(
-          (obj) => (obj.tsInitStatus == 'train' || obj.tsInitStatus == 'retrain') && obj.tsStatus === null
+          (obj) => (obj.tsInitStatus == 'train' || obj.tsInitStatus == 'retrain' || 'error') && obj.tsStatus === null
         ).map((obj) => {
           obj.tsStatus = 'training';
           return obj.id;
@@ -268,9 +268,11 @@ export class TrainingComponent implements OnInit {
                       song.storageStatus = 'error';
                       song.storageStatusErrReason = 'other';
                     } else {
+                      actualTrainedIdSongsList.push(song.id as number);
                       song.storageStatus = 'updated';
                       console.info('Canción entrenada:', song);
                     }*/
+                  actualTrainedIdSongsList.push(song.id as number); //Borrar
                   if (next)
                     next();
                   //});
@@ -336,14 +338,33 @@ export class TrainingComponent implements OnInit {
               });
             });
           }
-        } else if (mode == 'all') {
+        } else {
           const weights = this.tsService.getModelWeights();
-          
-          console.log('weights:', weights);
-          if (this.playlists.selected?.songs.find((obj) => obj.storageStatus == 'error' || obj.tsStatus == 'error'))
-            this.http.setToast('warn', 'Error al entrenar el modelo', 'Algunas canciones no pudieron ser entrenadas');
-          else
-            this.http.setToast('success', 'Entrenamiento completado', 'El modelo ha sido entrenado con éxito');
+          const blob = new Blob([JSON.stringify(weights)], { type: 'text/plain' });
+          const file = new File([blob], 'model-weights.txt', { type: 'text/plain' });
+
+          this.http.post('upload/model-weights', { file }, {
+            key: 'default',
+            severity: 'error',
+            summary: 'Error al actualizar modelo',
+            detail: 'Ocurrió un error al actualizar los pesos del modelo'
+          }).subscribe({
+            next: (res) => {
+              this.playlists.selected?.songs.find((obj) => obj.storageStatus == 'error' || obj.tsStatus == 'error') ?
+                this.http.setToast('warn', 'Error al entrenar el modelo', 'Algunas canciones no pudieron ser entrenadas') :
+                this.http.setToast('success', 'Entrenamiento completado', 'El modelo ha sido entrenado con éxito');
+            }, error: (error) => {
+              console.error('Error al subir los pesos del modelo:', error);
+              this.playlists.selected?.songs.find((obj) => obj.storageStatus == 'error' || obj.tsStatus == 'error') ?
+                this.http.setToast('warn', 'Error al entrenar el modelo', 'Algunas canciones no pudieron ser entrenadas') :
+                this.http.setToast('success', 'Entrenamiento completado', 'El modelo ha sido entrenado con éxito');
+              actualTrainedIdSongsList.forEach((id) => {
+                const song = this.playlists.selected?.songs.find((obj) => obj.id == id) as Song;
+                song.tsStatus = 'error';
+                song.tsStatusErrReason = 'training-error';
+              })
+            }
+          });
         }
       });
   }
@@ -357,7 +378,14 @@ export class TrainingComponent implements OnInit {
     userScore: Song['userScore']
   ): Promise<any> {
     return new Promise((resolve) => {
-      this.http.post('songs/update-status', { idSong, tsStatus, tsInitStatus, storageStatus, tsPrediction, userScore }, true).subscribe({
+      this.http.post('songs/update-status', {
+        idSong,
+        tsStatus,
+        tsInitStatus,
+        storageStatus,
+        tsPrediction,
+        userScore
+      }, true).subscribe({
         next: (res) => resolve(res),
         error: (error) => {
           console.error('Error al actualizar el estado de la canción en el servidor:', error);

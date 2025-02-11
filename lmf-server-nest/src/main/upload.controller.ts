@@ -4,11 +4,8 @@ import {
   HttpException,
   HttpStatus,
   Post,
-  Query,
   UploadedFile,
-  UseInterceptors,
-  UsePipes,
-  ValidationPipe
+  UseInterceptors
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -19,9 +16,9 @@ import { Mp3ValidationPipe } from 'src/_pipes/mp3-validation.pipe';
 import * as fs from 'fs';
 import * as path from 'path';
 import { ConfigService } from '@nestjs/config';
-import { BooleanDto } from 'src/_pipes/dtos.pipe';
 import { SongsPlaylistsEntity } from 'src/_entities/songs-playlists.entity';
 import { PlaylistEntity } from 'src/_entities/playlist.entity';
+import * as zlib from 'zlib';
 
 
 @Controller('upload')
@@ -124,11 +121,37 @@ export class UploadController {
   }
 
   @Post('model-weights')
-  @UseInterceptors(FileInterceptor(''))
-  async setPrediction(@Body() body: any) {
+  @UseInterceptors(FileInterceptor('file', {
+    storage: diskStorage({
+      destination: async (req, file, cb) => {
+        const cf: ConfigService = new ConfigService();
+        const destPath = cf.get<string>('TS_PATH_MODELS');
+        const filePath = path.join(destPath, file.filename);
+        const gzip = zlib.createGzip();
+        const source = fs.createReadStream(filePath);
+        const uniqueSuffix = new Date().getTime();
+        const destination = fs.createWriteStream(filePath + '.gz');
+
+        source.pipe(gzip).pipe(destination).on('finish', (err) => {
+          if (err) {
+            console.error('Error compressing file:', err);
+            cb(err, null);
+          } else {
+            cb(null, destPath);
+          }
+        });
+      },
+      filename: (req, file, cb) => {
+        const uniqueSuffix = new Date().getTime();
+        const sanitizedFilename = Buffer.from(file.originalname, 'latin1').toString('utf8');
+        cb(null, `${uniqueSuffix}_${sanitizedFilename}`);
+      }
+    })
+  }))
+  async setModelWeights(@Body() body: any) {
     console.log('body:', body);
     return {
-      message: 'Query successfull'
+      message: 'Query successful'
     }
   }
 
