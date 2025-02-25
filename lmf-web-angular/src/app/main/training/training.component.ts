@@ -205,7 +205,7 @@ export class TrainingComponent implements OnInit {
                     'warn',
                     'Extracción de características en espera',
                     `Las características de la canción con id ${idSong} aun no han sido extraídas. 
-                     Porfavor, espere hasta que el servidor haya completado la extracción.`,
+                     Por favor, espere hasta que el servidor haya completado la extracción.`,
                     7000
                   );
                   song.tsStatus = null;
@@ -297,7 +297,7 @@ export class TrainingComponent implements OnInit {
           const blob = new Blob([JSON.stringify(weights)], { type: 'application/json' });
           const file = new File([blob], 'model-weights.json', { type: 'application/json' });
           const plSelected = this.playlists.selected as Playlist;
-          this.http.post('upload/model-weights', { file, idPlaylist: plSelected.id }, {
+          this.http.post('upload/model-weights', { file, playList: { id: plSelected.id, isDefault: plSelected.isDefault } }, {
             key: 'default',
             severity: 'error',
             summary: 'Error al actualizar modelo',

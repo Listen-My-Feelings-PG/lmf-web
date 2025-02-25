@@ -11,7 +11,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { InjectRepository } from '@nestjs/typeorm';
 import { diskStorage } from 'multer';
 import { SongEntity } from 'src/_entities/song.entity';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Mp3ValidationPipe } from 'src/_pipes/mp3-validation.pipe';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -30,6 +30,7 @@ export class UploadController {
     @InjectRepository(SongEntity) private readonly songsTable: Repository<SongEntity>,
     @InjectRepository(SongsPlaylistsEntity) private readonly songsPlaylistsTable: Repository<SongsPlaylistsEntity>,
     @InjectRepository(ModelEntity) private readonly modelTable: Repository<ModelEntity>,
+    @InjectRepository(PlaylistEntity) private readonly playlistTable: Repository<PlaylistEntity>,
     private readonly cf: ConfigService
   ) { }
 
@@ -146,9 +147,13 @@ export class UploadController {
       await writeFile(gzipFilePath, compressedContent);
       console.info('Compressed file:', gzipFilePath);
       await fs.unlinkSync(filePath);
-      const globalModel = await this.modelTable.findOne({ where: { isGlobal: true } });
+      const globalModel = await this.modelTable.findOne({ where: { isGlobal: true } }); //Modelo global para one_user (un único modelo en la base de datos)
       if (globalModel) {
-
+        const oldFilePath = path.resolve(this.cf.get<string>('TS_PATH_MODELS'), globalModel.fileName) + '.gz';
+        const trainCount = globalModel.trainCount + 1;
+        await fs.unlinkSync(oldFilePath);
+        await this.modelTable.update(globalModel.id, { fileName: file.filename, trainCount });
+        return updatePlayListModel(this, compressedContent);
       } else {
         const newGlobalModel = await this.modelTable.save(this.modelTable.create({
           fileName: file.filename,
@@ -156,15 +161,44 @@ export class UploadController {
           isGlobal: true
         }));
         console.info('Global model created:', newGlobalModel, new Date().toLocaleString());
+        return updatePlayListModel(this, compressedContent);
       }
-
-      return {
-        message: 'Archivo comprimido exitosamente',
-        filePath: gzipFilePath
-      };
     } catch (error) {
       console.error('Error al comprimir el archivo:', error);
       throw new HttpException('Error al comprimir el archivo', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    async function updatePlayListModel(that, compressedContent) {
+      const playlist = await that.playlistTable.findOne({ where: { id: body.playList.id, isDefault: false }, relations: ['idModel'] });
+      if (playlist) {
+        if (playlist.idModel) {
+          const model = await that.modelTable.findOne({ where: { id: playlist.idModel.id } });
+          const trainCount = model.trainCount + 1;
+          const oldFilePath = path.resolve(that.cf.get('TS_PATH_MODELS'), model.fileName) + '.gz';
+          await fs.unlinkSync(oldFilePath);
+          const defaultModelFilePath = filePath.replace('.json', '-d.json');
+          const defaultModelFileName = file.filename.replace('.json', '-d.json');
+          await writeFile(defaultModelFilePath + '.gz', compressedContent);
+          await that.modelTable.update(model.id, { fileName: defaultModelFileName, trainCount });
+        } else {
+          const defaultModelFilePath = filePath.replace('.json', '-d.json');
+          const defaultModelFileName = file.filename.replace('.json', '-d.json');
+          await writeFile(defaultModelFilePath + '.gz', compressedContent);
+          const newModel = await that.modelTable.save(that.modelTable.create({
+            fileName: defaultModelFileName,
+            trainCount: 1,
+            isGlobal: false
+          }));
+          await that.playlistTable.update(playlist.id, { idModel: newModel });
+        }
+
+        return {
+          message: 'Modelos actualizados existosamente'
+        };
+      } else {
+        console.error('Error al extraer los datos de la lista de reproducción');
+        throw new HttpException('Error al obtener la información de la playlist', HttpStatus.INTERNAL_SERVER_ERROR);
+      }
     }
   }
 
