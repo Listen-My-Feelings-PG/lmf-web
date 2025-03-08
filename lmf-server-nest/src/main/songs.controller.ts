@@ -63,7 +63,17 @@ export class SongsController {
 
     return {
       message: 'Query successful',
-      data: list.map((s) => new Song(s.idSong.name, dataTypes[s.idSong.idDataType], null, s.idSong.userScore, s.idSong.tsPrediction, 'downloaded', s.idSong.tsStatus as Song['tsStatus'], s.idSong.tsInitStatus as Song['tsInitStatus'], s.idSong.id))
+      data: list.map((s) => new Song(
+        s.idSong.name,
+        dataTypes[s.idSong.idDataType],
+        null,
+        s.idSong.userScore,
+        s.idSong.tsPrediction,
+        'downloaded',
+        s.idSong.tsStatus as Song['tsStatus'],
+        s.idSong.tsInitStatus as Song['tsInitStatus'],
+        s.idSong.id
+      ))
     };
   }
 

@@ -52,13 +52,22 @@ export class SongService {
     }
   }
 
-  extractFeaturesFromSongs(idSongs: Array<number>, taskCallback: (error: boolean, data: any, done: boolean, idSong?: number, Callback?: Function) => void): void {
+  extractFeaturesFromSongs(
+    idSongs: Array<number>,
+    taskCallback: (
+      error: boolean,
+      data: any,
+      done: boolean,
+      idSong?: number,
+      Callback?: Function
+    ) => void
+  ): void {
     const that = this;
     this.pools.idSongsForFeatures = Object.assign([], idSongs);
-    if (!this.busyFlags.idSongsForFeatures) {
+    if (!this.busyFlags.idSongsForFeatures) { //Bloqueo del método hasta que termine el pool actual
       this.iterators.idSongsForFeatures = this.pools.idSongsForFeatures[Symbol.iterator]();
       this.busyFlags.idSongsForFeatures = true;
-      trigger();
+      trigger(); //Se dispara la función get de extracción
     } else
       taskCallback(true, 'Pool is busy', true);
 
@@ -67,8 +76,10 @@ export class SongService {
       if (item.done)
         return checkPool(item);
       that.http.get(`download/tsfeatures?value=${item.value}`).subscribe({
-        next: (data: any) => taskCallback(
-          false, data, false, item.value, () => checkPool(item)
+        next: (res: any) => taskCallback(
+          false, res, //Características planas extraidas
+          false, item.value, //Valor actual: id de la canción
+          () => checkPool(item) //Callback de activación: Se activa en la función "listener" que maneja el componente
         ),
         error: (error: any) => taskCallback(
           true, { message: 'Error al extraer características', error },

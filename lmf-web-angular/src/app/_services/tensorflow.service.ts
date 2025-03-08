@@ -33,9 +33,9 @@ export class TensorflowService {
     score2: number,
     score3: number
   }
-
-  private globalModel!: tf.Sequential | null;
-  private plModel!: tf.Sequential | null;
+  /**Se manejan dos modelos: */
+  private globalModel!: tf.Sequential | null; //El global (donde se entrenan todas las canciones de todas las playlists)
+  private plModel!: tf.Sequential | null; //El de playlist
 
   constructor() {
     this.epochsNumber = {
@@ -112,7 +112,7 @@ export class TensorflowService {
     })
   }
 
-  newModel(global: boolean): Promise<string> {
+  newModel(global: boolean): Promise<string> { //Se elige el modelo a cargar (Validar que no se vuelva a cargar si ya lo está)
     return new Promise((resolve) => {
       this[global ? 'globalModel' : 'plModel'] = tf.sequential();
       this[global ? 'globalModel' : 'plModel']?.add(tf.layers.dense({ units: 64, activation: 'relu', inputShape: [129, 20000] }));

@@ -120,7 +120,7 @@ export class TrainingComponent implements OnInit {
     }
   }
 
-  loadPlaylist(idPlaylist: number, isDefault: boolean): void {
+  loadPlaylist(idPlaylist: number, isDefault: boolean): void { //Cuando ya hay canciones cargadas: Paso 1: Se carga la lista seleccionada
     this.http.get(`songs/list-by-idPlaylist?value=${idPlaylist}`, true).subscribe({
       next: (res: any) => {
         const list: Array<Song> = res.data;
@@ -178,10 +178,10 @@ export class TrainingComponent implements OnInit {
   async trainModel(mode: 'single' | 'all', index?: number): Promise<void> {
     await this.tsService.newModel(false);
     let actualTrainedIdSongsList: Array<number> = [];
-    let list: Array<number> = []
-    if (mode == 'single') {
-      this.playlists.selected!.songs[index as number].tsStatus = 'training';
-      list = [this.playlists.selected?.songs[index as number].id as number];
+    let list: Array<number> = []; //Lista manejadora principal (Solo maneja los puros ids de cada canción)
+    if (mode == 'single') { //Si se seleccionó el botón del row...
+      this.playlists.selected!.songs[index as number].tsStatus = 'training'; //Se cambia el tsStatus
+      list = [this.playlists.selected?.songs[index as number].id as number]; //Se carga la lista manejadora con ese único elemento
     } else {
       list = (
         this.playlists.selected?.songs.filter(
@@ -193,10 +193,17 @@ export class TrainingComponent implements OnInit {
       ).filter((id): id is number => id !== undefined)
     }
 
-    this.songService.extractFeaturesFromSongs(
-      list, (error, data, done, idSong, next) => {
+    this.songService.extractFeaturesFromSongs( //Función de tipo Observable
+      list, //Se manda la lista manejadora
+      ( //Cada vez que se extraen las características de una canción de la lista, se ejecuta esta función Callback
+        error,
+        data, //Características de la canción actual
+        done,
+        idSong,
+        next //Función de siguiente salto del elemento en el pool (Contiene la activación de la función "checkPool()")
+      ) => {
         if (!done) {
-          const song = this.playlists.selected?.songs.find((obj) => obj.id == idSong) as Song;
+          const song: Song = this.playlists.selected?.songs.find((obj) => obj.id == idSong) as Song; //Obtiene los datos de la canción actual del pool
           if (error) {
             if (data.error) {
               switch (data.error.status) {
@@ -233,24 +240,24 @@ export class TrainingComponent implements OnInit {
                   song.tsStatusErrReason = 'features-notfound';
                   break;
               }
-              updateStatusTask(song).then(() => {
+              updateStatusTask(song).then(() => { //Escribe la situación del error de extracción de características de la canción actual en su registro en la base de datos
                 if (next)
                   next();
               });
             }
           } else {
-            this.songService.customizeSpectrogram(data.mel_spectrogram, data.tempo, false).then((customized) => {
-              const spectrogram = customized.resized;
+            this.songService.customizeSpectrogram(data.mel_spectrogram, data.tempo, false).then((customized) => { //Adecuación del espectrograma para que todas las canciones tengan la misma dimensión, ademas de agregar un hilo con el tempo
+              const spectrogram = customized.resized; //Espectrograma listo para un tensor
               try {
                 const epochs = this.tsService.epochsConfig('get') as { score1: number, score2: number, score3: number };
                 const epochsNum = epochs['score' + song.userScore as keyof typeof epochs];
-                this.tsService.trainSong(false, spectrogram, song.userScore as number, epochsNum).then(() => {
+                this.tsService.trainSong(false, spectrogram, song.userScore as number, epochsNum).then(() => { //Entrenamiento de la canción
                   song.tsStatus = 'trained';
                   /*updateStatusTask(song).then(()=>{
                     actualTrainedIdSongsList.push(song.id as number);*/
                   if (next)
                     next();
-                  //});
+                  //}); //Bloqueado para evitar el grabado de la situación de la canción en la base de datos para permitir siempre el entrenamiento
                 }).catch((error) => {
                   console.error('Ocurrió un error al entrenar el modelo:', error, song);
                   if (mode == 'single')
@@ -292,18 +299,18 @@ export class TrainingComponent implements OnInit {
               });
             });
           }
-        } else {
-          const weights = this.tsService.getModelWeights(false);
+        } else { //AL FINALIZAR EL POOL DE EXTRACCIÓN DE CARACTERÍSTICAS.................................................................................................
+          const weights = this.tsService.getModelWeights(false); //Pesos del modelo ya entrenado
           const blob = new Blob([JSON.stringify(weights)], { type: 'application/json' });
           const file = new File([blob], 'model-weights.json', { type: 'application/json' });
           const plSelected = this.playlists.selected as Playlist;
-          this.http.post('upload/model-weights', { file, playList: { id: plSelected.id, isDefault: plSelected.isDefault } }, {
+          this.http.post('upload/model-weights', { file, playList: { id: plSelected.id, isDefault: plSelected.isDefault } }, { //Por ahora, sólo se está cargando el modelo de la lista seleccionada (distinguiendo si es global o no). Si se selecciona una playlist, es necesario hacer dos entrenamientos: el global y el de la playlist seleccionada (Naturalmente, si no se seleccionó ninguna playlist, se cargarían todas las canciones de todas las playlist del usuario, por lo cual se entrenaría únicamente al modelo global)
             key: 'default',
             severity: 'error',
             summary: 'Error al actualizar modelo',
             detail: 'Ocurrió un error al actualizar los pesos del modelo'
           }).subscribe({
-            next: (res) => {
+            next: () => {
               this.playlists.selected?.songs.find((obj) => obj.storageStatus == 'error' || obj.tsStatus == 'error') ?
                 this.http.setToast('warn', 'Error al entrenar el modelo', 'Algunas canciones no pudieron ser entrenadas') :
                 this.http.setToast('success', 'Entrenamiento completado', 'El modelo ha sido entrenado con éxito');

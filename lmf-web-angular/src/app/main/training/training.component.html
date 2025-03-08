@@ -117,7 +117,7 @@
                   <i class="fa-solid fa-hexagon-nodes"></i>
                 </span>
               </td>
-              <td>
+              <td> <!--Calificación-->
                 <div *ngIf="song.tsStatus===null||song.tsStatus=='error'; else scoreDisabled">
                   <ng-container *ngFor="let star of rating.stars; let ist = index">
                     <i class="star-rated pi"
@@ -132,7 +132,9 @@
                   </ng-container>
                 </ng-template>
               </td>
-              <td>--</td>
+              <td><!--Predicción-->
+                --
+              </td>
               <td>
                 <p-buttonGroup class="text-nowrap">
                   <button pButton
