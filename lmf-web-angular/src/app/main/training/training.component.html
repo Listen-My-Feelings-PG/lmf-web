@@ -78,8 +78,8 @@
             let-song
             let-i="rowIndex">
             <tr>
-              <td [ngClass]="{'text-info':idSongPlaying==song.id}">{{i + 1}}</td>
-              <td>{{song.id ? song.id:'--'}}</td>
+              <th [ngClass]="{'text-info':idSongPlaying==song.id}">{{i + 1}}</th>
+              <td [ngClass]="{'text-info':idSongPlaying==song.id}">{{song.id ? song.id:'--'}}</td>
               <td [ngClass]="{'text-info':idSongPlaying==song.id}">{{song.name}}</td>
               <td><span class="badge text-bg-primary">Archivo MP3</span></td>
               <td>
@@ -91,8 +91,31 @@
                   severity="success"
                   (click)="play(i)"></button>
               </td>
-              <td class="text-center">
-                <span class="badge text-bg-info">{{song.storageStatus+'|'+song.tsStatus+'|'+song.tsInitStatus}}</span>
+              <td class="text-center status-icons-td text-nowrap"
+                pTooltip="{{song.storageStatus+' | '+song.tsStatus+' | '+song.tsInitStatus}}"
+                tooltipPosition="top"
+                [ngClass]="{'text-info':idSongPlaying==song.id}">
+                <span *ngIf="song.storageStatus=='local'"><i class="fa-solid fa-boxes-packing"></i></span>
+                <span *ngIf="song.storageStatus=='uploading'"><i class="fa-solid fa-truck-ramp-box"></i></span>
+                <span *ngIf="song.storageStatus=='downloading'"><i class="fa-solid fa-bars-progress"></i></span>
+                <span *ngIf="song.storageStatus=='downloaded'"><i class="fa-solid fa-download"></i></span>
+                <span *ngIf="song.storageStatus=='updated'"><i class="fa-solid fa-file-pen"></i></span>
+                <span *ngIf="song.storageStatus=='error'"
+                  class="text-warning"><i class="fa-solid fa-triangle-exclamation"></i></span>
+                <span *ngIf="song.tsStatus=='training'"><i class="fa-solid fa-hexagon-nodes-bolt"></i></span>
+                <span *ngIf="song.tsStatus=='trained'||song.tsInitStatus=='train'"
+                  [ngClass]="{'text-info-default':song.tsStatus=='trained'}">
+                  <i class="fa-solid fa-hexagon-nodes"></i>
+                </span>
+                <span *ngIf="song.tsStatus=='predicting'"><i class="fa-solid fa-wand-magic"></i></span>
+                <span *ngIf="song.tsStatus=='predicted'||song.tsInitStatus=='predict'"
+                  [ngClass]="{'text-info-default':song.tsStatus=='predicted'}">
+                  <i class="fa-solid fa-wand-magic-sparkles"></i>
+                </span>
+                <span *ngIf="song.tsStatus=='retrained'||song.tsInitStatus=='retrain'"
+                  [ngClass]="{'text-info-default':song.tsStatus=='retrained'}">
+                  <i class="fa-solid fa-hexagon-nodes"></i>
+                </span>
               </td>
               <td>
                 <div *ngIf="song.tsStatus===null||song.tsStatus=='error'; else scoreDisabled">

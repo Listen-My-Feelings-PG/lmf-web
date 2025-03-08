@@ -24,7 +24,6 @@ $font-family-base: 'Calibri', sans-serif;
 /*Importación de variables de Bootstrap para su sobreescritura*/
 @import "../node_modules/bootstrap/scss/bootstrap";
 
-//#{darken($base-color5, 50%)};
 :root {
   --player-bg-color: #{darken($base-color5, 30%)};
   --base-color:#{$info};
@@ -39,4 +38,13 @@ $font-family-base: 'Calibri', sans-serif;
 .p-listbox-item {
   padding-left: 10px;
   padding-bottom: 5px;
+}
+
+.text-info-default {
+  color: rgb(13, 202, 240);
+}
+
+.status-icons-td>span {
+  margin-left: 5px;
+  margin-right: 5px;
 }
