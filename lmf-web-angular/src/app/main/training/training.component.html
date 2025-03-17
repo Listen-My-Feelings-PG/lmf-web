@@ -117,7 +117,7 @@
                   <i class="fa-solid fa-hexagon-nodes"></i>
                 </span>
               </td>
-              <td> <!--Calificación-->
+              <td><!--Calificación-->
                 <div *ngIf="song.tsStatus===null||song.tsStatus=='error'; else scoreDisabled">
                   <ng-container *ngFor="let star of rating.stars; let ist = index">
                     <i class="star-rated pi"
