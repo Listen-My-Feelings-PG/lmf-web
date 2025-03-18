@@ -1,13 +1,11 @@
 {
   "name": "lmf-web-angular",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
-    "watch": "ng build --watch --configuration development",
-    "test": "ng test",
-    "serve:ssr:lmf-web-angular": "node dist/lmf-web-angular/server/server.mjs"
+    "watch": "ng build --watch --configuration development"
   },
   "private": true,
   "dependencies": {
