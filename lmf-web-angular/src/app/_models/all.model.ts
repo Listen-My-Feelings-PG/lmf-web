@@ -21,7 +21,7 @@ export class Playlist {
     public songs: Array<Song>,
     public songsForPredict: Array<Song>,
     public model: TsModel | null,
-    public isDefault: boolean,
+    public isGlobal: boolean,
     public id?: number
   ) { }
 }

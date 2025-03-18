@@ -19,7 +19,7 @@ export class PlaylistController {
       select: {
         id: true,
         name: true,
-        isDefault: true,
+        isGlobal: true,
         idModel: {
           id: true,
           description: true,

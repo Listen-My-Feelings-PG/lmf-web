@@ -86,7 +86,7 @@ export class TrainingComponent implements OnInit {
       next: (res) => {
         const list: Array<any> = res.data.list;
         if (list.length > 0) {
-          const defaultPlaylist = list.find((obj) => obj.isDefault);
+          const defaultPlaylist = list.find((obj) => obj.isGlobal);
           if (defaultPlaylist) {
             this.playlists.default = new Playlist(defaultPlaylist.name, [], [], null, true, defaultPlaylist.id);
             this.playlists.selected = this.playlists.default;
@@ -95,7 +95,7 @@ export class TrainingComponent implements OnInit {
             console.error('Defualt playlist not found');
             this.http.setToast('error', 'Error al cargar listas', 'Default playlist not found');
           }
-          this.playlists.list = list.filter((obj) => !obj.isDefault).map((obj) => new Playlist(obj.name, [], [], null, false, obj.id));
+          this.playlists.list = list.filter((obj) => !obj.isGlobal).map((obj) => new Playlist(obj.name, [], [], null, false, obj.id));
           this.tsService.epochsConfig('set', res.data.tsConfig.epochs);
           this.tsService.init();
         } else {
@@ -120,14 +120,19 @@ export class TrainingComponent implements OnInit {
     }
   }
 
-  loadPlaylist(idPlaylist: number, isDefault: boolean): void { //Cuando ya hay canciones cargadas: Paso 1: Se carga la lista seleccionada
+  loadPlaylist(idPlaylist: number, isGlobal: boolean): void { //Cuando ya hay canciones cargadas: Paso 1: Se carga la lista seleccionada
     this.http.get(`songs/list-by-idPlaylist?value=${idPlaylist}`, true).subscribe({
       next: (res: any) => {
         const list: Array<Song> = res.data;
-        if (isDefault && this.playlists.default)
+        if (isGlobal && this.playlists.default)
           this.playlists.default.songs = list;
         else if (this.playlists.selected)
           this.playlists.selected.songs = list;
+        this.http.post(`download/ts-weights`, { idPlaylist }).subscribe({
+          next: (res: any) => {
+            console.log('res', res);
+          }
+        });
       }
     });
   }
@@ -304,7 +309,7 @@ export class TrainingComponent implements OnInit {
           const blob = new Blob([JSON.stringify(weights)], { type: 'application/json' });
           const file = new File([blob], 'model-weights.json', { type: 'application/json' });
           const plSelected = this.playlists.selected as Playlist;
-          this.http.post('upload/model-weights', { file, playList: { id: plSelected.id, isDefault: plSelected.isDefault } }, { //Por ahora, sólo se está cargando el modelo de la lista seleccionada (distinguiendo si es global o no). Si se selecciona una playlist, es necesario hacer dos entrenamientos: el global y el de la playlist seleccionada (Naturalmente, si no se seleccionó ninguna playlist, se cargarían todas las canciones de todas las playlist del usuario, por lo cual se entrenaría únicamente al modelo global)
+          this.http.post('upload/model-weights', { file, playList: { id: plSelected.id, isGlobal: plSelected.isGlobal } }, { //Por ahora, sólo se está cargando el modelo de la lista seleccionada (distinguiendo si es global o no). Si se selecciona una playlist, es necesario hacer dos entrenamientos: el global y el de la playlist seleccionada (Naturalmente, si no se seleccionó ninguna playlist, se cargarían todas las canciones de todas las playlist del usuario, por lo cual se entrenaría únicamente al modelo global)
             key: 'default',
             severity: 'error',
             summary: 'Error al actualizar modelo',

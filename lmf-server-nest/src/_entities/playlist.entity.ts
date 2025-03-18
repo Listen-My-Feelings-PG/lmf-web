@@ -16,8 +16,8 @@ export class PlaylistEntity {
     @Column({ name: 'pl_fecha_creacion', type: 'timestamp with time zone', default: () => 'CURRENT_TIMESTAMP' })
     creationDate: string;
 
-    @Column({ name: 'pl_default', type: 'boolean', default: false })
-    isDefault: boolean;
+    @Column({ name: 'pl_global', type: 'boolean', default: false })
+    isGlobal: boolean;
 
     @ManyToOne(() => ModelEntity)
     @JoinColumn({ name: 'pl_id_modelo' })

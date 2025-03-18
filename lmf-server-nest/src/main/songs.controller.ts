@@ -38,7 +38,7 @@ export class SongsController {
         },
         idPlaylist: {
           name: true,
-          isDefault: true,
+          isGlobal: true,
           idModel: {
             id: true,
             trainCount: true,
