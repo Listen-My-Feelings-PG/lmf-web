@@ -33,7 +33,7 @@ export class HttpService {
     this.busy = true;
     return this.http.get(this.baseUrl + url)
       .pipe(
-        tap(() => console.info('url:', url)),
+        //tap(() => console.info('url:', url)),
         finalize(() => {
           this.busy = false;
           if (toastSuccess !== undefined)
@@ -61,7 +61,7 @@ export class HttpService {
     this.busy = true;
     return this.http.post(this.baseUrl + url, body)
       .pipe(
-        tap(() => console.info('url:', url, 'body:', body)),
+        //tap(() => console.info('url:', url, 'body:', body)),
         finalize(() => {
           this.busy = false;
           if (toastSuccess !== undefined)

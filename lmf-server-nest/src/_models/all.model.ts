@@ -1,3 +1,5 @@
+import { Decimal } from 'decimal.js';
+
 export class Song {
   constructor(
     public name: string,
@@ -40,3 +42,5 @@ export interface LibrosaTsFeatures {
   mel_spectrogram: Array<Array<number>>,
   tempo: number
 }
+
+export type TsModelJSON = Array<Array<Array<Decimal>>>

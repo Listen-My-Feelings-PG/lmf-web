@@ -154,7 +154,7 @@ export class TrainingComponent implements OnInit {
       this.songService.addToPoolSongsForUpload({ ...song });
     });
 
-    this.songService.uploadSongsToServer(list, this.playlists.selected?.id as number, (error: boolean, data: any, index: number) => {
+    this.songService.uploadSongsToServer(list, this.playlists.selected?.id as number, this.playlists.default?.id as number, (error: boolean, data: any, index: number) => {
       if (error) {
         list[index].storageStatus = 'error';
         list[index].storageStatusErrReason = data.storageStatusErrReason;
@@ -190,7 +190,7 @@ export class TrainingComponent implements OnInit {
     } else {
       list = (
         this.playlists.selected?.songs.filter(
-          (obj) => (obj.tsInitStatus == 'train' || obj.tsInitStatus == 'retrain' || 'error') && obj.tsStatus === null
+          (obj) => (obj.tsInitStatus == 'train' || obj.tsInitStatus == 'retrain' || 'error') && obj.tsStatus === null && obj.userScore
         ).map((obj) => {
           obj.tsStatus = 'training';
           return obj.id;
@@ -257,6 +257,7 @@ export class TrainingComponent implements OnInit {
                 const epochs = this.tsService.epochsConfig('get') as { score1: number, score2: number, score3: number };
                 const epochsNum = epochs['score' + song.userScore as keyof typeof epochs];
                 this.tsService.trainSong(false, spectrogram, song.userScore as number, epochsNum).then(() => { //Entrenamiento de la canción
+                  console.info(`Canción entrenada: ${song.id}`);
                   song.tsStatus = 'trained';
                   /*updateStatusTask(song).then(()=>{
                     actualTrainedIdSongsList.push(song.id as number);*/
@@ -309,7 +310,7 @@ export class TrainingComponent implements OnInit {
           const blob = new Blob([JSON.stringify(weights)], { type: 'application/json' });
           const file = new File([blob], 'model-weights.json', { type: 'application/json' });
           const plSelected = this.playlists.selected as Playlist;
-          this.http.post('upload/model-weights', { file, playList: { id: plSelected.id, isGlobal: plSelected.isGlobal } }, { //Por ahora, sólo se está cargando el modelo de la lista seleccionada (distinguiendo si es global o no). Si se selecciona una playlist, es necesario hacer dos entrenamientos: el global y el de la playlist seleccionada (Naturalmente, si no se seleccionó ninguna playlist, se cargarían todas las canciones de todas las playlist del usuario, por lo cual se entrenaría únicamente al modelo global)
+          this.http.post('upload/model-weights', { file, playList: JSON.stringify({ id: plSelected.id, isGlobal: plSelected.isGlobal }) }, { //Por ahora, sólo se está cargando el modelo de la lista seleccionada (distinguiendo si es global o no). Si se selecciona una playlist, es necesario hacer dos entrenamientos: el global y el de la playlist seleccionada (Naturalmente, si no se seleccionó ninguna playlist, se cargarían todas las canciones de todas las playlist del usuario, por lo cual se entrenaría únicamente al modelo global)
             key: 'default',
             severity: 'error',
             summary: 'Error al actualizar modelo',

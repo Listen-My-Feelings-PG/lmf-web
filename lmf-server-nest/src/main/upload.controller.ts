@@ -11,7 +11,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { InjectRepository } from '@nestjs/typeorm';
 import { diskStorage } from 'multer';
 import { SongEntity } from 'src/_entities/song.entity';
-import {  Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Mp3ValidationPipe } from 'src/_pipes/mp3-validation.pipe';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -34,7 +34,7 @@ export class UploadController {
     private readonly cf: ConfigService
   ) { }
 
-  @Post('file')
+  @Post('song')
   @UseInterceptors(FileInterceptor('file', {
     storage: diskStorage({
       destination: (req, file, cb) => {
@@ -104,15 +104,22 @@ export class UploadController {
           tsPrediction: body.tsPrediction !== undefined ? body.tsPrediction : null
         }));/*Regla: Todo lo que sea 'undefined' es porque en el front es NULL (un valor 0 es válido). 
        Cuando sea necesario en la operación, este debe permitir nulos, o tener un valor por default*/
+        let plsRowGlobal;
         const plsRow = await this.songsPlaylistsTable.save(this.songsPlaylistsTable.create({
           idSong: { id: sRow.id } as SongEntity,
           idPlaylist: { id: body.idPlaylist } as PlaylistEntity
         }));
+        if (body.idPlayList != body.idPlayListGlobal)
+          plsRowGlobal = await this.songsPlaylistsTable.save(this.songsPlaylistsTable.create({
+            idSong: { id: sRow.id } as SongEntity,
+            idPlaylist: { id: body.idPlaylistGlobal } as PlaylistEntity
+          }));
         return {
           message: 'uploaded successful',
           data: {
             sRow,
-            plsRow
+            plsRow,
+            plsRowGlobal: plsRowGlobal ? plsRowGlobal : null
           }
         }
       } catch (error) {
@@ -138,6 +145,7 @@ export class UploadController {
     })
   }))
   async setModelWeights(@UploadedFile() file: Express.Multer.File, @Body() body: any) {
+    const playListData = JSON.parse(body.playList);
     const gzip = promisify(zlib.gzip);
     const filePath = path.resolve(this.cf.get<string>('TS_PATH_MODELS'), file.filename);
     const gzipFilePath = `${filePath}.gz`;
@@ -148,18 +156,19 @@ export class UploadController {
       console.info('Compressed file:', gzipFilePath);
       await fs.unlinkSync(filePath);
       const globalModel = await this.modelTable.findOne({ where: { isGlobal: true } }); //Modelo global para one_user (un único modelo en la base de datos)
-      if (globalModel) {
+      if (globalModel) { //Si existe un modelo global...
         const oldFilePath = path.resolve(this.cf.get<string>('TS_PATH_MODELS'), globalModel.fileName) + '.gz';
         const trainCount = globalModel.trainCount + 1;
         await fs.unlinkSync(oldFilePath);
         await this.modelTable.update(globalModel.id, { fileName: file.filename, trainCount });
         return updatePlayListModel(this, compressedContent);
-      } else {
+      } else { //Si no existe un modelo global...
+        const fileName = file.filename.replace('.json', '-global.json');
         const newGlobalModel = await this.modelTable.save(this.modelTable.create({
-          fileName: file.filename,
+          fileName,
           trainCount: 1,
           isGlobal: true
-        }));
+        })); //Se crea un nuevo modelo global
         console.info('Global model created:', newGlobalModel, new Date().toLocaleString());
         return updatePlayListModel(this, compressedContent);
       }
@@ -168,7 +177,7 @@ export class UploadController {
       throw new HttpException('Error al comprimir el archivo', HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    async function updatePlayListModel(that, compressedContent) {
+    async function updatePlayListModel(that, compressedContent: any/*,idPlayList:number,idModel:number*/) {
       const playlist = await that.playlistTable.findOne({ where: { id: body.playList.id, isGlobal: false }, relations: ['idModel'] });
       if (playlist) {
         if (playlist.idModel) {

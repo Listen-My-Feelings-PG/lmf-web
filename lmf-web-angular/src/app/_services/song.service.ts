@@ -161,7 +161,7 @@ export class SongService {
     this.pools.songsForUpload.push(song);
   }
 
-  uploadSongsToServer(fullList: Array<Song>, idPlaylist: number, taskCallback: Function): void {
+  uploadSongsToServer(fullList: Array<Song>, idPlaylist: number, idPlaylistGlobal: number, taskCallback: Function): void {
     this.indexes.songsForUpload = fullList.length - this.pools.songsForUpload.length - 1;
     const that = this;
     if (!this.busyFlags.songsForUpload) {
@@ -180,7 +180,7 @@ export class SongService {
         return checkPool(item);
       item.value.userScore = 0;
       item.value.tsPrediction = null;
-      that.http.post('upload/file', { ...item.value, idPlaylist }).subscribe({
+      that.http.post('upload/song', { ...item.value, idPlaylist, idPlaylistGlobal }).subscribe({
         next: (res: any) => {
           taskCallback(false, { completed: false, storageStatus: 'uploaded', id: res.data.sRow.id }, that.indexes.songsForUpload);
           checkPool(item);

@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import * as tf from '@tensorflow/tfjs';
+import { SpectrogramSpecs } from './song.service';
 
 @Injectable({
   providedIn: 'root'
@@ -113,23 +114,6 @@ export class TensorflowService {
   }
 
   newModel(global: boolean): Promise<string> { //Se elige el modelo a cargar (Validar que no se vuelva a cargar si ya lo está)
-    return new Promise((resolve) => {
-      this[global ? 'globalModel' : 'plModel'] = tf.sequential();
-      this[global ? 'globalModel' : 'plModel']?.add(tf.layers.dense({ units: 64, activation: 'relu', inputShape: [129, 20000] }));
-      this[global ? 'globalModel' : 'plModel']?.add(tf.layers.flatten());
-      this[global ? 'globalModel' : 'plModel']?.add(tf.layers.dense({ units: 32, activation: 'relu' }));
-      this[global ? 'globalModel' : 'plModel']?.add(tf.layers.dense({ units: 1, activation: 'linear' }));
-
-      this[global ? 'globalModel' : 'plModel']?.compile({
-        optimizer: tf.train.adam(),
-        loss: 'meanSquaredError',
-        metrics: ['mae']
-      });
-      resolve('Modelo cargado');
-    });
-  }
-
-  loadModel(global:boolean): Promise<string> {
     return new Promise((resolve) => {
       this[global ? 'globalModel' : 'plModel'] = tf.sequential();
       this[global ? 'globalModel' : 'plModel']?.add(tf.layers.dense({ units: 64, activation: 'relu', inputShape: [129, 20000] }));
