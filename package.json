@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "proyecto IA de musica",
   "scripts": {
-    "serve": "npm --prefix ./lmf-web-angular start",
+    "serve": "npm --prefix ./lmf-web-angular serve",
     "start": "npm --prefix ./lmf-server-nest start"
   },
   "repository": {
