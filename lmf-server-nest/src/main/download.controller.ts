@@ -10,17 +10,19 @@ import { SongEntity } from '../_entities/song.entity';
 import { ConfigService } from '@nestjs/config';
 import { FeatureExtractorService } from 'src/_services/feature-extractor.service';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { PlaylistEntity } from 'src/_entities/playlist.entity';
 
 @Controller('download')
 export class DownloadController {
   constructor(
     @InjectRepository(SongEntity)
     private readonly songRepository: Repository<SongEntity>,
+    //private readonly playlistRepository: Repository<PlaylistEntity>,
     private readonly cf: ConfigService,
     private readonly featureExtractor: FeatureExtractorService
   ) { }
 
-  @Get('tsfeatures')
+  @Get('ts-features')
   @UsePipes(IntegerDto)
   async getTsFeatures(@Query('value') value: number, @Res() res: Response): Promise<void> {
     try {
@@ -60,7 +62,8 @@ export class DownloadController {
   @Post('ts-weights')
   @UseInterceptors(FileInterceptor(''))
   getTsWeights(@Body() body: any) {
-    
+    console.log('Received weights:', body);
+
     return {
       message: 'Weights received'
     };

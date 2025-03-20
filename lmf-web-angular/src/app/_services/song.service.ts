@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Song } from '../_models/all.model';
+import { Song, TsModelJSON } from '../_models/all.model';
 import { HttpService } from './http.service';
 
 export interface SpectrogramSpecs {
@@ -75,7 +75,7 @@ export class SongService {
       const item = that.iterators.idSongsForFeatures.next();
       if (item.done)
         return checkPool(item);
-      that.http.get(`download/tsfeatures?value=${item.value}`).subscribe({
+      that.http.get(`download/ts-features?value=${item.value}`).subscribe({
         next: (res: any) => taskCallback(
           false, res, //Características planas extraidas
           false, item.value, //Valor actual: id de la canción
@@ -100,7 +100,7 @@ export class SongService {
   }
 
   customizeSpectrogram(
-    mel_spectrogram: Array<Array<number>>,
+    mel_spectrogram: TsModelJSON,
     tempo: number,
     extendTempo: boolean
   ): Promise<SpectrogramSpecs> {
@@ -144,7 +144,7 @@ export class SongService {
 
         }
 
-        resolve({
+        return resolve({
           resized,
           maxValue: control.maxValue,
           firstIndex: control.firstIndex,
@@ -152,7 +152,8 @@ export class SongService {
           interval
         });
       } catch (error) {
-        reject({ message: 'Error al personalizar espectrograma', error });
+        console.error('Error al personalizar espectrograma:', error);
+        return reject(error);
       }
     });
   }

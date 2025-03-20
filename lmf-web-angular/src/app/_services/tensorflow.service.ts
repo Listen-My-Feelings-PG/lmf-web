@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import * as tf from '@tensorflow/tfjs';
 import { SpectrogramSpecs } from './song.service';
+import { response } from 'express';
 
 @Injectable({
   providedIn: 'root'
@@ -103,30 +104,35 @@ export class TensorflowService {
       if (this[global ? 'globalModel' : 'plModel']) {
         try {
           this[global ? 'globalModel' : 'plModel']?.setWeights(weights.map(w => tf.tensor(w)));
-          resolve('Pesos cargados');
+          return resolve('Pesos cargados');
         } catch (error) {
           console.error('Error al cargar los pesos en el modelo', error);
-          reject(error);
+          return reject(error);
         }
       } else
-        reject('Modelo no cargado');
+        return reject('Modelo no cargado');
     })
   }
 
   newModel(global: boolean): Promise<string> { //Se elige el modelo a cargar (Validar que no se vuelva a cargar si ya lo está)
     return new Promise((resolve) => {
-      this[global ? 'globalModel' : 'plModel'] = tf.sequential();
-      this[global ? 'globalModel' : 'plModel']?.add(tf.layers.dense({ units: 64, activation: 'relu', inputShape: [129, 20000] }));
-      this[global ? 'globalModel' : 'plModel']?.add(tf.layers.flatten());
-      this[global ? 'globalModel' : 'plModel']?.add(tf.layers.dense({ units: 32, activation: 'relu' }));
-      this[global ? 'globalModel' : 'plModel']?.add(tf.layers.dense({ units: 1, activation: 'linear' }));
+      try {
+        this[global ? 'globalModel' : 'plModel'] = tf.sequential();
+        this[global ? 'globalModel' : 'plModel']?.add(tf.layers.dense({ units: 64, activation: 'relu', inputShape: [129, 20000] }));
+        this[global ? 'globalModel' : 'plModel']?.add(tf.layers.flatten());
+        this[global ? 'globalModel' : 'plModel']?.add(tf.layers.dense({ units: 32, activation: 'relu' }));
+        this[global ? 'globalModel' : 'plModel']?.add(tf.layers.dense({ units: 1, activation: 'linear' }));
 
-      this[global ? 'globalModel' : 'plModel']?.compile({
-        optimizer: tf.train.adam(),
-        loss: 'meanSquaredError',
-        metrics: ['mae']
-      });
-      resolve('Modelo cargado');
+        this[global ? 'globalModel' : 'plModel']?.compile({
+          optimizer: tf.train.adam(),
+          loss: 'meanSquaredError',
+          metrics: ['mae']
+        });
+        return resolve('Modelo cargado');
+      } catch (error: any) {
+        console.error('Error al cargar el modelo', error);
+        return resolve(error);
+      }
     });
   }
 
@@ -140,27 +146,23 @@ export class TensorflowService {
     score: number,
     epochs: number
   ) {
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<any>(async (resolve, reject) => {
       if (!this[global ? 'globalModel' : 'plModel']) {
-        reject({ message: 'Modelo no cargado' });
-        return;
+        console.error('Modelo no cargado');
+        return reject({ message: 'Modelo no cargado' });
       }
-
-      const inputTensor = tf.tensor2d(mel_spectrogram);
-      const outputTensor = tf.tensor1d([score]);
-
-      this[global ? 'globalModel' : 'plModel']?.fit(inputTensor.expandDims(0), outputTensor, { epochs, batchSize: 1 }).then(() => {
+      try {
+        const inputTensor = tf.tensor2d(mel_spectrogram);
+        const outputTensor = tf.tensor1d([score]);
+        const trainResult = await this[global ? 'globalModel' : 'plModel']?.fit(inputTensor.expandDims(0), outputTensor, { epochs, batchSize: 1 });
         inputTensor.dispose();
         outputTensor.dispose();
-        resolve();
-      }).catch((error) => {
-        inputTensor.dispose();
-        outputTensor.dispose();
-        reject({
-          message: 'Error en el entrenamiento',
-          error
-        });
-      });
+        console.log('Training result:', trainResult);
+        return resolve(trainResult as any); // Cambia el tipo de retorno a void
+      } catch (e) {
+        console.error('Error al entrenar la canción:', e);
+        return reject(e);
+      }
     });
   }
 }

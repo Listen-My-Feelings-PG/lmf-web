@@ -200,7 +200,7 @@ export class TrainingComponent implements OnInit {
 
     this.songService.extractFeaturesFromSongs( //Función de tipo Observable
       list, //Se manda la lista manejadora
-      ( //Cada vez que se extraen las características de una canción de la lista, se ejecuta esta función Callback
+      async ( //Cada vez que se extraen las características de una canción de la lista, se ejecuta esta función Callback
         error,
         data, //Características de la canción actual
         done,
@@ -245,64 +245,41 @@ export class TrainingComponent implements OnInit {
                   song.tsStatusErrReason = 'features-notfound';
                   break;
               }
-              updateStatusTask(song).then(() => { //Escribe la situación del error de extracción de características de la canción actual en su registro en la base de datos
-                if (next)
-                  next();
-              });
+              await updateStatusTask(song);
+              if (next)
+                next();
             }
           } else {
             this.songService.customizeSpectrogram(data.mel_spectrogram, data.tempo, false).then((customized) => { //Adecuación del espectrograma para que todas las canciones tengan la misma dimensión, ademas de agregar un hilo con el tempo
               const spectrogram = customized.resized; //Espectrograma listo para un tensor
-              try {
-                const epochs = this.tsService.epochsConfig('get') as { score1: number, score2: number, score3: number };
-                const epochsNum = epochs['score' + song.userScore as keyof typeof epochs];
-                this.tsService.trainSong(false, spectrogram, song.userScore as number, epochsNum).then(() => { //Entrenamiento de la canción
-                  console.info(`Canción entrenada: ${song.id}`);
-                  song.tsStatus = 'trained';
-                  /*updateStatusTask(song).then(()=>{
-                    actualTrainedIdSongsList.push(song.id as number);*/
-                  if (next)
-                    next();
-                  //}); //Bloqueado para evitar el grabado de la situación de la canción en la base de datos para permitir siempre el entrenamiento
-                }).catch((error) => {
-                  console.error('Ocurrió un error al entrenar el modelo:', error, song);
-                  if (mode == 'single')
-                    this.http.setToast('error', 'Error al entrenar la canción', `Error al entrenar la canción con id ${idSong}`);
-                  song.tsStatus = 'error';
-                  song.tsStatusErrReason = 'training-error';
-                  updateStatusTask(song).then(() => {
-                    if (next)
-                      next();
-                  });
-                });
-              } catch (error) {
-                song.tsStatus = 'error';
-                song.tsStatusErrReason = 'training-error';
+              const epochs = this.tsService.epochsConfig('get') as { score1: number, score2: number, score3: number };
+              const epochsNum = epochs['score' + song.userScore as keyof typeof epochs];
+              this.tsService.trainSong(false, spectrogram, song.userScore as number, epochsNum).then(() => { //Entrenamiento de la canción
+                console.info(`Canción entrenada: ${song.id}`);
+                song.tsStatus = 'trained';
+                /*updateStatusTask(song).then(()=>{
+                  actualTrainedIdSongsList.push(song.id as number);*/
+                if (next)
+                  next();
+                //}); //Bloqueado para evitar el grabado de la situación de la canción en la base de datos para permitir siempre el entrenamiento
+              }).catch(async (error) => {
                 if (mode == 'single')
                   this.http.setToast('error', 'Error al entrenar la canción', `Error al entrenar la canción con id ${idSong}`);
-                updateStatusTask(song).then((res) => {
-                  if (res === null) {
-                    song.storageStatus = 'error';
-                    song.storageStatusErrReason = 'other';
-                  }
-                  if (next)
-                    next();
-                });
-              }
-            }).catch((error) => {
+                song.tsStatus = 'error';
+                song.tsStatusErrReason = 'training-error';
+                await updateStatusTask(song);
+                if (next)
+                  next();
+              });
+            }).catch(async (error) => {
               console.error(error);
               song.tsStatus = 'error';
               song.tsStatusErrReason = 'customize-error';
               if (mode == 'single')
                 this.http.setToast('error', 'Error al personalizar el espectrograma de la canción', `Error al personalizar el espectrograma de la canción con id ${idSong}`);
-              updateStatusTask(song).then((res) => {
-                if (res === null) {
-                  song.storageStatus = 'error';
-                  song.storageStatusErrReason = 'other';
-                }
-                if (next)
-                  next();
-              });
+              await updateStatusTask(song);
+              if (next)
+                next();
             });
           }
         } else { //AL FINALIZAR EL POOL DE EXTRACCIÓN DE CARACTERÍSTICAS.................................................................................................
@@ -335,8 +312,8 @@ export class TrainingComponent implements OnInit {
         }
       });
     const that = this;
-    function updateStatusTask(song: Song) {
-      return that.updateSongStatusOnServer(
+    async function updateStatusTask(song: Song) {
+      return await that.updateSongStatusOnServer(
         song.id as number,
         song.tsStatus,
         song.tsInitStatus,
@@ -364,10 +341,10 @@ export class TrainingComponent implements OnInit {
         tsPrediction,
         userScore
       }, true).subscribe({
-        next: (res) => resolve(res),
+        next: (res) => { return resolve(res); },
         error: (error) => {
           console.error('Error al actualizar el estado de la canción en el servidor:', error);
-          resolve(null);
+          return resolve(error);
         }
       });
     })

@@ -73,13 +73,19 @@ export class SpectrogramViewerComponent implements AfterViewInit, OnDestroy {
 
   draw(x: number, y: number, v: number): Promise<number> {
     return new Promise((resolve, reject) => {
-      const size = 2;
-      const clampedIntensity = Math.max(0, Math.min(1, v));
-      const colorValue = Math.floor(clampedIntensity * 255);
-      const color = v > 1 ? 'red' : `rgb(${colorValue}, ${colorValue}, ${colorValue})`;
-      this.ctx.fillStyle = color;
-      this.ctx.fillRect(x, y, size, size);
-      resolve(v);
+      try {
+        const size = 2;
+        const clampedIntensity = Math.max(0, Math.min(1, v));
+        const colorValue = Math.floor(clampedIntensity * 255);
+        const color = v > 1 ? 'red' : `rgb(${colorValue}, ${colorValue}, ${colorValue})`;
+        this.ctx.fillStyle = color;
+        this.ctx.fillRect(x, y, size, size);
+        return resolve(v);
+      } catch (e) {
+        console.error('Error al dibujar espectrograma:', e);
+        return reject(e);
+      }
+
     });
   }
 
@@ -153,7 +159,7 @@ export class SpectrogramViewerComponent implements AfterViewInit, OnDestroy {
   loadSpectrogram(): void {
     const that = this;
     this.canvas.nativeElement
-    this.http.get(`download/tsfeatures?value=${this.idSong}`, true).subscribe({
+    this.http.get(`download/ts-features?value=${this.idSong}`, true).subscribe({
       next: async (data) => {
         that.songService.customizeSpectrogram(data.mel_spectrogram, data.tempo, false).then((res) => {
           res.resized.push([]);
