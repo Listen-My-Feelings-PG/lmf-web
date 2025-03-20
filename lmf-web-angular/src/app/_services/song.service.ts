@@ -69,22 +69,27 @@ export class SongService {
       this.busyFlags.idSongsForFeatures = true;
       trigger(); //Se dispara la función get de extracción
     } else
-      taskCallback(true, 'Pool is busy', true);
+      return taskCallback(true, 'Pool is busy', true);
 
     function trigger() {
       const item = that.iterators.idSongsForFeatures.next();
       if (item.done)
         return checkPool(item);
       that.http.get(`download/ts-features?value=${item.value}`).subscribe({
-        next: (res: any) => taskCallback(
-          false, res, //Características planas extraidas
-          false, item.value, //Valor actual: id de la canción
-          () => checkPool(item) //Callback de activación: Se activa en la función "listener" que maneja el componente
-        ),
-        error: (error: any) => taskCallback(
-          true, { message: 'Error al extraer características', error },
-          false, item.value, () => checkPool(item)
-        )
+        next: (res: any) => {
+          return taskCallback(
+            false, res, //Características planas extraidas
+            false, item.value, //Valor actual: id de la canción
+            () => checkPool(item) //Callback de activación: Se activa en la función "listener" que maneja el componente
+          );
+        },
+        error: (error: any) => {
+          console.error('Error al extraer características:', error.status);
+          return taskCallback(
+            true, error,
+            false, item.value, () => checkPool(item)
+          );
+        }
       });
     }
 
@@ -94,7 +99,7 @@ export class SongService {
       else {
         that.pools.idSongsForFeatures = [];
         that.busyFlags.idSongsForFeatures = false;
-        taskCallback(false, 'Pool finalizado', true);
+        return taskCallback(false, 'Pool finalizado', true);
       }
     }
   }

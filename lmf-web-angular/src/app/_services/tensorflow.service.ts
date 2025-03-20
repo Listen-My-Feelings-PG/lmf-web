@@ -151,13 +151,14 @@ export class TensorflowService {
         console.error('Modelo no cargado');
         return reject({ message: 'Modelo no cargado' });
       }
+
       try {
         const inputTensor = tf.tensor2d(mel_spectrogram);
         const outputTensor = tf.tensor1d([score]);
         const trainResult = await this[global ? 'globalModel' : 'plModel']?.fit(inputTensor.expandDims(0), outputTensor, { epochs, batchSize: 1 });
         inputTensor.dispose();
         outputTensor.dispose();
-        console.log('Training result:', trainResult);
+        console.info('Training result:', trainResult);
         return resolve(trainResult as any); // Cambia el tipo de retorno a void
       } catch (e) {
         console.error('Error al entrenar la canción:', e);

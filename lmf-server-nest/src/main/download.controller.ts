@@ -62,8 +62,6 @@ export class DownloadController {
   @Post('ts-weights')
   @UseInterceptors(FileInterceptor(''))
   getTsWeights(@Body() body: any) {
-    console.log('Received weights:', body);
-
     return {
       message: 'Weights received'
     };

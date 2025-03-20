@@ -8,8 +8,7 @@ export const httpRequestInterceptor: HttpInterceptorFn = (req, next) => {
      *  key1: string,
      *  key2: string,
      *  ...
-     * }
-     *  
+     * } 
      * Si existe más de un archivo, se especifican las definiciones(campos) del archivo en camnpos con la siguiente nomenclatura: 
      * file_[índice]_[key1], file_[índice]_[key2],... seguido del archivo con el nombre "file_[índice]":
      * { 
@@ -20,7 +19,13 @@ export const httpRequestInterceptor: HttpInterceptorFn = (req, next) => {
      *  file_0_key1: string,
      *  file_1_key1: string,
      *  ...
-     * } 
+     * }
+     * Si el/los archivo/s cargados no tienen nada que ver con las definiciones, estas se empaquetan en 'data'
+     * {
+     *  ...
+     *  file: File,
+     *  data:'{"key1": "value1", "key2": "value2"}'
+     * }
     */
     const body: any = req.body;
     const formData: FormData = new FormData();

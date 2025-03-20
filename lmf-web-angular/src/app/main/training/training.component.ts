@@ -130,7 +130,7 @@ export class TrainingComponent implements OnInit {
           this.playlists.selected.songs = list;
         this.http.post(`download/ts-weights`, { idPlaylist }).subscribe({
           next: (res: any) => {
-            console.log('res', res);
+            //console.log('res', res);
           }
         });
       }
@@ -271,8 +271,7 @@ export class TrainingComponent implements OnInit {
                 if (next)
                   next();
               });
-            }).catch(async (error) => {
-              console.error(error);
+            }).catch(async () => {
               song.tsStatus = 'error';
               song.tsStatusErrReason = 'customize-error';
               if (mode == 'single')
@@ -287,7 +286,12 @@ export class TrainingComponent implements OnInit {
           const blob = new Blob([JSON.stringify(weights)], { type: 'application/json' });
           const file = new File([blob], 'model-weights.json', { type: 'application/json' });
           const plSelected = this.playlists.selected as Playlist;
-          this.http.post('upload/model-weights', { file, playList: JSON.stringify({ id: plSelected.id, isGlobal: plSelected.isGlobal }) }, { //Por ahora, sólo se está cargando el modelo de la lista seleccionada (distinguiendo si es global o no). Si se selecciona una playlist, es necesario hacer dos entrenamientos: el global y el de la playlist seleccionada (Naturalmente, si no se seleccionó ninguna playlist, se cargarían todas las canciones de todas las playlist del usuario, por lo cual se entrenaría únicamente al modelo global)
+          this.http.post('upload/model-weights', {
+            file, data: JSON.stringify({
+              playlist: { idSelected: plSelected.id, idGlobal: this.playlists.default?.id },
+              models: { idSelected: plSelected.model?.id, idGlobal: this.playlists.default?.model?.id }
+            })
+          }, { //Por ahora, sólo se está cargando el modelo de la lista seleccionada (distinguiendo si es global o no). Si se selecciona una playlist, es necesario hacer dos entrenamientos: el global y el de la playlist seleccionada (Naturalmente, si no se seleccionó ninguna playlist, se cargarían todas las canciones de todas las playlist del usuario, por lo cual se entrenaría únicamente al modelo global)
             key: 'default',
             severity: 'error',
             summary: 'Error al actualizar modelo',
