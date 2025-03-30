@@ -130,7 +130,7 @@ export class TrainingComponent implements OnInit {
           this.playlists.selected.songs = list;
         this.http.post(`download/ts-weights`, { idPlaylist }).subscribe({
           next: (res: any) => {
-            //console.log('res', res);
+            console.log('res', res);
           }
         });
       }
@@ -255,13 +255,12 @@ export class TrainingComponent implements OnInit {
               const epochs = this.tsService.epochsConfig('get') as { score1: number, score2: number, score3: number };
               const epochsNum = epochs['score' + song.userScore as keyof typeof epochs];
               this.tsService.trainSong(false, spectrogram, song.userScore as number, epochsNum).then(() => { //Entrenamiento de la canción
-                console.info(`Canción entrenada: ${song.id}`);
                 song.tsStatus = 'trained';
-                /*updateStatusTask(song).then(()=>{
-                  actualTrainedIdSongsList.push(song.id as number);*/
-                if (next)
-                  next();
-                //}); //Bloqueado para evitar el grabado de la situación de la canción en la base de datos para permitir siempre el entrenamiento
+                updateStatusTask(song).then(() => {
+                  actualTrainedIdSongsList.push(song.id as number);
+                  if (next)
+                    next();
+                });
               }).catch(async (error) => {
                 if (mode == 'single')
                   this.http.setToast('error', 'Error al entrenar la canción', `Error al entrenar la canción con id ${idSong}`);
@@ -298,14 +297,10 @@ export class TrainingComponent implements OnInit {
             detail: 'Ocurrió un error al actualizar los pesos del modelo'
           }).subscribe({
             next: (res) => {
-              console.log('res', res);
-
               if (this.playlists.default?.model === null && res.data.idGlobalModel)
                 this.playlists.default.model = new TsModel(res.data.idGlobalModel, 'tensorflow', true, 0, null);
-
               if (this.playlists.selected?.model === null && res.data.idPlaylistModel)
                 this.playlists.selected.model = new TsModel(res.data.idPlaylistModel, 'tensorflow', false, 0, null);
-
               this.playlists.selected?.songs.find((obj) => obj.storageStatus == 'error' || obj.tsStatus == 'error') ?
                 this.http.setToast('warn', 'Error al entrenar el modelo', 'Algunas canciones no pudieron ser entrenadas') :
                 this.http.setToast('success', 'Entrenamiento completado', 'El modelo ha sido entrenado con éxito');

@@ -166,7 +166,6 @@ export class UploadController {
         }
       } = JSON.parse(body.data);
 
-      console.log('Parsed data:', data);
       if (Object.keys(data.models).length > 0) { //Significa que al menos uno de los dos modelos ya existe
         if (data.models.idGlobal) { //Si existe un modelo global...
           const idGlobalModel = data.models.idGlobal;
