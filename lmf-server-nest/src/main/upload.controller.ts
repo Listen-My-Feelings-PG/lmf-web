@@ -167,13 +167,13 @@ export class UploadController {
       } = JSON.parse(body.data);
 
       console.log('Parsed data:', data);
-      if (Object.keys(data.models).length > 0) { //Significa que los modelos ya existen
+      if (Object.keys(data.models).length > 0) { //Significa que al menos uno de los dos modelos ya existe
         if (data.models.idGlobal) { //Si existe un modelo global...
           const idGlobalModel = data.models.idGlobal;
           const globalModel = await this.modelTable.findOne({ where: { isGlobal: true } }); //Modelo global para one_user (un único modelo en la base de datos)
           if (globalModel.id != idGlobalModel) //Validación de seguridad si existe un modelo global en la base de datos
             throw new HttpException('Error de seguridad: el id del modelo de la playlist global obtenido no coincide con el modelo de la playlist de la base de datos', HttpStatus.FORBIDDEN);
-          const oldFilePath = path.resolve(this.cf.get<string>('TS_PATH_MODELS'), globalModel.fileName) + '.gz';
+          const oldFilePath = path.resolve(this.cf.get<string>('TS_PATH_MODELS'), globalModel.fileName);
           const trainCount = globalModel.trainCount + 1;
           await fs.unlinkSync(oldFilePath);
           await this.modelTable.update(globalModel.id, { fileName: file.filename, trainCount });
@@ -188,10 +188,7 @@ export class UploadController {
               await fs.unlinkSync(oldFilePath);
               await this.modelTable.update(playlistModel.id, { fileName: file.filename, trainCount });
             } //Ya que si son iguales, nos estamos refiriendo únicamente al modelo global
-            return {
-              message: 'Modelos actualizados exitosamente'
-            };
-          } else { //Significa que no existe ningun modelo para la playlist actual
+          } else {
             const idSelectedPlaylist = data.models.idSelected;
             const newPlaylistModel = await this.modelTable.save(this.modelTable.create({
               fileName: gzipFileName,
@@ -202,16 +199,19 @@ export class UploadController {
           }
         } else
           throw new HttpException('Error de seguridad: el id del modelo global es obligatorio', HttpStatus.FORBIDDEN);
+        return { message: 'Modelos actualizados exitosamente' };
       } else { //Significa que no hay ningun modelo existente
         const idGlobalPlaylist = data.playlist.idGlobal;
         const idSelectedPlaylist = data.playlist.idSelected;
-        if (idGlobalPlaylist != idSelectedPlaylist) {
+        let idPlaylistModel = null;
+        if (idGlobalPlaylist != idSelectedPlaylist) { //Significa que la lista seleccionada es diferente a la lista global, por lo cual, este bloque se dedicará a crear un modelo para la lista seleccionada, pero aun asi, es necesario crear un modelo global y entrenarlo con el modelo de la lista seleccionada
           const newPlaylistModel = await this.modelTable.save(this.modelTable.create({
             fileName: gzipFileName,
             trainCount: 1,
             isGlobal: false
           }));
           await this.playlistTable.update(idSelectedPlaylist, { idModel: { id: newPlaylistModel.id } });
+          idPlaylistModel = newPlaylistModel.id;
         }
 
         const newGlobalModel = await this.modelTable.save(this.modelTable.create({
@@ -219,13 +219,9 @@ export class UploadController {
           trainCount: 1,
           isGlobal: true
         }));
-        console.log('idGlobalPlaylist:', idGlobalPlaylist);
         await this.playlistTable.update(idGlobalPlaylist, { idModel: { id: newGlobalModel.id } });
 
-
-        return {
-          message: 'Modelos actualizados exitosamente'
-        };
+        return { message: 'Modelos actualizados exitosamente', data: { idGlobalModel: newGlobalModel.id, idPlaylistModel } };
       }
     } catch (error) {
       console.error('Error al comprimir el archivo:', error);

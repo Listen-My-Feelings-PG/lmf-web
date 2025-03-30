@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { FileUploadModule } from 'primeng/fileupload';
-import { Playlist, Song } from '../../_models/all.model';
+import { Playlist, Song, TsModel } from '../../_models/all.model';
 import { HttpService } from '../../_services/http.service';
 import { SongService } from '../../_services/song.service';
 import { TensorflowService } from '../../_services/tensorflow.service';
@@ -297,7 +297,15 @@ export class TrainingComponent implements OnInit {
             summary: 'Error al actualizar modelo',
             detail: 'Ocurrió un error al actualizar los pesos del modelo'
           }).subscribe({
-            next: () => {
+            next: (res) => {
+              console.log('res', res);
+
+              if (this.playlists.default?.model === null && res.data.idGlobalModel)
+                this.playlists.default.model = new TsModel(res.data.idGlobalModel, 'tensorflow', true, 0, null);
+
+              if (this.playlists.selected?.model === null && res.data.idPlaylistModel)
+                this.playlists.selected.model = new TsModel(res.data.idPlaylistModel, 'tensorflow', false, 0, null);
+
               this.playlists.selected?.songs.find((obj) => obj.storageStatus == 'error' || obj.tsStatus == 'error') ?
                 this.http.setToast('warn', 'Error al entrenar el modelo', 'Algunas canciones no pudieron ser entrenadas') :
                 this.http.setToast('success', 'Entrenamiento completado', 'El modelo ha sido entrenado con éxito');

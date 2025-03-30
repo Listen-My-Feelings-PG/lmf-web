@@ -81,7 +81,8 @@
               <th [ngClass]="{'text-info':idSongPlaying==song.id}">{{i + 1}}</th>
               <td [ngClass]="{'text-info':idSongPlaying==song.id}">{{song.id ? song.id:'--'}}</td>
               <td [ngClass]="{'text-info':idSongPlaying==song.id}">{{song.name}}</td>
-              <td><span class="badge text-bg-primary">Archivo MP3</span></td>
+              <td><span class="badge text-bg-primary"
+                  [ngClass]="{'text-info':idSongPlaying==song.id}">Archivo MP3</span></td>
               <td>
                 <button pButton
                   type="button"
@@ -92,7 +93,7 @@
                   (click)="play(i)"></button>
               </td>
               <td class="text-center status-icons-td text-nowrap"
-                pTooltip="{{song.storageStatus+' | '+song.tsStatus+' | '+song.tsInitStatus}}"
+                pTooltip="{{song.storageStatus+' | for '+song.tsInitStatus+' | '+(song.tsStatus ? song.tsStatus:'prepared')}}"
                 tooltipPosition="top"
                 [ngClass]="{'text-info':idSongPlaying==song.id}">
                 <span *ngIf="song.storageStatus=='local'"><i class="fa-solid fa-boxes-packing"></i></span>
@@ -113,8 +114,7 @@
                   <i class="fa-solid fa-wand-magic-sparkles"></i>
                 </span>
                 <span *ngIf="song.tsStatus=='retrained'||song.tsInitStatus=='retrain'"
-                  [ngClass]="{'text-info-default':song.tsStatus=='retrained'}">
-                  <i class="fa-solid fa-hexagon-nodes"></i>
+                  [ngClass]="{'text-info-default':song.tsStatus=='retrained'}"><i class="fa-solid fa-hexagon-nodes"></i>
                 </span>
               </td>
               <td><!--Calificación-->
@@ -132,7 +132,7 @@
                   </ng-container>
                 </ng-template>
               </td>
-              <td><!--Predicción-->
+              <td [ngClass]="{'text-info':idSongPlaying==song.id}"><!--Predicción-->
                 --
               </td>
               <td>
