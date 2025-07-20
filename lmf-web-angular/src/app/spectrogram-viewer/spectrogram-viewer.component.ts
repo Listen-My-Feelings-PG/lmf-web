@@ -3,6 +3,8 @@ import { HttpService } from '../_services/http.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SongService } from '../_services/song.service';
+import { Decimal } from 'decimal.js';
+import { TsModelJSON } from '../_models/all.model';
 
 @Component({
   selector: 'app-spectrogram-viewer',
@@ -90,7 +92,7 @@ export class SpectrogramViewerComponent implements AfterViewInit, OnDestroy {
   }
 
   playSong(): void {
-    this.audio.src = `http://localhost:3000/songs/song/mp3?value=${this.idSong}`; // Cambia la ruta según sea necesario
+    this.audio.src = `http://localhost:3002/songs/song/mp3?value=${this.idSong}`; // Cambia la ruta según sea necesario
     this.audio.play();
     this.currentTime = 0;
     this.intervalId = setInterval(() => {
@@ -160,8 +162,15 @@ export class SpectrogramViewerComponent implements AfterViewInit, OnDestroy {
     const that = this;
     this.canvas.nativeElement
     this.http.get(`download/ts-features?value=${this.idSong}`, true).subscribe({
-      next: async (data) => {
-        that.songService.customizeSpectrogram(data.mel_spectrogram, data.tempo, false).then((res) => {
+      next: async (response) => {
+        const data = response.data as { melSpectrogram: number[][], tempo: number };
+        
+        // Convertir number[][] a TsModelJSON (Decimal[][][])
+        const convertedSpectrogram: TsModelJSON = data.melSpectrogram.map(row => 
+          row.map(value => [new Decimal(value)])
+        );
+        
+        that.songService.customizeSpectrogram(convertedSpectrogram, data.tempo, false).then((res) => {
           res.resized.push([]);
           for (let i = res.firstIndex; i <= res.lastIndex; i++) {
             res.resized[128].push(i % res.interval == 0 ? 1 : 0);

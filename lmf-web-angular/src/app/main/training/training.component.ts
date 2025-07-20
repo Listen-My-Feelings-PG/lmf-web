@@ -2,10 +2,11 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { FileUploadModule } from 'primeng/fileupload';
-import { Playlist, Song, TsModel } from '../../_models/all.model';
+import { Playlist, Song, TsModel, TsModelJSON } from '../../_models/all.model';
 import { HttpService } from '../../_services/http.service';
 import { SongService } from '../../_services/song.service';
-import { TensorflowService } from '../../_services/tensorflow.service';
+import { TensorflowService } from '../../_services/tensorflow-v2.service';
+import { Decimal } from 'decimal.js';
 import { ChipModule } from 'primeng/chip';
 import { BadgeModule } from 'primeng/badge';
 import { ListboxModule } from 'primeng/listbox';
@@ -96,8 +97,8 @@ export class TrainingComponent implements OnInit {
             this.http.setToast('error', 'Error al cargar listas', 'Default playlist not found');
           }
           this.playlists.list = list.filter((obj) => !obj.isGlobal).map((obj) => new Playlist(obj.name, [], [], null, false, obj.id));
-          this.tsService.epochsConfig('set', res.data.tsConfig.epochs);
-          this.tsService.init();
+          this.tsService.setEpochsConfig(res.data.tsConfig.epochs);
+          this.tsService.initializeTensorflow();
         } else {
           console.error('Default playlist not found');
           this.http.setToast('error', 'No se encontraron listas de reproducción', 'Default playlist not found');
@@ -181,7 +182,7 @@ export class TrainingComponent implements OnInit {
   }
 
   async trainModel(mode: 'single' | 'all', index?: number): Promise<void> {
-    await this.tsService.newModel(false);
+    await this.tsService.createModel(false);
     let actualTrainedIdSongsList: Array<number> = [];
     let list: Array<number> = []; //Lista manejadora principal (Solo maneja los puros ids de cada canción)
     if (mode == 'single') { //Si se seleccionó el botón del row...
@@ -250,10 +251,14 @@ export class TrainingComponent implements OnInit {
                 next();
             }
           } else {
-            this.songService.customizeSpectrogram(data.mel_spectrogram, data.tempo, false).then((customized) => { //Adecuación del espectrograma para que todas las canciones tengan la misma dimensión, ademas de agregar un hilo con el tempo
+            // Convertir number[][] a TsModelJSON (Decimal[][][])
+            const convertedSpectrogram: TsModelJSON = data.mel_spectrogram.map((row: number[]) => 
+              row.map((value: number) => [new Decimal(value)])
+            );
+            
+            this.songService.customizeSpectrogram(convertedSpectrogram, data.tempo, false).then((customized) => { //Adecuación del espectrograma para que todas las canciones tengan la misma dimensión, ademas de agregar un hilo con el tempo
               const spectrogram = customized.resized; //Espectrograma listo para un tensor
-              const epochs = this.tsService.epochsConfig('get') as { score1: number, score2: number, score3: number };
-              const epochsNum = epochs['score' + song.userScore as keyof typeof epochs];
+              const epochsNum = this.tsService.getEpochsForScore(song.userScore as number);
               this.tsService.trainSong(false, spectrogram, song.userScore as number, epochsNum).then(() => { //Entrenamiento de la canción
                 song.tsStatus = 'trained';
                 updateStatusTask(song).then(() => {
@@ -261,7 +266,7 @@ export class TrainingComponent implements OnInit {
                   if (next)
                     next();
                 });
-              }).catch(async (error) => {
+              }).catch(async (error: any) => {
                 if (mode == 'single')
                   this.http.setToast('error', 'Error al entrenar la canción', `Error al entrenar la canción con id ${idSong}`);
                 song.tsStatus = 'error';

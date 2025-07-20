@@ -3,7 +3,7 @@ import { RouterOutlet } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { HttpService } from './_services/http.service';
 import { ToastModule } from 'primeng/toast';
-import { TensorflowService } from './_services/tensorflow.service';
+import { TensorflowService } from './_services/tensorflow-v2.service';
 
 @Component({
   selector: 'app-root',
@@ -21,7 +21,7 @@ export class AppComponent implements OnInit {
     private tsService: TensorflowService
   ) { }
   ngOnInit(): void {
-    this.tsService.init();
+    this.tsService.initializeTensorflow();
     this.http.getToastEvent().subscribe((props) => {
       if (props.key)
         this.toast.add(props as any)

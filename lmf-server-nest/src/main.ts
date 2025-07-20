@@ -15,6 +15,6 @@ async function bootstrap() {
   app.use(bodyParser.urlencoded({ limit: '100mb', extended: true }));
 
   app.use(new LogMiddleware().use);
-  await app.listen(process.env.TS_PORT || 3000);
+  await app.listen(process.env.TS_PORT || 3002);
 }
 bootstrap();

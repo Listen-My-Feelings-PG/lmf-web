@@ -1,149 +1,197 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, catchError, finalize, Observable, ObservableInput, tap, throwError } from 'rxjs';
+import { BehaviorSubject, catchError, finalize, Observable, ObservableInput, tap, throwError, timeout } from 'rxjs';
+import { ApiResponse } from '../_models/types';
+
+export interface ToastProperties {
+  key: 'default' | 'custom' | null;
+  severity: 'success' | 'info' | 'warn' | 'error';
+  summary: string;
+  detail: string;
+  life?: number;
+  data?: any;
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class HttpService {
-  busy: boolean;
-  baseUrl: string;
-  private toastEvent: BehaviorSubject<ToastProperties>;
-  constructor(private http: HttpClient) {
-    this.busy = false;
-    this.baseUrl = 'http://localhost:3000/';
-    this.toastEvent = new BehaviorSubject<ToastProperties>({ //Evento en un servicio. La variable funcionará como puente entre el componente emisor (.next) y el receptor(.subscribe)
-      key: null,
-      severity: 'info',
-      summary: '',
-      detail: '',
-      life: 4000
-    });
+  private readonly busySubject = new BehaviorSubject<boolean>(false);
+  private readonly baseUrl = 'http://localhost:3002/';
+  private readonly defaultTimeout = 30000;
+  private readonly toastSubject = new BehaviorSubject<ToastProperties>({
+    key: null,
+    severity: 'info',
+    summary: '',
+    detail: '',
+    life: 4000
+  });
+
+  readonly busy$ = this.busySubject.asObservable();
+  readonly toastEvent$ = this.toastSubject.asObservable();
+
+  constructor(private http: HttpClient) { }
+
+  get busy(): boolean {
+    return this.busySubject.value;
   }
 
   /**
-   * Envía una solicitud GET a la URL especificada y opcionalmente muestra notificaciones toast.
-   *
-   * @param {string} url - La URL a la que se envía la solicitud GET.
-   * @param {ToastProperties} [toastError] - Propiedades opcionales para mostrar una notificación toast de error.
-   * @param {ToastProperties} [toastSuccess] - Propiedades opcionales para mostrar una notificación toast de éxito.
-   * @returns {Observable<any>} - Un observable de la respuesta HTTP.
+   * Realiza una petición GET HTTP con manejo de errores mejorado
    */
-  get(url: string, toastError?: ToastProperties | true, toastSuccess?: ToastProperties): Observable<any> {
-    this.busy = true;
-    return this.http.get(this.baseUrl + url)
+  get<T = any>(
+    url: string,
+    showErrorToast: boolean | ToastProperties = false,
+    showSuccessToast?: ToastProperties,
+    timeoutMs: number = this.defaultTimeout
+  ): Observable<ApiResponse<T>> {
+    this.setBusy(true);
+
+    return this.http.get<ApiResponse<T>>(this.buildUrl(url))
       .pipe(
-        //tap(() => console.info('url:', url)),
-        finalize(() => {
-          this.busy = false;
-          if (toastSuccess !== undefined)
-            this.setToast(
-              toastSuccess.severity,
-              toastSuccess.summary,
-              toastSuccess.detail,
-              toastSuccess.life
-            );
+        timeout(timeoutMs),
+        tap(() => {
+          if (showSuccessToast) {
+            this.showToast(showSuccessToast);
+          }
         }),
-        catchError((err) => this.handleError(err, toastError))
+        catchError(error => this.handleError(error, showErrorToast)),
+        finalize(() => this.setBusy(false))
       );
   }
 
   /**
-   * Envía una solicitud POST a la URL especificada con el cuerpo proporcionado y opcionalmente muestra notificaciones toast.
-   *
-   * @param {string} url - La URL a la que se envía la solicitud POST.
-   * @param {Object} body - El cuerpo de la solicitud POST.
-   * @param {ToastProperties} [toastError] - Propiedades opcionales para mostrar una notificación toast de error.
-   * @param {ToastProperties} [toastSuccess] - Propiedades opcionales para mostrar una notificación toast de éxito.
-   * @returns {Observable<any>} - Un observable de la respuesta HTTP.
+   * Realiza una petición POST HTTP con manejo de errores mejorado
    */
-  post(url: string, body: Object, toastError?: ToastProperties | true, toastSuccess?: ToastProperties): Observable<any> {
-    this.busy = true;
-    return this.http.post(this.baseUrl + url, body)
+  post<T = any>(
+    url: string,
+    body: any,
+    showErrorToast: boolean | ToastProperties = false,
+    showSuccessToast?: ToastProperties,
+    timeoutMs: number = this.defaultTimeout
+  ): Observable<ApiResponse<T>> {
+    this.setBusy(true);
+
+    return this.http.post<ApiResponse<T>>(this.buildUrl(url), body)
       .pipe(
-        //tap(() => console.info('url:', url, 'body:', body)),
-        finalize(() => {
-          this.busy = false;
-          if (toastSuccess !== undefined)
-            this.setToast(
-              toastSuccess.severity,
-              toastSuccess.summary,
-              toastSuccess.detail,
-              toastSuccess.life
-            );
+        timeout(timeoutMs),
+        tap(() => {
+          if (showSuccessToast) {
+            this.showToast(showSuccessToast);
+          }
         }),
-        catchError((err) => this.handleError(err, toastError))
+        catchError(error => this.handleError(error, showErrorToast)),
+        finalize(() => this.setBusy(false))
       );
   }
 
   /**
-   * Muestra una notificación toast con los parámetros especificados.
-   * 
-   * @param severity - El nivel de severidad del toast. Puede ser 'success', 'info', 'warn' o 'error'.
-   * @param summary - Un breve resumen del mensaje del toast.
-   * @param detail - Una descripción detallada del mensaje del toast.
-   * @param life - (Opcional) La duración en milisegundos durante la cual se debe mostrar el toast. Por defecto es 5000 milisegundos si no se proporciona.
+   * Realiza upload de archivos con soporte para progreso
+   */
+  upload<T = any>(
+    url: string,
+    formData: FormData,
+    onProgress?: (progress: number) => void,
+    showErrorToast: boolean | ToastProperties = true
+  ): Observable<ApiResponse<T>> {
+    this.setBusy(true);
+
+    // TODO: Implementar seguimiento de progreso
+    return this.http.post<ApiResponse<T>>(this.buildUrl(url), formData)
+      .pipe(
+        catchError(error => this.handleError(error, showErrorToast)),
+        finalize(() => this.setBusy(false))
+      );
+  }
+
+  /**
+   * Muestra una notificación toast
    */
   setToast(
     severity: 'success' | 'info' | 'warn' | 'error',
     summary: string,
     detail: string,
-    life?: number
-  ) {
-    this.toastEvent.next({  //El evento se dispara con next (disparado tambien en el componente emisor)
+    life: number = 5000
+  ): void {
+    this.showToast({
       key: 'default',
       severity,
       summary,
       detail,
-      life: life ? life : 5000
+      life
     });
   }
 
-
   /**
-   * Maneja los errores HTTP y opcionalmente muestra una notificación tipo toast.
-   * 
-   * @param error - El objeto de error o cualquier otra información de error.
-   * @param toastError - Parámetro opcional para especificar propiedades del toast o un booleano para mostrar un toast de error predeterminado.
-   * @returns Un observable input del error.
-   * 
-   * Si el estado del error es 422, elimina el 'currentUser' del almacenamiento de sesión y recarga la ventana.
-   * Si `toastError` se proporciona y no es un booleano, establece un toast con las propiedades proporcionadas.
-   * Si `toastError` es verdadero, establece un toast de error predeterminado indicando un error de conexión.
+   * Obtiene el observable para eventos de toast
    */
-  handleError(error: Error | any, toastError?: ToastProperties | true): ObservableInput<Error> {
-    if (error.status == 422) {
+  getToastEvent(): Observable<ToastProperties> {
+    return this.toastEvent$;
+  }
+
+  private setBusy(busy: boolean): void {
+    this.busySubject.next(busy);
+  }
+
+  private buildUrl(endpoint: string): string {
+    return `${this.baseUrl}${endpoint}`;
+  }
+
+  private showToast(toast: ToastProperties): void {
+    this.toastSubject.next(toast);
+  }
+
+  private handleError(
+    error: HttpErrorResponse | any,
+    showToast: boolean | ToastProperties
+  ): ObservableInput<never> {
+    console.error('HTTP Error:', error);
+
+    // Manejo específico de errores HTTP
+    if (error.status === 422) {
       sessionStorage.removeItem('currentUser');
       window.location.reload();
-    } else if (toastError !== undefined) {
-      if (typeof toastError !== 'boolean')
-        this.setToast(
-          toastError.severity,
-          toastError.summary,
-          toastError.detail,
-          toastError.life
-        );
-      else
-        this.setToast('error', 'Error de conexión', 'No se pudo establecer conexión con el servidor');
+      return throwError(() => error);
     }
-    return throwError(error);
+
+    // Mostrar toast de error si está configurado
+    if (showToast) {
+      if (typeof showToast === 'boolean') {
+        this.setToast(
+          'error',
+          'Error de conexión',
+          this.getErrorMessage(error)
+        );
+      } else {
+        this.showToast(showToast);
+      }
+    }
+
+    return throwError(() => error);
   }
 
-  /**
-   * Recupera el observable del evento toast actual.
-   *
-   * @returns {Observable<any>} El observable para el evento toast.
-   */
-  getToastEvent() {
-    return this.toastEvent;
-  }
-}
+  private getErrorMessage(error: HttpErrorResponse | any): string {
+    if (error.error?.message) {
+      return error.error.message;
+    }
 
-export interface ToastProperties {
-  key: 'default' | 'custom' | null,
-  severity: 'success' | 'info' | 'warn' | 'error',
-  summary: string,
-  detail: string,
-  life?: number,
-  data?: any
+    switch (error.status) {
+      case 0:
+        return 'No se pudo conectar con el servidor. Verifica tu conexión a internet.';
+      case 400:
+        return 'Solicitud incorrecta. Verifica los datos enviados.';
+      case 401:
+        return 'No autorizado. Inicia sesión nuevamente.';
+      case 403:
+        return 'Acceso denegado.';
+      case 404:
+        return 'Recurso no encontrado.';
+      case 500:
+        return 'Error interno del servidor. Intenta nuevamente.';
+      case 503:
+        return 'Servicio no disponible. Intenta más tarde.';
+      default:
+        return error.message || 'Error desconocido en la conexión.';
+    }
+  }
 }

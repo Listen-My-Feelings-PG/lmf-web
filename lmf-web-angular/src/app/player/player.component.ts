@@ -25,7 +25,7 @@ export class PlayerComponent implements OnInit {
 
   constructor(private playerService: PlayerService, private songService: SongService) {
     this.urlSong = '';
-    this.baseUrl = 'http://localhost:3000/songs/song/mp3?value=';
+    this.baseUrl = 'http://localhost:3002/songs/song/mp3?value=';
     this.caption = 'Proident incididunt nisi eiusmod qui occaecat. Voluptate irure eiusmod cillum ut. Incididunt ullamco aliqua nulla laboris eiusmod in velit tempor esse amet mollit excepteur deserunt. Non ad veniam duis aute ut. Minim officia anim consequat laborum aliquip Lorem quis proident voluptate excepteur duis incididunt.';
     this.isPlaying = false;
     this.currentTime = 0;
