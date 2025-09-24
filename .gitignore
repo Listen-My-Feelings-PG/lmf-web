@@ -41,5 +41,5 @@ testem.log
 .DS_Store
 Thumbs.db
 
-/uploads
-/features
+express-server-lmf/node_modules
+express-server-lmf/.env
