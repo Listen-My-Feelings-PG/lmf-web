@@ -19,8 +19,5 @@
   "bugs": {
     "url": "https://github.com/Listen-My-Feelings-PG/lmf-web/issues"
   },
-  "homepage": "https://github.com/Listen-My-Feelings-PG/lmf-web#readme",
-  "devDependencies": {
-    "concurrently": "^8.2.0"
-  }
+  "homepage": "https://github.com/Listen-My-Feelings-PG/lmf-web#readme"
 }
