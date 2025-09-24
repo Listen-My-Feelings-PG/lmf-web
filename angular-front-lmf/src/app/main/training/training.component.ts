@@ -17,6 +17,8 @@ import { PlayerService } from '../../_services/player.service';
 import { InputSwitchModule } from 'primeng/inputswitch';
 import { DialogModule } from 'primeng/dialog';
 import { TooltipModule } from 'primeng/tooltip';
+import { InputTextModule } from 'primeng/inputtext';
+import { TagModule } from 'primeng/tag';
 
 @Component({
   selector: 'app-training',
@@ -33,7 +35,9 @@ import { TooltipModule } from 'primeng/tooltip';
     ButtonGroupModule,
     InputSwitchModule,
     DialogModule,
-    TooltipModule
+    TooltipModule,
+    InputTextModule,
+    TagModule
   ],
   templateUrl: './training.component.html',
   styleUrl: './training.component.scss'
@@ -252,10 +256,10 @@ export class TrainingComponent implements OnInit {
             }
           } else {
             // Convertir number[][] a TsModelJSON (Decimal[][][])
-            const convertedSpectrogram: TsModelJSON = data.mel_spectrogram.map((row: number[]) => 
+            const convertedSpectrogram: TsModelJSON = data.mel_spectrogram.map((row: number[]) =>
               row.map((value: number) => [new Decimal(value)])
             );
-            
+
             this.songService.customizeSpectrogram(convertedSpectrogram, data.tempo, false).then((customized) => { //Adecuación del espectrograma para que todas las canciones tengan la misma dimensión, ademas de agregar un hilo con el tempo
               const spectrogram = customized.resized; //Espectrograma listo para un tensor
               const epochsNum = this.tsService.getEpochsForScore(song.userScore as number);

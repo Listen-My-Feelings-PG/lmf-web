@@ -1,4 +1,4 @@
-/*Colores distintivos de la apliación*/
+/*Colores distintivos de la aplicación*/
 $base-color1: #46f0be;
 $base-color2: #f0c81e;
 $base-color3: #8278e6;
@@ -9,24 +9,197 @@ $base-color6: #00b400;
 $base-color7: #fadc00;
 $base-color8: #fa6400;
 
-/*Sobreescritura de los colores en Bootstrap*/
-$body-bg: darken($base-color3, 64%);
-$body-color: $base-color4;
-$primary: $base-color5;
-$success: $base-color6;
-$info: $base-color1;
-$warning: $base-color7;
-$danger: $base-color8;
+/* Importación de tema base de PrimeNG */
+@import "primeng/resources/themes/lara-light-blue/theme.css";
+@import "primeng/resources/primeng.css";
+@import "primeicons/primeicons.css";
 
-/*Sobreescritura de las fuentes de Bootstrap*/
-$font-family-base: 'Calibri', sans-serif;
-
-/*Importación de variables de Bootstrap para su sobreescritura*/
-@import "../node_modules/bootstrap/scss/bootstrap";
+/* Configuración global del body */
+body {
+  margin: 0;
+  font-family: 'Calibri', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+  background-color: #{darken($base-color3, 64%)};
+  color: $base-color4;
+}
 
 :root {
   --player-bg-color: #{darken($base-color5, 30%)};
-  --base-color:#{$info};
+  --base-color: #{$base-color1};
+
+  /* Personalización del tema PrimeNG con colores distintivos */
+  --primary-color: #{$base-color5};
+  --primary-color-text: #{$base-color4};
+  --surface-0: #{darken($base-color3, 64%)};
+  --surface-50: #{darken($base-color3, 60%)};
+  --surface-100: #{darken($base-color3, 55%)};
+  --surface-200: #{darken($base-color3, 50%)};
+  --surface-300: #{darken($base-color3, 45%)};
+  --surface-400: #{darken($base-color3, 40%)};
+  --surface-500: #{darken($base-color3, 35%)};
+  --surface-600: #{darken($base-color3, 30%)};
+  --surface-700: #{darken($base-color3, 25%)};
+  --surface-800: #{darken($base-color3, 20%)};
+  --surface-900: #{darken($base-color3, 15%)};
+  
+  --text-color: #{$base-color4};
+  --text-color-secondary: #{darken($base-color4, 10%)};
+  --surface-border: #{$base-color3};
+  
+  /* Colores semánticos */
+  --green-500: #{$base-color6};
+  --blue-500: #{$base-color5};
+  --yellow-500: #{$base-color7};
+  --orange-500: #{$base-color8};
+  --cyan-500: #{$base-color1};
+  --purple-500: #{$base-color3};
+}
+
+/* Clases de utilidad para reemplazar Bootstrap */
+.container {
+  width: 100%;
+  padding-right: 15px;
+  padding-left: 15px;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+@media (min-width: 576px) { .container { max-width: 540px; } }
+@media (min-width: 768px) { .container { max-width: 720px; } }
+@media (min-width: 992px) { .container { max-width: 960px; } }
+@media (min-width: 1200px) { .container { max-width: 1140px; } }
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  margin-right: -15px;
+  margin-left: -15px;
+}
+
+.col, .col-auto, .col-1, .col-2, .col-3, .col-4, .col-5, .col-6,
+.col-7, .col-8, .col-9, .col-10, .col-11, .col-12 {
+  position: relative;
+  width: 100%;
+  padding-right: 15px;
+  padding-left: 15px;
+}
+
+.col { flex: 1 0 0%; }
+.col-auto { flex: 0 0 auto; width: auto; }
+.col-1 { flex: 0 0 8.333333%; max-width: 8.333333%; }
+.col-2 { flex: 0 0 16.666667%; max-width: 16.666667%; }
+.col-3 { flex: 0 0 25%; max-width: 25%; }
+.col-4 { flex: 0 0 33.333333%; max-width: 33.333333%; }
+.col-5 { flex: 0 0 41.666667%; max-width: 41.666667%; }
+.col-6 { flex: 0 0 50%; max-width: 50%; }
+.col-7 { flex: 0 0 58.333333%; max-width: 58.333333%; }
+.col-8 { flex: 0 0 66.666667%; max-width: 66.666667%; }
+.col-9 { flex: 0 0 75%; max-width: 75%; }
+.col-10 { flex: 0 0 83.333333%; max-width: 83.333333%; }
+.col-11 { flex: 0 0 91.666667%; max-width: 91.666667%; }
+.col-12 { flex: 0 0 100%; max-width: 100%; }
+
+/* Clases de color usando los colores distintivos */
+.text-primary { color: #{$base-color5} !important; }
+.text-success { color: #{$base-color6} !important; }
+.text-info { color: #{$base-color1} !important; }
+.text-warning { color: #{$base-color7} !important; }
+.text-danger { color: #{$base-color8} !important; }
+.text-light { color: #{$base-color4} !important; }
+.text-dark { color: #{darken($base-color3, 60%)} !important; }
+
+.bg-primary { background-color: #{$base-color5} !important; }
+.bg-success { background-color: #{$base-color6} !important; }
+.bg-info { background-color: #{$base-color1} !important; }
+.bg-warning { background-color: #{$base-color7} !important; }
+.bg-danger { background-color: #{$base-color8} !important; }
+.bg-light { background-color: #{$base-color4} !important; }
+.bg-dark { background-color: #{darken($base-color3, 60%)} !important; }
+
+/* Clases de espaciado */
+.m-0 { margin: 0 !important; }
+.m-1 { margin: 0.25rem !important; }
+.m-2 { margin: 0.5rem !important; }
+.m-3 { margin: 1rem !important; }
+.m-4 { margin: 1.5rem !important; }
+.m-5 { margin: 3rem !important; }
+
+.p-0 { padding: 0 !important; }
+.p-1 { padding: 0.25rem !important; }
+.p-2 { padding: 0.5rem !important; }
+.p-3 { padding: 1rem !important; }
+.p-4 { padding: 1.5rem !important; }
+.p-5 { padding: 3rem !important; }
+
+/* Clases de display */
+.d-none { display: none !important; }
+.d-inline { display: inline !important; }
+.d-inline-block { display: inline-block !important; }
+.d-block { display: block !important; }
+.d-flex { display: flex !important; }
+
+/* Clases de flexbox */
+.justify-content-start { justify-content: flex-start !important; }
+.justify-content-end { justify-content: flex-end !important; }
+.justify-content-center { justify-content: center !important; }
+.justify-content-between { justify-content: space-between !important; }
+.justify-content-around { justify-content: space-around !important; }
+
+.align-items-start { align-items: flex-start !important; }
+.align-items-end { align-items: flex-end !important; }
+.align-items-center { align-items: center !important; }
+.align-items-baseline { align-items: baseline !important; }
+.align-items-stretch { align-items: stretch !important; }
+
+/* Botones básicos con colores distintivos */
+.btn {
+  display: inline-block;
+  padding: 0.375rem 0.75rem;
+  margin-bottom: 0;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+  text-align: center;
+  text-decoration: none;
+  vertical-align: middle;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: 0.25rem;
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.btn-primary {
+  color: #{$base-color4};
+  background-color: #{$base-color5};
+  border-color: #{$base-color5};
+}
+
+.btn-primary:hover {
+  background-color: #{darken($base-color5, 10%)};
+  border-color: #{darken($base-color5, 12.5%)};
+}
+
+.btn-success {
+  color: #{$base-color4};
+  background-color: #{$base-color6};
+  border-color: #{$base-color6};
+}
+
+.btn-info {
+  color: #{darken($base-color3, 60%)};
+  background-color: #{$base-color1};
+  border-color: #{$base-color1};
+}
+
+.btn-warning {
+  color: #{darken($base-color3, 60%)};
+  background-color: #{$base-color7};
+  border-color: #{$base-color7};
+}
+
+.btn-danger {
+  color: #{$base-color4};
+  background-color: #{$base-color8};
+  border-color: #{$base-color8};
 }
 
 .p-listbox-list,
@@ -40,8 +213,97 @@ $font-family-base: 'Calibri', sans-serif;
   padding-bottom: 5px;
 }
 
+/* Personalización adicional de componentes PrimeNG */
+.p-button {
+  transition: all 0.2s ease-in-out;
+}
+
+.p-button.p-button-outlined {
+  border: 1px solid var(--primary-color);
+}
+
+.p-inputtext {
+  background: var(--surface-100) !important;
+  border: 1px solid var(--surface-300) !important;
+  color: var(--text-color) !important;
+}
+
+.p-inputtext:enabled:focus {
+  box-shadow: 0 0 0 0.2rem rgba(70, 240, 190, 0.25) !important;
+  border-color: #{$base-color1} !important;
+}
+
+.p-tag {
+  background: var(--primary-color) !important;
+  color: var(--primary-color-text) !important;
+}
+
+.p-tag.p-tag-primary {
+  background: #{$base-color5} !important;
+  color: #{$base-color4} !important;
+}
+
+.p-listbox {
+  background: var(--surface-0) !important;
+  border: 1px solid var(--surface-300) !important;
+}
+
+.p-listbox .p-listbox-list .p-listbox-item {
+  color: var(--text-color) !important;
+}
+
+.p-listbox .p-listbox-list .p-listbox-item.p-highlight {
+  background: #{$base-color1} !important;
+  color: #{darken($base-color3, 60%)} !important;
+}
+
+.p-datatable {
+  background: var(--surface-0) !important;
+}
+
+.p-datatable .p-datatable-header {
+  background: var(--surface-100) !important;
+  color: var(--text-color) !important;
+  border-color: var(--surface-300) !important;
+}
+
+.p-datatable .p-datatable-tbody > tr {
+  background: var(--surface-0) !important;
+  color: var(--text-color) !important;
+}
+
+.p-datatable .p-datatable-tbody > tr:nth-child(odd) {
+  background: var(--surface-50) !important;
+}
+
+.p-dialog {
+  background: var(--surface-0) !important;
+  border: 1px solid var(--surface-300) !important;
+}
+
+.p-dialog .p-dialog-header {
+  background: var(--surface-100) !important;
+  color: var(--text-color) !important;
+}
+
+.p-dialog .p-dialog-content {
+  background: var(--surface-0) !important;
+  color: var(--text-color) !important;
+}
+
+/* Estrella personalizada */
+.star-rated {
+  color: #{$base-color7} !important;
+  cursor: pointer;
+}
+
+.star-disabled {
+  color: #{lighten($base-color3, 20%)} !important;
+  cursor: default;
+}
+
 .text-info-default {
-  color: rgb(13, 202, 240);
+  color: #{$base-color1};
 }
 
 .status-icons-td>span {

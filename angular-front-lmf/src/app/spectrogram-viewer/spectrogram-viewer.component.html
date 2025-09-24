@@ -8,26 +8,25 @@
 
 </div>
 <br>
-<button type="button"
-  class="btn btn-primary"
+<p-button label="Reproducir"
   [disabled]="http.busy||loader.busy"
-  (click)="playSong()">Reproducir</button>
-<button type="button"
-  class="btn btn-secondary"
-  (click)="stopSong()">Detener</button>
+  (click)="playSong()"></p-button>
+<p-button label="Detener"
+  severity="secondary"
+  (click)="stopSong()"></p-button>
 <br>
 <input type="number"
   name="idSong"
   id="idSong"
   [disabled]="http.busy||loader.busy"
   [(ngModel)]="idSong">
-<button type="button"
+<p-button label="Cargar espectrograma"
   [disabled]="http.busy||loader.busy"
   (click)="loadSpectrogram()"
-  class="btn btn-success">Cargar espectrograma</button>
-<button type="button"
+  severity="success"></p-button>
+<p-button label="Detener"
   (click)="stopLoading()"
-  class="btn btn-danger">Detener</button><br>
+  severity="danger"></p-button><br>
 <h3>Estadisticas:</h3>
 <ul>
   <li><b>Inicio de la canción: </b>{{spec.firstIndex}}</li>

@@ -1,7 +1,7 @@
-<div class="container-xxl mb-5">
+<div class="container mb-5">
   <h1>Entrenamiento</h1>
   <div class="row">
-    <div class="col-md-3">
+    <div class="col-3">
       <span *ngIf="playlists.list.length === 0; else notEmpty">(No hay listas de reproducción)</span>
       <ng-template #notEmpty>
         <label>Selecciona una lista de reproducción:</label>
@@ -53,7 +53,7 @@
         </p-buttonGroup>
       </div>
     </div>
-    <div class="col-md">
+    <div class="col-9">
       <div class="card">
         <p-table [value]="playlists.selected?.songs || []"
           [paginator]="true"
@@ -81,7 +81,7 @@
               <th [ngClass]="{'text-info':idSongPlaying==song.id}">{{i + 1}}</th>
               <td [ngClass]="{'text-info':idSongPlaying==song.id}">{{song.id ? song.id:'--'}}</td>
               <td [ngClass]="{'text-info':idSongPlaying==song.id}">{{song.name}}</td>
-              <td><span class="badge text-bg-primary"
+              <td><span class="p-tag p-tag-primary"
                   [ngClass]="{'text-info':idSongPlaying==song.id}">Archivo MP3</span></td>
               <td>
                 <button pButton
@@ -193,10 +193,9 @@
   [style]="{ width: '25rem' }">
   <div class="form-group">
     <label for="playlistName">Nombre de la lista de reproducción:</label>
-    <input type="text"
-      class="form-control"
-      id="playlistName"
-      [(ngModel)]="playlistModal.name" />
+    <p-inputText id="playlistName"
+      [(ngModel)]="playlistModal.name"
+      class="w-100" />
   </div><br>
   <div class="flex justify-content-end gap-2">
     <p-button label="Cancelar"

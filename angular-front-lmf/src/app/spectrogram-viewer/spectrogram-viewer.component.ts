@@ -5,13 +5,15 @@ import { FormsModule } from '@angular/forms';
 import { SongService } from '../_services/song.service';
 import { Decimal } from 'decimal.js';
 import { TsModelJSON } from '../_models/all.model';
+import { ButtonModule } from 'primeng/button';
 
 @Component({
   selector: 'app-spectrogram-viewer',
   standalone: true,
   imports: [
     CommonModule,
-    FormsModule
+    FormsModule,
+    ButtonModule
   ],
   templateUrl: './spectrogram-viewer.component.html',
   styleUrl: './spectrogram-viewer.component.scss'
@@ -164,12 +166,12 @@ export class SpectrogramViewerComponent implements AfterViewInit, OnDestroy {
     this.http.get(`download/ts-features?value=${this.idSong}`, true).subscribe({
       next: async (response) => {
         const data = response.data as { melSpectrogram: number[][], tempo: number };
-        
+
         // Convertir number[][] a TsModelJSON (Decimal[][][])
-        const convertedSpectrogram: TsModelJSON = data.melSpectrogram.map(row => 
+        const convertedSpectrogram: TsModelJSON = data.melSpectrogram.map(row =>
           row.map(value => [new Decimal(value)])
         );
-        
+
         that.songService.customizeSpectrogram(convertedSpectrogram, data.tempo, false).then((res) => {
           res.resized.push([]);
           for (let i = res.firstIndex; i <= res.lastIndex; i++) {
