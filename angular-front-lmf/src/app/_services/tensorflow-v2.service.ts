@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import * as tf from '@tensorflow/tfjs';
+import '@tensorflow/tfjs-backend-webgl';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { ModelConfig, LayerConfig } from '../_models/types';
 
