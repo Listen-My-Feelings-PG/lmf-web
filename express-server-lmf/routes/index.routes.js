@@ -1,11 +1,42 @@
 const { app } = require("../main");
-const authRoutes = require("./auth.routes");
-const finesRoutes = require("./fines.routes");
-const appRoutes = require("./app.routes");
-const jwt = require("../services/jwt.service");
-const uploadRoutes = require("./upload.routes");
 
-app.get('/test', (_, res) => { return res.status(200).json({ message: 'Test route is working!' }); });
-app.use("/api/v1/auth", jwt.checkToken, authRoutes);
+// Importar nuevas rutas
+const songRoutes = require("./song.routes");
+const playlistRoutes = require("./playlist.routes");
+const modelRoutes = require("./model.routes");
 
-app.use("/app/v1", appRoutes);
+// Configurar rutas con prefijo API
+const API_PREFIX = '/api/v1';
+
+// Rutas de canciones
+app.use(`${API_PREFIX}/songs`, songRoutes);
+
+// Rutas de playlists
+app.use(`${API_PREFIX}/playlists`, playlistRoutes);
+
+// Rutas de modelos
+app.use(`${API_PREFIX}/models`, modelRoutes);
+
+// Ruta de health check
+app.get(`${API_PREFIX}/health`, (req, res) => {
+  res.json({
+    success: true,
+    message: 'Listen My Feelings API is running',
+    timestamp: new Date().toISOString(),
+    version: '1.0.0'
+  });
+});
+
+// Ruta por defecto
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Listen My Feelings API',
+    endpoints: {
+      health: `${API_PREFIX}/health`,
+      songs: `${API_PREFIX}/songs`,
+      playlists: `${API_PREFIX}/playlists`,
+      models: `${API_PREFIX}/models`
+    }
+  });
+});

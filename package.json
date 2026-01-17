@@ -2,16 +2,13 @@
   "name": "lmf-app",
   "version": "0.0.1",
   "description": "proyecto IA de musica",
-  "scripts": {
-    "serve": "npm --prefix ./angular-front-lmf run serve",
-    "start": "npm --prefix ./express-server-lmf run start"
-  },
+  "scripts": {},
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Listen-My-Feelings-PG/lmf-web.git"
   },
   "keywords": [
-    "nestjs",
+    "express",
     "angular"
   ],
   "author": "Pench",
