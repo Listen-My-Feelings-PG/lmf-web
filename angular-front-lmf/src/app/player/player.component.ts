@@ -1,7 +1,5 @@
 import { CommonModule } from '@angular/common';
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
-import { ButtonModule } from 'primeng/button';
-import { ButtonGroupModule } from 'primeng/buttongroup';
 import { Song } from '../_models/all.model';
 import { PlayerService } from '../_services/player.service';
 import { SongService } from '../_services/song.service';
@@ -9,7 +7,7 @@ import { SongService } from '../_services/song.service';
 @Component({
   selector: 'app-player',
   standalone: true,
-  imports: [CommonModule, ButtonModule, ButtonGroupModule],
+  imports: [CommonModule],
   templateUrl: './player.component.html',
   styleUrl: './player.component.scss'
 })

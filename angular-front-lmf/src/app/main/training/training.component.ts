@@ -1,43 +1,23 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { ButtonModule } from 'primeng/button';
-import { FileUploadModule } from 'primeng/fileupload';
 import { Playlist, Song, TsModel, TsModelJSON } from '../../_models/all.model';
 import { HttpService } from '../../_services/http.service';
 import { SongService } from '../../_services/song.service';
 import { TensorflowService } from '../../_services/tensorflow-v2.service';
 import { Decimal } from 'decimal.js';
-import { ChipModule } from 'primeng/chip';
-import { BadgeModule } from 'primeng/badge';
-import { ListboxModule } from 'primeng/listbox';
 import { FormsModule } from '@angular/forms';
-import { TableModule } from 'primeng/table';
-import { ButtonGroupModule } from 'primeng/buttongroup';
 import { PlayerService } from '../../_services/player.service';
-import { InputSwitchModule } from 'primeng/inputswitch';
-import { DialogModule } from 'primeng/dialog';
-import { TooltipModule } from 'primeng/tooltip';
-import { InputTextModule } from 'primeng/inputtext';
-import { TagModule } from 'primeng/tag';
+import { ModalComponent } from '../../_components/modal.component';
+import { InputComponent } from '../../_components/input.component';
 
 @Component({
   selector: 'app-training',
   standalone: true,
   imports: [
-    FileUploadModule,
-    ButtonModule,
     CommonModule,
-    ChipModule,
-    BadgeModule,
-    ListboxModule,
     FormsModule,
-    TableModule,
-    ButtonGroupModule,
-    InputSwitchModule,
-    DialogModule,
-    TooltipModule,
-    InputTextModule,
-    TagModule
+    ModalComponent,
+    InputComponent
   ],
   templateUrl: './training.component.html',
   styleUrl: './training.component.scss'
@@ -145,7 +125,7 @@ export class TrainingComponent implements OnInit {
   uploadSongs(evt: any, mode: 'train' | 'predict'): void {
     const list = this.playlists.selected?.songs as Array<Song>;
     evt.currentFiles.forEach((item: any) => {
-      const song: Song = {
+      const song = new Song({
         name: item.name,
         type: 'file',
         file: item,
@@ -154,7 +134,7 @@ export class TrainingComponent implements OnInit {
         storageStatus: 'local',
         tsStatus: null,
         tsInitStatus: mode
-      }
+      });
       list.push(song);
       this.songService.addToPoolSongsForUpload({ ...song });
     });

@@ -8,25 +8,31 @@
 
 </div>
 <br>
-<p-button label="Reproducir"
+<button class="btn btn-primary"
   [disabled]="http.busy||loader.busy"
-  (click)="playSong()"></p-button>
-<p-button label="Detener"
-  severity="secondary"
-  (click)="stopSong()"></p-button>
+  (click)="playSong()">
+  <i class="fas fa-play"></i> Reproducir
+</button>
+<button class="btn btn-secondary"
+  (click)="stopSong()">
+  <i class="fas fa-stop"></i> Detener
+</button>
 <br>
 <input type="number"
   name="idSong"
   id="idSong"
+  class="form-control"
   [disabled]="http.busy||loader.busy"
   [(ngModel)]="idSong">
-<p-button label="Cargar espectrograma"
+<button class="btn btn-success"
   [disabled]="http.busy||loader.busy"
-  (click)="loadSpectrogram()"
-  severity="success"></p-button>
-<p-button label="Detener"
-  (click)="stopLoading()"
-  severity="danger"></p-button><br>
+  (click)="loadSpectrogram()">
+  <i class="fas fa-upload"></i> Cargar espectrograma
+</button>
+<button class="btn btn-danger"
+  (click)="stopLoading()">
+  <i class="fas fa-times"></i> Detener
+</button><br>
 <h3>Estadisticas:</h3>
 <ul>
   <li><b>Inicio de la canción: </b>{{spec.firstIndex}}</li>

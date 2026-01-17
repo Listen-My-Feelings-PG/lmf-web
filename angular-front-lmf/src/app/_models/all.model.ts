@@ -1,20 +1,30 @@
 import { Decimal } from 'decimal.js';
 
 export class Song {
-  constructor(
-    public name: string,
-    public type: 'file' | 'link',
-    public file: File | null,
-    public userScore: number | null, //Dentro de cualquier playlist, se aceptará una calificación de 0
-    public tsPrediction: number | null,
-    public storageStatus: 'local' | 'uploading' | 'uploaded' | 'downloading' | 'downloaded' | 'updated' | 'error',
-    public tsStatus: 'training' | 'trained' | 'predicting' | 'predicted' | 'retrained' | 'error' | null,
-    public tsInitStatus: 'train' | 'predict' | 'retrain',
-    public id?: number,
-    public storageStatusErrReason?: 'duplicated' | 'other' | null,
-    public tsFeaturesDimensions?: number | 'error' | null,
-    public tsStatusErrReason?: 'features-notfound' | 'training-error' | 'customize-error' | 'other'
-  ) { }
+  public id?: number;
+  public name!: string;
+  public type!: 'file' | 'link';
+  public file: File | null = null;
+  public userScore: number | null = null;
+  public userRating: number | null = null;
+  public tsPrediction: number | null = null;
+  public prediction: number | null = null;
+  public storageStatus: 'local' | 'uploading' | 'uploaded' | 'downloading' | 'downloaded' | 'updated' | 'error' = 'local';
+  public tsStatus: 'training' | 'trained' | 'predicting' | 'predicted' | 'retrained' | 'error' | null = null;
+  public tsInitStatus: 'train' | 'predict' | 'retrain' = 'train';
+  public storageStatusErrReason?: 'duplicated' | 'other' | null;
+  public tsFeaturesDimensions?: number | 'error' | null;
+  public tsStatusErrReason?: 'features-notfound' | 'training-error' | 'customize-error' | 'other';
+  public featuresFile?: string | null;
+  public fileSize?: number;
+  public audioUrl?: string;
+  public playlistId?: number;
+
+  constructor(data: Partial<Song> = {}) {
+    Object.assign(this, data);
+    this.userRating = this.userRating || this.userScore;
+    this.prediction = this.prediction || this.tsPrediction;
+  }
 }
 
 export class Playlist {
@@ -24,7 +34,8 @@ export class Playlist {
     public songsForPredict: Array<Song>,
     public model: TsModel | null,
     public isGlobal: boolean,
-    public id?: number
+    public id?: number,
+    public songCount?: number
   ) { }
 }
 

@@ -1,0 +1,285 @@
+<div class="flex h-screen bg-purple-dark text-light overflow-hidden">
+  <!-- Sidebar - Playlists -->
+  <aside class="playlist-sidebar p-6 flex flex-col">
+    <div class="mb-8">
+      <h1 class="text-2xl font-bold text-gradient mb-2">Listen My Feelings</h1>
+      <p class="text-sm text-white/50">Tu biblioteca musical inteligente</p>
+    </div>
+
+    <!-- Create Playlist Button -->
+    <app-button label="Nueva Playlist"
+      icon="fas fa-plus"
+      variant="success"
+      size="sm"
+      [fullWidth]="true"
+      (clicked)="showCreatePlaylistModal()"
+      class="mb-4"></app-button>
+
+    <!-- Playlists List -->
+    <nav class="flex-1 overflow-y-auto space-y-2">
+      <div *ngFor="let playlist of playlists"
+        [ngClass]="{'bg-white/10': selectedPlaylist?.id === playlist.id}"
+        class="p-3 rounded-lg cursor-pointer hover:bg-white/5 transition-all group"
+        (click)="loadPlaylist(playlist.id!)">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3 flex-1 min-w-0">
+            <i [class]="playlist.isGlobal ? 'fas fa-globe text-info' : 'fas fa-list text-white/70'"></i>
+            <div class="flex-1 min-w-0">
+              <p class="font-medium truncate">{{ playlist.name }}</p>
+              <p class="text-xs text-white/50">{{ playlist.songCount || 0 }} canciones</p>
+            </div>
+          </div>
+          <button *ngIf="!playlist.isGlobal"
+            class="opacity-0 group-hover:opacity-100 transition-opacity btn-icon btn-sm"
+            (click)="$event.stopPropagation(); showEditPlaylistModal(playlist)">
+            <i class="fas fa-ellipsis-v"></i>
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Stats -->
+    <div class="mt-4 pt-4 border-t border-white/10">
+      <div class="text-xs text-white/50 space-y-1">
+        <p>Total: {{ songs.length }} canciones</p>
+        <p>Calificadas: {{ getRatedSongsCount() }}</p>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 flex flex-col overflow-hidden">
+    <!-- Header -->
+    <header class="bg-purple-darker border-b border-white/10 p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-3xl font-bold">{{ selectedPlaylist?.name || 'Biblioteca' }}</h2>
+          <p class="text-white/50 mt-1">{{ filteredSongs.length }} canciones</p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <!-- Upload Buttons -->
+          <app-button label="Subir para entrenar"
+            icon="fas fa-upload"
+            variant="success"
+            (clicked)="showUploadModal('train')"
+            [disabled]="!selectedPlaylist || loading.upload"></app-button>
+
+          <app-button label="Subir para predecir"
+            icon="fas fa-upload"
+            variant="warning"
+            (clicked)="showUploadModal('predict')"
+            [disabled]="!selectedPlaylist || loading.upload"></app-button>
+
+          <!-- Train Model Button -->
+          <app-button label="Entrenar Modelo"
+            icon="fas fa-brain"
+            variant="primary"
+            (clicked)="trainModel()"
+            [disabled]="!selectedPlaylist || loading.training"
+            [loading]="loading.training"></app-button>
+        </div>
+      </div>
+
+      <!-- Search and Filters -->
+      <div class="flex items-center gap-4">
+        <!-- Search -->
+        <div class="flex-1 max-w-md">
+          <app-input type="search"
+            placeholder="Buscar canciones..."
+            icon="fas fa-search"
+            [(ngModel)]="searchQuery"
+            (ngModelChange)="onSearch($event)"></app-input>
+        </div>
+
+        <!-- Filter Buttons -->
+        <div class="flex gap-2">
+          <button [class.btn-info]="filterStatus === 'all'"
+            [class.btn-outline]="filterStatus !== 'all'"
+            class="btn btn-sm"
+            (click)="onFilterChange('all')">
+            Todas
+          </button>
+          <button [class.btn-success]="filterStatus === 'train'"
+            [class.btn-outline]="filterStatus !== 'train'"
+            class="btn btn-sm"
+            (click)="onFilterChange('train')">
+            Entrenamiento
+          </button>
+          <button [class.btn-warning]="filterStatus === 'predict'"
+            [class.btn-outline]="filterStatus !== 'predict'"
+            class="btn btn-sm"
+            (click)="onFilterChange('predict')">
+            Predicción
+          </button>
+        </div>
+
+        <!-- View Mode Toggle -->
+        <div class="flex gap-1 bg-white/5 rounded-lg p-1">
+          <button [ngClass]="{'bg-white/20': viewMode === 'list'}"
+            class="btn-icon btn-sm"
+            (click)="viewMode = 'list'">
+            <i class="fas fa-list"></i>
+          </button>
+          <button [ngClass]="{'bg-white/20': viewMode === 'grid'}"
+            class="btn-icon btn-sm"
+            (click)="viewMode = 'grid'">
+            <i class="fas fa-th-large"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Songs List/Grid -->
+    <div class="flex-1 overflow-y-auto p-6">
+      <!-- Loading State -->
+      <div *ngIf="loading.songs"
+        class="flex items-center justify-center h-64">
+        <div class="text-center">
+          <i class="fas fa-spinner fa-spin text-4xl text-info mb-4"></i>
+          <p class="text-white/50">Cargando canciones...</p>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="!loading.songs && filteredSongs.length === 0"
+        class="flex items-center justify-center h-64">
+        <div class="text-center">
+          <i class="fas fa-music text-6xl text-white/20 mb-4"></i>
+          <p class="text-xl text-white/50 mb-2">No hay canciones</p>
+          <p class="text-white/30">Sube algunas canciones para comenzar</p>
+        </div>
+      </div>
+
+      <!-- List View -->
+      <div *ngIf="!loading.songs && viewMode === 'list' && filteredSongs.length > 0">
+        <table class="table">
+          <thead>
+            <tr>
+              <th class="w-12">#</th>
+              <th class="w-12"></th>
+              <th>Título</th>
+              <th class="w-32">Tipo</th>
+              <th class="w-32">Estado</th>
+              <th class="w-40">Calificación</th>
+              <th class="w-32">Predicción</th>
+              <th class="w-32">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let song of filteredSongs; let i = index"
+              [ngClass]="{'bg-info/10': playingSongId === song.id}"
+              class="group">
+              <td class="text-white/50">{{ i + 1 }}</td>
+              <td>
+                <button class="btn-icon btn-sm btn-success"
+                  (click)="playSong(song, i)">
+                  <i [class]="playingSongId === song.id ? 'fas fa-pause' : 'fas fa-play'"></i>
+                </button>
+              </td>
+              <td>
+                <div>
+                  <p class="font-medium">{{ song.name }}</p>
+                  <p class="text-sm text-white/50">{{ song.fileSize ? (song.fileSize / 1024 / 1024).toFixed(2) + ' MB' : '--' }}
+                  </p>
+                </div>
+              </td>
+              <td>
+                <span class="badge badge-primary">
+                  <i class="fas fa-file-audio mr-1"></i>
+                  MP3
+                </span>
+              </td>
+              <td>
+                <div class="flex items-center gap-2">
+                  <i [class]="getStatusIcon(song)"></i>
+                  <span class="text-sm">{{ getStatusText(song) }}</span>
+                </div>
+              </td>
+              <td>
+                <app-rating [value]="song.userRating || 0"
+                  [max]="3"
+                  size="sm"
+                  (rated)="updateRating(song, $event)"></app-rating>
+              </td>
+              <td class="text-center">
+                <span *ngIf="song.prediction !== null"
+                  class="text-warning font-bold">{{ song.prediction }}</span>
+                <span *ngIf="song.prediction === null"
+                  class="text-white/30">--</span>
+              </td>
+              <td>
+                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button *ngIf="!song.featuresFile"
+                    class="btn-icon btn-sm btn-info"
+                    (click)="extractFeatures(song)"
+                    title="Extraer características">
+                    <i class="fas fa-waveform"></i>
+                  </button>
+                  <button class="btn-icon btn-sm btn-danger"
+                    (click)="deleteSong(song)"
+                    title="Eliminar">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Grid View -->
+      <div *ngIf="!loading.songs && viewMode === 'grid' && filteredSongs.length > 0"
+        class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        <div *ngFor="let song of filteredSongs; let i = index"
+          class="card p-4 hover:scale-105 transition-transform cursor-pointer group"
+          (click)="playSong(song, i)">
+          <div
+            class="aspect-square bg-gradient-to-br from-primary to-info rounded-lg mb-3 flex items-center justify-center relative overflow-hidden">
+            <i class="fas fa-music text-5xl text-white/30"></i>
+            <div
+              class="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <i class="fas fa-play text-3xl text-white"></i>
+            </div>
+          </div>
+          <h3 class="font-semibold truncate mb-2">{{ song.name }}</h3>
+          <app-rating [value]="song.userRating || 0"
+            [max]="3"
+            size="sm"
+            (rated)="updateRating(song, $event)"
+            (click)="$event.stopPropagation()"></app-rating>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Playlist Modal -->
+<app-modal [(visible)]="playlistModal.visible"
+  [title]="playlistModal.mode === 'new' ? 'Nueva Playlist' : 'Editar Playlist'"
+  (confirmed)="savePlaylist()">
+  <app-input label="Nombre de la playlist"
+    placeholder="Mi playlist favorita"
+    [(ngModel)]="playlistModal.name"
+    [required]="true"></app-input>
+
+  <div *ngIf="playlistModal.mode === 'edit'"
+    class="mt-4">
+    <app-button label="Eliminar Playlist"
+      icon="fas fa-trash"
+      variant="danger"
+      [fullWidth]="true"
+      (clicked)="deletePlaylist(playlistModal.playlistId!); playlistModal.visible = false"></app-button>
+  </div>
+</app-modal>
+
+<!-- Upload Modal -->
+<app-modal [(visible)]="uploadModal.visible"
+  [title]="uploadModal.type === 'train' ? 'Subir canciones para entrenar' : 'Subir canciones para predecir'"
+  [showFooter]="false">
+  <app-file-upload accept="audio/mp3,audio/mpeg,audio/wav"
+    acceptLabel="MP3, WAV (máx. 100MB por archivo)"
+    [multiple]="true"
+    [autoUpload]="false"
+    (uploadFiles)="onFilesUpload($event)"></app-file-upload>
+</app-modal>

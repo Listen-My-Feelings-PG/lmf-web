@@ -1,4 +1,12 @@
-/*Colores distintivos de la aplicación*/
+/* Tailwind CSS */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Importación de FontAwesome */
+@import "@fortawesome/fontawesome-free/css/all.min.css";
+
+/* Colores distintivos de la aplicación */
 $base-color1: #46f0be;
 $base-color2: #f0c81e;
 $base-color3: #8278e6;
@@ -9,10 +17,228 @@ $base-color6: #00b400;
 $base-color7: #fadc00;
 $base-color8: #fa6400;
 
-/* Importación de tema base de PrimeNG */
-@import "primeng/resources/themes/lara-light-blue/theme.css";
-@import "primeng/resources/primeng.css";
-@import "primeicons/primeicons.css";
+/* Configuración global del body */
+body {
+  margin: 0;
+  font-family: 'Calibri', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+  background-color: #{darken($base-color3, 64%)};
+  color: $base-color4;
+  overflow-x: hidden;
+}
+
+:root {
+  --player-bg-color: #{darken($base-color5, 30%)};
+  --base-color: #{$base-color1};
+  --primary-color: #{$base-color5};
+  --success-color: #{$base-color6};
+  --warning-color: #{$base-color7};
+  --danger-color: #{$base-color8};
+  --info-color: #{$base-color1};
+}
+
+/* Scrollbar personalizado estilo Spotify */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Componentes personalizados */
+@layer components {
+  /* Botones personalizados */
+  .btn {
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 inline-flex items-center justify-center gap-2 cursor-pointer;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-light hover:bg-primary-light active:scale-95;
+  }
+
+  .btn-success {
+    @apply bg-success text-light hover:brightness-110 active:scale-95;
+  }
+
+  .btn-warning {
+    @apply bg-warning text-purple-darker hover:brightness-110 active:scale-95;
+  }
+
+  .btn-danger {
+    @apply bg-danger text-light hover:brightness-110 active:scale-95;
+  }
+
+  .btn-info {
+    @apply bg-info text-purple-darker hover:brightness-110 active:scale-95;
+  }
+
+  .btn-outline {
+    @apply border-2 border-current bg-transparent hover:bg-white/10 active:scale-95;
+  }
+
+  .btn-sm {
+    @apply px-3 py-1.5 text-sm;
+  }
+
+  .btn-lg {
+    @apply px-6 py-3 text-lg;
+  }
+
+  .btn-icon {
+    @apply w-10 h-10 p-0 rounded-full;
+  }
+
+  /* Cards */
+  .card {
+    @apply bg-purple-darker rounded-xl p-6 shadow-xl border border-white/10;
+  }
+
+  .card-header {
+    @apply text-xl font-bold mb-4 text-info;
+  }
+
+  /* Inputs */
+  .input {
+    @apply w-full px-4 py-2 bg-purple-dark border border-white/20 rounded-lg text-light placeholder-white/50 focus:outline-none focus:border-info focus:ring-2 focus:ring-info/30 transition-all;
+  }
+
+  /* Lista de canciones */
+  .song-item {
+    @apply flex items-center gap-4 p-3 rounded-lg hover:bg-white/5 transition-all cursor-pointer group;
+  }
+
+  .song-item.active {
+    @apply bg-info/20 border-l-4 border-info;
+  }
+
+  /* Rating stars */
+  .star {
+    @apply text-2xl cursor-pointer transition-all hover:scale-110;
+  }
+
+  .star-filled {
+    @apply text-warning;
+  }
+
+  .star-empty {
+    @apply text-white/30;
+  }
+
+  /* Table */
+  .table {
+    @apply w-full border-collapse;
+  }
+
+  .table th {
+    @apply bg-purple-dark text-left p-3 font-semibold text-info border-b border-white/10;
+  }
+
+  .table td {
+    @apply p-3 border-b border-white/5;
+  }
+
+  .table tr:hover td {
+    @apply bg-white/5;
+  }
+
+  /* Badge/Tag */
+  .badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+  }
+
+  .badge-primary {
+    @apply bg-primary/20 text-primary border border-primary/30;
+  }
+
+  .badge-success {
+    @apply bg-success/20 text-success border border-success/30;
+  }
+
+  .badge-warning {
+    @apply bg-warning/20 text-warning border border-warning/30;
+  }
+
+  /* Player específicos */
+  .player-container {
+    @apply fixed bottom-0 left-0 right-0 bg-player border-t border-white/10 shadow-2xl z-50;
+  }
+
+  .playlist-sidebar {
+    @apply fixed left-0 top-0 h-full w-64 bg-purple-darker border-r border-white/10 overflow-y-auto;
+  }
+
+  /* Progress bar */
+  .progress-bar {
+    @apply w-full h-1 bg-white/20 rounded-full overflow-hidden;
+  }
+
+  .progress-fill {
+    @apply h-full bg-info transition-all duration-300;
+  }
+
+  /* Modal/Dialog */
+  .modal-overlay {
+    @apply fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm;
+  }
+
+  .modal-content {
+    @apply bg-purple-darker rounded-2xl p-6 max-w-2xl w-full mx-4 shadow-2xl border border-white/10;
+  }
+}
+
+/* Animaciones personalizadas */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
+}
+
+/* Utilidades adicionales */
+.text-gradient {
+  background: linear-gradient(135deg, #{$base-color1} 0%, #{$base-color5} 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.glass-effect {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 
 /* Configuración global del body */
 body {

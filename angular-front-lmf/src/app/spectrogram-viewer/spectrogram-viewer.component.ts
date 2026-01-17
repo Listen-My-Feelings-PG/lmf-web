@@ -5,15 +5,13 @@ import { FormsModule } from '@angular/forms';
 import { SongService } from '../_services/song.service';
 import { Decimal } from 'decimal.js';
 import { TsModelJSON } from '../_models/all.model';
-import { ButtonModule } from 'primeng/button';
 
 @Component({
   selector: 'app-spectrogram-viewer',
   standalone: true,
   imports: [
     CommonModule,
-    FormsModule,
-    ButtonModule
+    FormsModule
   ],
   templateUrl: './spectrogram-viewer.component.html',
   styleUrl: './spectrogram-viewer.component.scss'

@@ -17,7 +17,7 @@ export interface ToastProperties {
 })
 export class HttpService {
   private readonly busySubject = new BehaviorSubject<boolean>(false);
-  private readonly baseUrl = 'http://localhost:3002/';
+  private readonly baseUrl = 'http://localhost:3000/api/v1/';
   private readonly defaultTimeout = 30000;
   private readonly toastSubject = new BehaviorSubject<ToastProperties>({
     key: null,
@@ -86,6 +86,55 @@ export class HttpService {
   }
 
   /**
+   * Realiza una petición PUT HTTP con manejo de errores mejorado
+   */
+  put<T = any>(
+    url: string,
+    body: any,
+    showErrorToast: boolean | ToastProperties = false,
+    showSuccessToast?: ToastProperties,
+    timeoutMs: number = this.defaultTimeout
+  ): Observable<ApiResponse<T>> {
+    this.setBusy(true);
+
+    return this.http.put<ApiResponse<T>>(this.buildUrl(url), body)
+      .pipe(
+        timeout(timeoutMs),
+        tap(() => {
+          if (showSuccessToast) {
+            this.showToast(showSuccessToast);
+          }
+        }),
+        catchError(error => this.handleError(error, showErrorToast)),
+        finalize(() => this.setBusy(false))
+      );
+  }
+
+  /**
+   * Realiza una petición DELETE HTTP con manejo de errores mejorado
+   */
+  delete<T = any>(
+    url: string,
+    showErrorToast: boolean | ToastProperties = false,
+    showSuccessToast?: ToastProperties,
+    timeoutMs: number = this.defaultTimeout
+  ): Observable<ApiResponse<T>> {
+    this.setBusy(true);
+
+    return this.http.delete<ApiResponse<T>>(this.buildUrl(url))
+      .pipe(
+        timeout(timeoutMs),
+        tap(() => {
+          if (showSuccessToast) {
+            this.showToast(showSuccessToast);
+          }
+        }),
+        catchError(error => this.handleError(error, showErrorToast)),
+        finalize(() => this.setBusy(false))
+      );
+  }
+
+  /**
    * Realiza upload de archivos con soporte para progreso
    */
   upload<T = any>(
@@ -102,6 +151,13 @@ export class HttpService {
         catchError(error => this.handleError(error, showErrorToast)),
         finalize(() => this.setBusy(false))
       );
+  }
+
+  /**
+   * Obtiene la URL base del API
+   */
+  getBaseUrl(): string {
+    return this.baseUrl;
   }
 
   /**

@@ -61,6 +61,12 @@ export class PlayerService {
   getPlayerEmmitterIdSong() {
     return this.playerEmmitteridSong.asObservable();
   }
+
+  loadSong(song: Song, index: number, queue: Song[]) {
+    this.setActualSong(song);
+    this.listQueue = queue;
+    this.setPlayerEvent('play', song);
+  }
 }
 
 export type PlayerActions = 'play' | 'pause' | 'stop' | 'next' | 'previous' | 'rate' | 'showListQueue';

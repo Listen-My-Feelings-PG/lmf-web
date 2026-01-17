@@ -1,10 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
-import { MenuItem } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { MenubarModule } from 'primeng/menubar';
-import { AvatarModule } from 'primeng/avatar';
-import { MenuModule } from 'primeng/menu';
+import { RouterOutlet, RouterLink } from '@angular/router';
 import { PlayerComponent } from '../player/player.component';
 import { CommonModule } from '@angular/common';
 
@@ -13,10 +8,7 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [
     RouterOutlet,
-    MenubarModule,
-    ButtonModule,
-    AvatarModule,
-    MenuModule,
+    RouterLink,
     PlayerComponent,
     CommonModule
   ],
@@ -24,8 +16,8 @@ import { CommonModule } from '@angular/common';
   styleUrl: './main.component.scss'
 })
 export class MainComponent implements OnInit {
-  menuItems: MenuItem[] | undefined;
-  profileItems: MenuItem[] | undefined;
+  menuItems: any[] | undefined;
+  profileItems: any[] | undefined;
   menubarVisible: boolean;
   timer: any;
   constructor(

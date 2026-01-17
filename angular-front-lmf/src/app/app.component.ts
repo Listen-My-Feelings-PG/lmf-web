@@ -1,30 +1,24 @@
-import { AfterViewInit, Component, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { MessageService } from 'primeng/api';
+import { CommonModule } from '@angular/common';
 import { HttpService } from './_services/http.service';
-import { ToastModule } from 'primeng/toast';
 import { TensorflowService } from './_services/tensorflow-v2.service';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, ToastModule],
+  imports: [RouterOutlet, CommonModule],
   templateUrl: './app.component.html',
-  styleUrl: './app.component.scss',
-  providers: [MessageService]
+  styleUrl: './app.component.scss'
 })
 export class AppComponent implements OnInit {
   title = 'lmf-web-angular';
   constructor(
-    private toast: MessageService,
     private http: HttpService,
     private tsService: TensorflowService
   ) { }
   ngOnInit(): void {
     this.tsService.initializeTensorflow();
-    this.http.getToastEvent().subscribe((props) => {
-      if (props.key)
-        this.toast.add(props as any)
-    });
+    // Toast functionality can be implemented later with custom component
   }
 }
