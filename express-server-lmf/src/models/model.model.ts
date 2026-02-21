@@ -1,4 +1,4 @@
-const { psql } = require('../main');
+import { psql } from '../main';
 
 /**
  * Modelo para manejar modelos de TensorFlow en la base de datos
@@ -7,9 +7,9 @@ class ModelModel {
   /**
    * Obtener todos los modelos
    */
-  static async getAll() {
+  static async getAll(): Promise<any[]> {
     try {
-      const models = await psql`
+      const models = await psql<any[]>`
         SELECT 
           mo_id as id,
           mo_nombre as name,
@@ -32,9 +32,9 @@ class ModelModel {
   /**
    * Obtener modelo por ID
    */
-  static async getById(id) {
+  static async getById(id: number): Promise<any | undefined> {
     try {
-      const [model] = await psql`
+      const [model] = await psql<any[]>`
         SELECT 
           mo_id as id,
           mo_nombre as name,
@@ -56,9 +56,9 @@ class ModelModel {
   /**
    * Obtener modelo por playlist
    */
-  static async getByPlaylist(playlistId) {
+  static async getByPlaylist(playlistId: number): Promise<any | undefined> {
     try {
-      const [model] = await psql`
+      const [model] = await psql<any[]>`
         SELECT 
           mo_id as id,
           mo_nombre as name,
@@ -82,9 +82,13 @@ class ModelModel {
   /**
    * Crear nuevo modelo
    */
-  static async create(modelData) {
+  static async create(modelData: {
+    name: string;
+    playlistId: number;
+    path: string;
+  }): Promise<any> {
     try {
-      const [model] = await psql`
+      const [model] = await psql<any[]>`
         INSERT INTO public.modelos (
           mo_nombre,
           mo_fecha_creacion,
@@ -112,7 +116,7 @@ class ModelModel {
   /**
    * Actualizar ruta del modelo
    */
-  static async updatePath(id, path) {
+  static async updatePath(id: number, path: string): Promise<{ success: boolean }> {
     try {
       await psql`
         UPDATE public.modelos
@@ -131,7 +135,7 @@ class ModelModel {
   /**
    * Desactivar modelo
    */
-  static async deactivate(id) {
+  static async deactivate(id: number): Promise<{ success: boolean }> {
     try {
       await psql`
         UPDATE public.modelos
@@ -148,9 +152,9 @@ class ModelModel {
   /**
    * Obtener modelo global (más reciente)
    */
-  static async getGlobal() {
+  static async getGlobal(): Promise<any | null> {
     try {
-      const [playlist] = await psql`
+      const [playlist] = await psql<{ id: number }[]>`
         SELECT pl_id as id FROM public.playlists
         WHERE pl_global = true
         LIMIT 1
@@ -166,4 +170,4 @@ class ModelModel {
   }
 }
 
-module.exports = ModelModel;
+export default ModelModel;

@@ -1,6 +1,7 @@
-const express = require('express');
-const router = express.Router();
-const songController = require('../controllers/song.controller');
+import { Router } from 'express';
+import * as songController from '../controllers/song.controller';
+
+const router = Router();
 
 // Subir canciones
 router.post('/upload', songController.uploadSongs);
@@ -29,4 +30,4 @@ router.get('/:songId/download', songController.downloadAudio);
 // Eliminar canción
 router.delete('/:songId', songController.deleteSong);
 
-module.exports = router;
+export default router;

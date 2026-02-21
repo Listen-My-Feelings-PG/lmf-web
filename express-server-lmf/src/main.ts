@@ -1,28 +1,28 @@
-const express = require('express');
-const app = express();
-const httpServer = require('http').Server(app);
-const postgres = require('postgres');
-const cookieParser = require('cookie-parser');
-const cors = require('cors');
-const compression = require('compression');
-const path = require('path');
-const fs = require('fs');
+import express, { Application, Request, Response, NextFunction } from 'express';
+import { Server as HttpServer } from 'http';
+import postgres, { Sql } from 'postgres';
+import cookieParser from 'cookie-parser';
+import cors from 'cors';
+import compression from 'compression';
+import fs from 'fs';
+import dotenv from 'dotenv';
+import { AppConfig, AppPaths } from './types';
 
-require('dotenv').config();
+dotenv.config();
 
 // Configuración de PostgreSQL
-const psql = postgres({
-  host: process.env.DB_SERVER,
-  port: process.env.DB_PORT,
-  database: process.env.DB_DATABASE,
-  username: process.env.DB_USER,
-  password: process.env.DB_PASS,
+const psql: Sql = postgres({
+  host: process.env.DB_SERVER!,
+  port: parseInt(process.env.DB_PORT || '5432'),
+  database: process.env.DB_DATABASE!,
+  username: process.env.DB_USER!,
+  password: process.env.DB_PASS!,
   max: 10,
   max_lifetime: 60 * 30
 });
 
 // Crear directorios necesarios si no existen
-const directories = [
+const directories: string[] = [
   process.env.AUDIO_PATH || './files/audio',
   process.env.MODELS_PATH || './files/models',
   process.env.SPECTROGRAMS_PATH || './files/spectrograms',
@@ -35,6 +35,10 @@ directories.forEach(dir => {
     console.info(`Directorio creado: ${dir}`);
   }
 });
+
+// Crear aplicación Express
+const app: Application = express();
+const httpServer: HttpServer = require('http').Server(app);
 
 // Middleware de seguridad y configuración
 app.disable('x-powered-by');
@@ -50,29 +54,34 @@ app.use('/models', express.static(directories[1]));
 app.use('/spectrograms', express.static(directories[2]));
 
 // Logger middleware
-app.use((req, res, next) => {
+app.use((req: Request, _res: Response, next: NextFunction) => {
   const timestamp = new Date().toISOString();
   console.info(`[${timestamp}] ${req.method} ${req.url}`);
   next();
 });
 
-// Exportar para usar en controladores
-module.exports = {
-  app,
-  psql,
-  paths: {
-    audio: directories[0],
-    models: directories[1],
-    spectrograms: directories[2],
-    features: './files/features'
-  }
+// Exportar configuración para usar en controladores
+const appPaths: AppPaths = {
+  audio: directories[0],
+  models: directories[1],
+  spectrograms: directories[2],
+  features: './files/features'
 };
 
+export const config: AppConfig = {
+  app,
+  psql,
+  paths: appPaths
+};
+
+// Exportar también individualmente para compatibilidad
+export { app, psql, appPaths as paths };
+
 // Cargar rutas
-require('./routes/index.routes');
+import('./routes/index');
 
 // Manejador de errores global
-app.use((err, req, res, next) => {
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error('Error no manejado:', err);
   res.status(500).json({
     error: true,
@@ -82,9 +91,9 @@ app.use((err, req, res, next) => {
 });
 
 // Iniciar servidor
-const port = process.env.HTTP_PORT || 3000;
+const port = parseInt(process.env.PORT || process.env.HTTP_PORT || '3000');
 
-httpServer.listen(port, (error) => {
+httpServer.listen(port, (error?: Error) => {
   if (error) {
     console.error('Error al iniciar el servidor:', error);
     process.exit(1);

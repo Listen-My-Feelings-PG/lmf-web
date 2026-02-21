@@ -1,6 +1,7 @@
-const express = require('express');
-const router = express.Router();
-const playlistController = require('../controllers/playlist.controller');
+import { Router } from 'express';
+import * as playlistController from '../controllers/playlist.controller';
+
+const router = Router();
 
 // Obtener todas las playlists
 router.post('/get-all', playlistController.getAllPlaylists);
@@ -26,4 +27,4 @@ router.post('/add-song', playlistController.addSongToPlaylist);
 // Remover canción de playlist
 router.post('/remove-song', playlistController.removeSongFromPlaylist);
 
-module.exports = router;
+export default router;

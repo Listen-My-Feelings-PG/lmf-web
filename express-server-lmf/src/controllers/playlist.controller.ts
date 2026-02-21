@@ -1,11 +1,12 @@
-const PlaylistModel = require('../models/playlist.model');
-const SongModel = require('../models/song.model');
-const { sendResponse, sendError, logger } = require('../services/file.service');
+import { Request, Response } from 'express';
+import PlaylistModel from '../models/playlist.model';
+import SongModel from '../models/song.model';
+import { sendResponse, sendError, logger } from '../services/file.service';
 
 /**
  * Obtener todas las playlists
  */
-async function getAllPlaylists(req, res) {
+export async function getAllPlaylists(req: Request, res: Response): Promise<void> {
   try {
     const { all } = req.body;
     const playlists = await PlaylistModel.getAll(all === true);
@@ -23,39 +24,43 @@ async function getAllPlaylists(req, res) {
 
     sendResponse(res, true, { list: playlistsWithSongs }, 'Playlists obtenidas');
   } catch (error) {
-    sendError(res, 'Error al obtener playlists', 500, error);
+    sendError(res, 'Error al obtener playlists', 500, error as Error);
   }
 }
 
 /**
  * Obtener playlist por ID
  */
-async function getPlaylistById(req, res) {
+export async function getPlaylistById(req: Request, res: Response): Promise<void> {
   try {
     const { playlistId } = req.params;
 
-    const playlist = await PlaylistModel.getById(playlistId);
+    const playlist = await PlaylistModel.getById(parseInt(playlistId));
     if (!playlist) {
       return sendError(res, 'Playlist no encontrada', 404);
     }
 
     // Obtener canciones de la playlist
-    const songs = await SongModel.getByPlaylist(playlistId);
+    const songs = await SongModel.getByPlaylist(parseInt(playlistId));
 
-    sendResponse(res, true, {
-      ...playlist,
-      songs: songs
-    }, 'Playlist obtenida');
-
+    sendResponse(
+      res,
+      true,
+      {
+        ...playlist,
+        songs: songs
+      },
+      'Playlist obtenida'
+    );
   } catch (error) {
-    sendError(res, 'Error al obtener playlist', 500, error);
+    sendError(res, 'Error al obtener playlist', 500, error as Error);
   }
 }
 
 /**
  * Crear nueva playlist
  */
-async function createPlaylist(req, res) {
+export async function createPlaylist(req: Request, res: Response): Promise<void> {
   try {
     const { name, isGlobal = false } = req.body;
 
@@ -67,16 +72,15 @@ async function createPlaylist(req, res) {
 
     logger('info', `Playlist creada: ${name} (ID: ${playlist.id})`);
     sendResponse(res, true, playlist, 'Playlist creada exitosamente');
-
   } catch (error) {
-    sendError(res, 'Error al crear playlist', 500, error);
+    sendError(res, 'Error al crear playlist', 500, error as Error);
   }
 }
 
 /**
  * Actualizar nombre de playlist
  */
-async function updatePlaylist(req, res) {
+export async function updatePlaylist(req: Request, res: Response): Promise<void> {
   try {
     const { playlistId } = req.params;
     const { name } = req.body;
@@ -85,29 +89,28 @@ async function updatePlaylist(req, res) {
       return sendError(res, 'El nombre es requerido', 400);
     }
 
-    const playlist = await PlaylistModel.getById(playlistId);
+    const playlist = await PlaylistModel.getById(parseInt(playlistId));
     if (!playlist) {
       return sendError(res, 'Playlist no encontrada', 404);
     }
 
-    await PlaylistModel.updateName(playlistId, name.trim());
+    await PlaylistModel.updateName(parseInt(playlistId), name.trim());
 
     logger('info', `Playlist actualizada ID: ${playlistId}`);
     sendResponse(res, true, null, 'Playlist actualizada');
-
   } catch (error) {
-    sendError(res, 'Error al actualizar playlist', 500, error);
+    sendError(res, 'Error al actualizar playlist', 500, error as Error);
   }
 }
 
 /**
  * Eliminar playlist
  */
-async function deletePlaylist(req, res) {
+export async function deletePlaylist(req: Request, res: Response): Promise<void> {
   try {
     const { playlistId } = req.params;
 
-    const playlist = await PlaylistModel.getById(playlistId);
+    const playlist = await PlaylistModel.getById(parseInt(playlistId));
     if (!playlist) {
       return sendError(res, 'Playlist no encontrada', 404);
     }
@@ -116,20 +119,19 @@ async function deletePlaylist(req, res) {
       return sendError(res, 'No se puede eliminar la playlist global', 400);
     }
 
-    await PlaylistModel.delete(playlistId);
+    await PlaylistModel.delete(parseInt(playlistId));
 
     logger('info', `Playlist eliminada ID: ${playlistId}`);
     sendResponse(res, true, null, 'Playlist eliminada');
-
   } catch (error) {
-    sendError(res, 'Error al eliminar playlist', 500, error);
+    sendError(res, 'Error al eliminar playlist', 500, error as Error);
   }
 }
 
 /**
  * Agregar canción a playlist
  */
-async function addSongToPlaylist(req, res) {
+export async function addSongToPlaylist(req: Request, res: Response): Promise<void> {
   try {
     const { playlistId, songId } = req.body;
 
@@ -152,16 +154,15 @@ async function addSongToPlaylist(req, res) {
 
     logger('info', `Canción ${songId} agregada a playlist ${playlistId}`);
     sendResponse(res, true, null, 'Canción agregada a playlist');
-
   } catch (error) {
-    sendError(res, 'Error al agregar canción a playlist', 500, error);
+    sendError(res, 'Error al agregar canción a playlist', 500, error as Error);
   }
 }
 
 /**
  * Remover canción de playlist
  */
-async function removeSongFromPlaylist(req, res) {
+export async function removeSongFromPlaylist(req: Request, res: Response): Promise<void> {
   try {
     const { playlistId, songId } = req.body;
 
@@ -173,16 +174,15 @@ async function removeSongFromPlaylist(req, res) {
 
     logger('info', `Canción ${songId} removida de playlist ${playlistId}`);
     sendResponse(res, true, null, 'Canción removida de playlist');
-
   } catch (error) {
-    sendError(res, 'Error al remover canción de playlist', 500, error);
+    sendError(res, 'Error al remover canción de playlist', 500, error as Error);
   }
 }
 
 /**
  * Obtener playlist global
  */
-async function getGlobalPlaylist(req, res) {
+export async function getGlobalPlaylist(_req: Request, res: Response): Promise<void> {
   try {
     let playlist = await PlaylistModel.getGlobal();
 
@@ -195,23 +195,16 @@ async function getGlobalPlaylist(req, res) {
     // Obtener canciones
     const songs = await SongModel.getByPlaylist(playlist.id);
 
-    sendResponse(res, true, {
-      ...playlist,
-      songs: songs
-    }, 'Playlist global obtenida');
-
+    sendResponse(
+      res,
+      true,
+      {
+        ...playlist,
+        songs: songs
+      },
+      'Playlist global obtenida'
+    );
   } catch (error) {
-    sendError(res, 'Error al obtener playlist global', 500, error);
+    sendError(res, 'Error al obtener playlist global', 500, error as Error);
   }
 }
-
-module.exports = {
-  getAllPlaylists,
-  getPlaylistById,
-  createPlaylist,
-  updatePlaylist,
-  deletePlaylist,
-  addSongToPlaylist,
-  removeSongFromPlaylist,
-  getGlobalPlaylist
-};

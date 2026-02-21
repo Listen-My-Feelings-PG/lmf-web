@@ -1,0 +1,50 @@
+# Dependencias
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Archivos compilados
+dist/
+build/
+*.js.map
+*.d.ts.map
+
+# Variables de entorno
+.env
+.env.local
+.env.*.local
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+# Archivos de aplicación
+files/audio/*
+!files/audio/.gitkeep
+files/models/*
+!files/models/.gitkeep
+files/features/*
+!files/features/.gitkeep
+files/spectrograms/*
+!files/spectrograms/.gitkeep
+
+# Logs
+logs/
+*.log
+
+# Archivos temporales
+temp/
+tmp/
+*.tmp

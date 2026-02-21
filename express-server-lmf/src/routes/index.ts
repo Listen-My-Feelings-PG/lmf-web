@@ -1,9 +1,7 @@
-const { app } = require("../main");
-
-// Importar nuevas rutas
-const songRoutes = require("./song.routes");
-const playlistRoutes = require("./playlist.routes");
-const modelRoutes = require("./model.routes");
+import { app } from '../main';
+import songRoutes from './song.routes';
+import playlistRoutes from './playlist.routes';
+import modelRoutes from './model.routes';
 
 // Configurar rutas con prefijo API
 const API_PREFIX = '/api/v1';
@@ -18,7 +16,7 @@ app.use(`${API_PREFIX}/playlists`, playlistRoutes);
 app.use(`${API_PREFIX}/models`, modelRoutes);
 
 // Ruta de health check
-app.get(`${API_PREFIX}/health`, (req, res) => {
+app.get(`${API_PREFIX}/health`, (_req, res) => {
   res.json({
     success: true,
     message: 'Listen My Feelings API is running',
@@ -28,7 +26,7 @@ app.get(`${API_PREFIX}/health`, (req, res) => {
 });
 
 // Ruta por defecto
-app.get('/', (req, res) => {
+app.get('/', (_req, res) => {
   res.json({
     success: true,
     message: 'Listen My Feelings API',
@@ -40,3 +38,5 @@ app.get('/', (req, res) => {
     }
   });
 });
+
+export { };

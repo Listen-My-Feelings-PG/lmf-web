@@ -1,12 +1,14 @@
-const { spawn } = require('child_process');
-const fs = require('fs').promises;
-const fsSync = require('fs');
-const path = require('path');
-const archiver = require('archiver');
-const unzipper = require('unzipper');
-const { v4: uuidv4 } = require('uuid');
-const zlib = require('zlib');
-const { promisify } = require('util');
+import { spawn } from 'child_process';
+import fs from 'fs/promises';
+import fsSync from 'fs';
+import path from 'path';
+import archiver from 'archiver';
+import unzipper from 'unzipper';
+import { v4 as uuidv4 } from 'uuid';
+import zlib from 'zlib';
+import { promisify } from 'util';
+import { Response } from 'express';
+import { AudioFeatures, LogLevel } from '../types';
 
 const gzip = promisify(zlib.gzip);
 const gunzip = promisify(zlib.gunzip);
@@ -14,7 +16,7 @@ const gunzip = promisify(zlib.gunzip);
 /**
  * Logger personalizado
  */
-function logger(level, msg, data) {
+export function logger(level: LogLevel, msg: string, data?: any): void {
   setImmediate(() => {
     process.nextTick(() => {
       const timestamp = new Date().toISOString();
@@ -39,7 +41,7 @@ function logger(level, msg, data) {
 /**
  * Ejecutar script de Python para extraer características
  */
-async function extractFeatures(audioFilePath) {
+export async function extractFeatures(audioFilePath: string): Promise<AudioFeatures> {
   return new Promise((resolve, reject) => {
     const pythonPath = process.env.PYTHON_PATH || 'python';
     const scriptPath = path.join(__dirname, '../../feature_extractor.py');
@@ -66,7 +68,7 @@ async function extractFeatures(audioFilePath) {
       }
 
       try {
-        const features = JSON.parse(stdout);
+        const features: AudioFeatures = JSON.parse(stdout);
         resolve(features);
       } catch (error) {
         logger('error', 'Error al parsear características:', error);
@@ -79,7 +81,11 @@ async function extractFeatures(audioFilePath) {
 /**
  * Guardar características comprimidas
  */
-async function saveFeaturesCompressed(features, fileName, outputPath) {
+export async function saveFeaturesCompressed(
+  features: AudioFeatures,
+  fileName: string,
+  outputPath: string
+): Promise<string> {
   try {
     const jsonString = JSON.stringify(features);
     const compressed = await gzip(Buffer.from(jsonString));
@@ -96,11 +102,11 @@ async function saveFeaturesCompressed(features, fileName, outputPath) {
 /**
  * Leer características comprimidas
  */
-async function readFeaturesCompressed(filePath) {
+export async function readFeaturesCompressed(filePath: string): Promise<AudioFeatures> {
   try {
     const compressed = await fs.readFile(filePath);
     const decompressed = await gunzip(compressed);
-    const features = JSON.parse(decompressed.toString());
+    const features: AudioFeatures = JSON.parse(decompressed.toString());
     return features;
   } catch (error) {
     logger('error', 'Error al leer características:', error);
@@ -111,7 +117,11 @@ async function readFeaturesCompressed(filePath) {
 /**
  * Crear archivo ZIP
  */
-async function createZip(sourceDir, outputPath, fileName) {
+export async function createZip(
+  sourceDir: string,
+  outputPath: string,
+  fileName: string
+): Promise<string> {
   return new Promise((resolve, reject) => {
     const output = fsSync.createWriteStream(path.join(outputPath, fileName));
     const archive = archiver('zip', { zlib: { level: 9 } });
@@ -135,15 +145,16 @@ async function createZip(sourceDir, outputPath, fileName) {
 /**
  * Extraer archivo ZIP
  */
-async function extractZip(zipPath, outputPath) {
+export async function extractZip(zipPath: string, outputPath: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    fsSync.createReadStream(zipPath)
+    fsSync
+      .createReadStream(zipPath)
       .pipe(unzipper.Extract({ path: outputPath }))
       .on('close', () => {
         logger('info', 'ZIP extraído exitosamente');
         resolve(outputPath);
       })
-      .on('error', (err) => {
+      .on('error', (err: Error) => {
         logger('error', 'Error al extraer ZIP:', err);
         reject(err);
       });
@@ -153,7 +164,7 @@ async function extractZip(zipPath, outputPath) {
 /**
  * Guardar archivo desde buffer
  */
-async function saveFile(buffer, filePath) {
+export async function saveFile(buffer: Buffer, filePath: string): Promise<string> {
   try {
     await fs.writeFile(filePath, buffer);
     logger('info', 'Archivo guardado:', filePath);
@@ -167,12 +178,12 @@ async function saveFile(buffer, filePath) {
 /**
  * Eliminar archivo
  */
-async function deleteFile(filePath) {
+export async function deleteFile(filePath: string): Promise<boolean> {
   try {
     await fs.unlink(filePath);
     logger('info', 'Archivo eliminado:', filePath);
     return true;
-  } catch (error) {
+  } catch (error: any) {
     if (error.code !== 'ENOENT') {
       logger('error', 'Error al eliminar archivo:', error);
     }
@@ -183,7 +194,7 @@ async function deleteFile(filePath) {
 /**
  * Generar nombre único para archivo
  */
-function generateUniqueFileName(originalName) {
+export function generateUniqueFileName(originalName: string): string {
   const ext = path.extname(originalName);
   const name = path.basename(originalName, ext);
   const timestamp = Date.now();
@@ -194,7 +205,7 @@ function generateUniqueFileName(originalName) {
 /**
  * Validar formato de archivo de audio
  */
-function isValidAudioFile(filename) {
+export function isValidAudioFile(filename: string): boolean {
   const validExtensions = ['.mp3', '.wav', '.ogg', '.m4a'];
   const ext = path.extname(filename).toLowerCase();
   return validExtensions.includes(ext);
@@ -203,7 +214,7 @@ function isValidAudioFile(filename) {
 /**
  * Obtener tamaño de archivo
  */
-async function getFileSize(filePath) {
+export async function getFileSize(filePath: string): Promise<number> {
   try {
     const stats = await fs.stat(filePath);
     return stats.size;
@@ -216,7 +227,7 @@ async function getFileSize(filePath) {
 /**
  * Crear directorio si no existe
  */
-async function ensureDirectory(dirPath) {
+export async function ensureDirectory(dirPath: string): Promise<boolean> {
   try {
     await fs.mkdir(dirPath, { recursive: true });
     return true;
@@ -229,7 +240,13 @@ async function ensureDirectory(dirPath) {
 /**
  * Response helper
  */
-function sendResponse(res, success, data = null, message = '', statusCode = 200) {
+export function sendResponse<T = any>(
+  res: Response,
+  success: boolean,
+  data: T | null = null,
+  message = '',
+  statusCode = 200
+): void {
   res.status(statusCode).json({
     success,
     data,
@@ -241,7 +258,12 @@ function sendResponse(res, success, data = null, message = '', statusCode = 200)
 /**
  * Error response helper
  */
-function sendError(res, message, statusCode = 500, error = null) {
+export function sendError(
+  res: Response,
+  message: string,
+  statusCode = 500,
+  error: Error | null = null
+): void {
   logger('error', message, error);
   res.status(statusCode).json({
     success: false,
@@ -250,20 +272,3 @@ function sendError(res, message, statusCode = 500, error = null) {
     timestamp: new Date().toISOString()
   });
 }
-
-module.exports = {
-  logger,
-  extractFeatures,
-  saveFeaturesCompressed,
-  readFeaturesCompressed,
-  createZip,
-  extractZip,
-  saveFile,
-  deleteFile,
-  generateUniqueFileName,
-  isValidAudioFile,
-  getFileSize,
-  ensureDirectory,
-  sendResponse,
-  sendError
-};

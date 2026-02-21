@@ -1,4 +1,4 @@
-const { psql } = require('../main');
+import { psql } from '../main';
 
 /**
  * Modelo para manejar playlists en la base de datos
@@ -7,9 +7,9 @@ class PlaylistModel {
   /**
    * Obtener todas las playlists
    */
-  static async getAll(includeGlobal = true) {
+  static async getAll(includeGlobal = true): Promise<any[]> {
     try {
-      const playlists = await psql`
+      const playlists = await psql<any[]>`
         SELECT 
           pl_id as id,
           pl_nombre as name,
@@ -31,9 +31,9 @@ class PlaylistModel {
   /**
    * Obtener playlist por ID
    */
-  static async getById(id) {
+  static async getById(id: number): Promise<any | undefined> {
     try {
-      const [playlist] = await psql`
+      const [playlist] = await psql<any[]>`
         SELECT 
           pl_id as id,
           pl_nombre as name,
@@ -54,9 +54,9 @@ class PlaylistModel {
   /**
    * Crear nueva playlist
    */
-  static async create(name, isGlobal = false) {
+  static async create(name: string, isGlobal = false): Promise<any> {
     try {
-      const [playlist] = await psql`
+      const [playlist] = await psql<any[]>`
         INSERT INTO public.playlists (
           pl_nombre,
           pl_fecha_creacion,
@@ -80,7 +80,7 @@ class PlaylistModel {
   /**
    * Actualizar nombre de playlist
    */
-  static async updateName(id, name) {
+  static async updateName(id: number, name: string): Promise<{ success: boolean }> {
     try {
       await psql`
         UPDATE public.playlists
@@ -99,7 +99,7 @@ class PlaylistModel {
   /**
    * Eliminar playlist
    */
-  static async delete(id) {
+  static async delete(id: number): Promise<{ success: boolean }> {
     try {
       // Primero eliminar las relaciones con canciones
       await psql`
@@ -122,10 +122,13 @@ class PlaylistModel {
   /**
    * Agregar canción a playlist
    */
-  static async addSong(playlistId, songId) {
+  static async addSong(
+    playlistId: number,
+    songId: number
+  ): Promise<{ success: boolean; message?: string }> {
     try {
       // Verificar si ya existe la relación
-      const [exists] = await psql`
+      const [exists] = await psql<{ cp_id: number }[]>`
         SELECT cp_id FROM public.canciones_playlists
         WHERE cp_pl_id = ${playlistId} AND cp_ca_id = ${songId}
       `;
@@ -148,7 +151,10 @@ class PlaylistModel {
   /**
    * Remover canción de playlist
    */
-  static async removeSong(playlistId, songId) {
+  static async removeSong(
+    playlistId: number,
+    songId: number
+  ): Promise<{ success: boolean }> {
     try {
       await psql`
         DELETE FROM public.canciones_playlists
@@ -164,9 +170,9 @@ class PlaylistModel {
   /**
    * Obtener playlist global
    */
-  static async getGlobal() {
+  static async getGlobal(): Promise<any | undefined> {
     try {
-      const [playlist] = await psql`
+      const [playlist] = await psql<any[]>`
         SELECT 
           pl_id as id,
           pl_nombre as name,
@@ -185,4 +191,4 @@ class PlaylistModel {
   }
 }
 
-module.exports = PlaylistModel;
+export default PlaylistModel;

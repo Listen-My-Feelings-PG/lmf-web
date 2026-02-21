@@ -1,6 +1,7 @@
-const express = require('express');
-const router = express.Router();
-const modelController = require('../controllers/model.controller');
+import { Router } from 'express';
+import * as modelController from '../controllers/model.controller';
+
+const router = Router();
 
 // Obtener todos los modelos
 router.get('/', modelController.getAllModels);
@@ -26,4 +27,4 @@ router.post('/predictions', modelController.updatePredictions);
 // Desactivar modelo
 router.put('/:modelId/deactivate', modelController.deactivateModel);
 
-module.exports = router;
+export default router;

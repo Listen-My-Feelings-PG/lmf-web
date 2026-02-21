@@ -19,5 +19,8 @@
   "bugs": {
     "url": "https://github.com/Listen-My-Feelings-PG/lmf-web/issues"
   },
-  "homepage": "https://github.com/Listen-My-Feelings-PG/lmf-web#readme"
+  "homepage": "https://github.com/Listen-My-Feelings-PG/lmf-web#readme",
+  "devDependencies": {
+    "rimraf": "^6.1.3"
+  }
 }

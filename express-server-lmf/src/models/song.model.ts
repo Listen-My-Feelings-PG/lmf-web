@@ -1,4 +1,5 @@
-const { psql } = require('../main');
+import { psql } from '../main';
+import { Song } from '../types/models';
 
 /**
  * Modelo para manejar canciones en la base de datos
@@ -7,9 +8,9 @@ class SongModel {
   /**
    * Obtener todas las canciones
    */
-  static async getAll() {
+  static async getAll(): Promise<Song[]> {
     try {
-      const songs = await psql`
+      const songs = await psql<Song[]>`
         SELECT 
           ca_id as id,
           ca_nombre as name,
@@ -38,9 +39,9 @@ class SongModel {
   /**
    * Obtener una canción por ID
    */
-  static async getById(id) {
+  static async getById(id: number): Promise<Song | undefined> {
     try {
-      const [song] = await psql`
+      const [song] = await psql<Song[]>`
         SELECT 
           ca_id as id,
           ca_nombre as name,
@@ -67,9 +68,17 @@ class SongModel {
   /**
    * Crear una nueva canción
    */
-  static async create(songData) {
+  static async create(songData: {
+    name: string;
+    fileSize: number;
+    fileName: string;
+    trainLevel?: number;
+    dataTypeId?: number;
+    initStatus?: string;
+    userRating?: number | null;
+  }): Promise<{ id: number }> {
     try {
-      const [song] = await psql`
+      const [song] = await psql<{ id: number }[]>`
         INSERT INTO public.canciones (
           ca_nombre,
           ca_file_size,
@@ -101,7 +110,7 @@ class SongModel {
   /**
    * Actualizar calificación de usuario
    */
-  static async updateRating(id, rating) {
+  static async updateRating(id: number, rating: number): Promise<{ success: boolean }> {
     try {
       await psql`
         UPDATE public.canciones
@@ -118,7 +127,11 @@ class SongModel {
   /**
    * Actualizar estado de características
    */
-  static async updateFeaturesStatus(id, featuresFile, status) {
+  static async updateFeaturesStatus(
+    id: number,
+    featuresFile: string,
+    status: string
+  ): Promise<{ success: boolean }> {
     try {
       await psql`
         UPDATE public.canciones
@@ -137,7 +150,10 @@ class SongModel {
   /**
    * Actualizar predicción
    */
-  static async updatePrediction(id, prediction) {
+  static async updatePrediction(
+    id: number,
+    prediction: string
+  ): Promise<{ success: boolean }> {
     try {
       await psql`
         UPDATE public.canciones
@@ -154,9 +170,9 @@ class SongModel {
   /**
    * Obtener canciones por estado
    */
-  static async getByStatus(status) {
+  static async getByStatus(status: string): Promise<Partial<Song>[]> {
     try {
-      const songs = await psql`
+      const songs = await psql<Partial<Song>[]>`
         SELECT 
           ca_id as id,
           ca_nombre as name,
@@ -178,7 +194,7 @@ class SongModel {
   /**
    * Eliminar canción (soft delete)
    */
-  static async delete(id) {
+  static async delete(id: number): Promise<{ success: boolean }> {
     try {
       await psql`
         UPDATE public.canciones
@@ -195,9 +211,9 @@ class SongModel {
   /**
    * Obtener canciones de una playlist
    */
-  static async getByPlaylist(playlistId) {
+  static async getByPlaylist(playlistId: number): Promise<Partial<Song>[]> {
     try {
-      const songs = await psql`
+      const songs = await psql<Partial<Song>[]>`
         SELECT 
           c.ca_id as id,
           c.ca_nombre as name,
@@ -221,4 +237,4 @@ class SongModel {
   }
 }
 
-module.exports = SongModel;
+export default SongModel;

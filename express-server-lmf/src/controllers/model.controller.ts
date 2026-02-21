@@ -1,74 +1,72 @@
-const path = require('path');
-const fs = require('fs').promises;
-const { paths } = require('../main');
-const ModelModel = require('../models/model.model');
-const SongModel = require('../models/song.model');
-const {
+import path from 'path';
+import fs from 'fs/promises';
+import { Request, Response } from 'express';
+import { paths } from '../main';
+import ModelModel from '../models/model.model';
+import SongModel from '../models/song.model';
+import {
   createZip,
-  extractZip,
   sendResponse,
   sendError,
   logger,
   ensureDirectory
-} = require('../services/file.service');
+} from '../services/file.service';
 
 /**
  * Obtener todos los modelos
  */
-async function getAllModels(req, res) {
+export async function getAllModels(_req: Request, res: Response): Promise<void> {
   try {
     const models = await ModelModel.getAll();
     sendResponse(res, true, models, 'Modelos obtenidos');
   } catch (error) {
-    sendError(res, 'Error al obtener modelos', 500, error);
+    sendError(res, 'Error al obtener modelos', 500, error as Error);
   }
 }
 
 /**
  * Obtener modelo por ID
  */
-async function getModelById(req, res) {
+export async function getModelById(req: Request, res: Response): Promise<void> {
   try {
     const { modelId } = req.params;
 
-    const model = await ModelModel.getById(modelId);
+    const model = await ModelModel.getById(parseInt(modelId));
     if (!model) {
       return sendError(res, 'Modelo no encontrado', 404);
     }
 
     sendResponse(res, true, model, 'Modelo obtenido');
-
   } catch (error) {
-    sendError(res, 'Error al obtener modelo', 500, error);
+    sendError(res, 'Error al obtener modelo', 500, error as Error);
   }
 }
 
 /**
  * Obtener modelo por playlist
  */
-async function getModelByPlaylist(req, res) {
+export async function getModelByPlaylist(req: Request, res: Response): Promise<void> {
   try {
     const { playlistId } = req.params;
 
-    const model = await ModelModel.getByPlaylist(playlistId);
+    const model = await ModelModel.getByPlaylist(parseInt(playlistId));
     if (!model) {
       return sendResponse(res, true, null, 'No hay modelo para esta playlist');
     }
 
     sendResponse(res, true, model, 'Modelo obtenido');
-
   } catch (error) {
-    sendError(res, 'Error al obtener modelo', 500, error);
+    sendError(res, 'Error al obtener modelo', 500, error as Error);
   }
 }
 
 /**
  * Guardar modelo de TensorFlow
  */
-async function saveModel(req, res) {
+export async function saveModel(req: Request, res: Response): Promise<void> {
   try {
     const { playlistId, modelName } = req.body;
-    const modelFiles = req.files; // Asumiendo que se usa multer
+    const modelFiles = req.files as Express.Multer.File[]; // Asumiendo que se usa multer
 
     if (!playlistId || !modelName) {
       return sendError(res, 'playlistId y modelName son requeridos', 400);
@@ -91,7 +89,7 @@ async function saveModel(req, res) {
 
     // Crear ZIP del modelo
     const zipName = `model_${playlistId}_${timestamp}.zip`;
-    const zipPath = await createZip(tempDir, paths.models, zipName);
+    await createZip(tempDir, paths.models, zipName);
 
     // Eliminar directorio temporal
     await fs.rm(tempDir, { recursive: true, force: true });
@@ -105,20 +103,19 @@ async function saveModel(req, res) {
 
     logger('info', `Modelo guardado: ${modelName} (ID: ${model.id})`);
     sendResponse(res, true, model, 'Modelo guardado exitosamente');
-
   } catch (error) {
-    sendError(res, 'Error al guardar modelo', 500, error);
+    sendError(res, 'Error al guardar modelo', 500, error as Error);
   }
 }
 
 /**
  * Descargar modelo
  */
-async function downloadModel(req, res) {
+export async function downloadModel(req: Request, res: Response): Promise<void> {
   try {
     const { modelId } = req.params;
 
-    const model = await ModelModel.getById(modelId);
+    const model = await ModelModel.getById(parseInt(modelId));
     if (!model) {
       return sendError(res, 'Modelo no encontrado', 404);
     }
@@ -133,16 +130,15 @@ async function downloadModel(req, res) {
     }
 
     res.download(modelPath, model.path);
-
   } catch (error) {
-    sendError(res, 'Error al descargar modelo', 500, error);
+    sendError(res, 'Error al descargar modelo', 500, error as Error);
   }
 }
 
 /**
  * Obtener modelo global
  */
-async function getGlobalModel(req, res) {
+export async function getGlobalModel(_req: Request, res: Response): Promise<void> {
   try {
     const model = await ModelModel.getGlobal();
 
@@ -151,16 +147,15 @@ async function getGlobalModel(req, res) {
     }
 
     sendResponse(res, true, model, 'Modelo global obtenido');
-
   } catch (error) {
-    sendError(res, 'Error al obtener modelo global', 500, error);
+    sendError(res, 'Error al obtener modelo global', 500, error as Error);
   }
 }
 
 /**
  * Actualizar predicción de canciones
  */
-async function updatePredictions(req, res) {
+export async function updatePredictions(req: Request, res: Response): Promise<void> {
   try {
     const { predictions } = req.body;
 
@@ -168,14 +163,14 @@ async function updatePredictions(req, res) {
       return sendError(res, 'predictions debe ser un array no vacío', 400);
     }
 
-    const updated = [];
-    const errors = [];
+    const updated: number[] = [];
+    const errors: any[] = [];
 
     for (const pred of predictions) {
       try {
         await SongModel.updatePrediction(pred.songId, pred.prediction);
         updated.push(pred.songId);
-      } catch (error) {
+      } catch (error: any) {
         errors.push({
           songId: pred.songId,
           error: error.message
@@ -183,43 +178,33 @@ async function updatePredictions(req, res) {
       }
     }
 
-    logger('info', `Predicciones actualizadas: ${updated.length} exitosas, ${errors.length} fallidas`);
+    logger(
+      'info',
+      `Predicciones actualizadas: ${updated.length} exitosas, ${errors.length} fallidas`
+    );
     sendResponse(res, true, { updated, errors }, 'Predicciones actualizadas');
-
   } catch (error) {
-    sendError(res, 'Error al actualizar predicciones', 500, error);
+    sendError(res, 'Error al actualizar predicciones', 500, error as Error);
   }
 }
 
 /**
  * Desactivar modelo
  */
-async function deactivateModel(req, res) {
+export async function deactivateModel(req: Request, res: Response): Promise<void> {
   try {
     const { modelId } = req.params;
 
-    const model = await ModelModel.getById(modelId);
+    const model = await ModelModel.getById(parseInt(modelId));
     if (!model) {
       return sendError(res, 'Modelo no encontrado', 404);
     }
 
-    await ModelModel.deactivate(modelId);
+    await ModelModel.deactivate(parseInt(modelId));
 
     logger('info', `Modelo desactivado ID: ${modelId}`);
     sendResponse(res, true, null, 'Modelo desactivado');
-
   } catch (error) {
-    sendError(res, 'Error al desactivar modelo', 500, error);
+    sendError(res, 'Error al desactivar modelo', 500, error as Error);
   }
 }
-
-module.exports = {
-  getAllModels,
-  getModelById,
-  getModelByPlaylist,
-  saveModel,
-  downloadModel,
-  getGlobalModel,
-  updatePredictions,
-  deactivateModel
-};
