@@ -1,0 +1,122 @@
+<div class="container-fluid p-6 bg-purple-dark text-light min-h-screen">
+  <h1 class="text-3xl font-bold mb-6">Entrenamiento</h1>
+
+  <div class="grid grid-cols-12 gap-6">
+    <!-- Sidebar -->
+    <div class="col-span-3">
+      <div class="card p-4">
+        <span *ngIf="playlists.list.length === 0; else notEmpty"
+          class="text-white/50">
+          (No hay listas de reproducción)
+        </span>
+        <ng-template #notEmpty>
+          <label class="block text-sm font-medium mb-2">Selecciona una lista:</label>
+          <select class="form-select w-full"
+            [(ngModel)]="playlists.selected"
+            (ngModelChange)="loadPlaylist(playlists.selected!.id!, playlists.selected!.isGlobal)">
+            <option *ngFor="let playlist of playlists.list"
+              [ngValue]="playlist">{{ playlist.name }}</option>
+          </select>
+        </ng-template>
+
+        <div class="mt-4 space-y-2">
+          <button class="btn btn-success btn-sm w-full"
+            (click)="setPlaylist(false,'new')">
+            <i class="fas fa-plus"></i> Crear lista
+          </button>
+          <button class="btn btn-danger btn-sm w-full"
+            [disabled]="!playlists.selected || songService.busyFlags.idSongsForFeatures"
+            (click)="trainModel('all')">
+            <i class="fas fa-brain"></i> Entrenar faltantes
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="col-span-9">
+      <div class="card">
+        <div class="overflow-x-auto">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Id</th>
+                <th>Nombre</th>
+                <th>Tipo</th>
+                <th></th>
+                <th>Status</th>
+                <th>Calificación</th>
+                <th>Predicción</th>
+                <th>Opciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let song of playlists.selected?.songs || []; let i = index"
+                [class.text-info]="idSongPlaying==song.id">
+                <th>{{i + 1}}</th>
+                <td>{{song.id || '--'}}</td>
+                <td>{{song.name}}</td>
+                <td><span class="badge badge-primary">MP3</span></td>
+                <td>
+                  <button class="btn-icon btn-sm btn-success"
+                    (click)="play(i)">
+                    <i class="fas fa-play"></i>
+                  </button>
+                </td>
+                <td class="text-center text-nowrap">
+                  <span *ngIf="song.storageStatus=='local'"><i class="fas fa-box"></i></span>
+                  <span *ngIf="song.storageStatus=='uploading'"><i class="fas fa-spinner fa-spin"></i></span>
+                  <span *ngIf="song.tsStatus=='trained'"
+                    class="text-success"><i class="fas fa-check-circle"></i></span>
+                </td>
+                <td>
+                  <div *ngIf="song.tsStatus===null||song.tsStatus=='error'; else scoreDisabled">
+                    <ng-container *ngFor="let star of rating.stars; let ist = index">
+                      <i class="star-rated fas"
+                        [class.fa-star]="song.userScore !== null && ist < song.userScore!"
+                        [class.fa-star-o]="!(song.userScore !== null && ist < song.userScore!)"
+                        (click)="rate(i,ist + 1)"></i>
+                    </ng-container>
+                  </div>
+                  <ng-template #scoreDisabled>
+                    <ng-container *ngFor="let star of rating.stars; let ist = index">
+                      <i class="star-disabled fas"
+                        [class.fa-star]="song.userScore!==null && ist < song.userScore"
+                        [class.fa-star-o]="!(song.userScore!==null && ist < song.userScore)"></i>
+                    </ng-container>
+                  </ng-template>
+                </td>
+                <td>--</td>
+                <td>
+                  <div class="flex gap-1">
+                    <button class="btn-icon btn-sm btn-success"
+                      [disabled]="!song.userScore||song.tsStatus=='training'||song.tsStatus=='trained'||songService.busyFlags.idSongsForFeatures"
+                      (click)="trainModel('single',i)">
+                      <i class="fas fa-brain"></i>
+                    </button>
+                    <button class="btn-icon btn-sm btn-info">
+                      <i class="fas fa-plus"></i>
+                    </button>
+                    <button class="btn-icon btn-sm btn-danger">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<app-modal [(visible)]="playlistModal.visible"
+  title="Nueva lista de reproducción"
+  (confirmed)="setPlaylist(true)">
+  <app-input label="Nombre de la lista"
+    [(ngModel)]="playlistModal.name"
+    [required]="true"></app-input>
+</app-modal>

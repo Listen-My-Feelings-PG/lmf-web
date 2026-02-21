@@ -1,0 +1,41 @@
+<br>
+<div #canvasWrapper
+  class="canvas-wrapper">
+  <canvas class="spec-canvas"
+    #canvas></canvas>
+  <canvas class="line-canvas"
+    #overlayCanvas></canvas>
+
+</div>
+<br>
+<button class="btn btn-primary"
+  [disabled]="http.busy||loader.busy"
+  (click)="playSong()">
+  <i class="fas fa-play"></i> Reproducir
+</button>
+<button class="btn btn-secondary"
+  (click)="stopSong()">
+  <i class="fas fa-stop"></i> Detener
+</button>
+<br>
+<input type="number"
+  name="idSong"
+  id="idSong"
+  class="form-control"
+  [disabled]="http.busy||loader.busy"
+  [(ngModel)]="idSong">
+<button class="btn btn-success"
+  [disabled]="http.busy||loader.busy"
+  (click)="loadSpectrogram()">
+  <i class="fas fa-upload"></i> Cargar espectrograma
+</button>
+<button class="btn btn-danger"
+  (click)="stopLoading()">
+  <i class="fas fa-times"></i> Detener
+</button><br>
+<h3>Estadisticas:</h3>
+<ul>
+  <li><b>Inicio de la canción: </b>{{spec.firstIndex}}</li>
+  <li><b>Fin de la canción: </b>{{spec.lastIndex}}</li>
+  <li><b>Valor normalizado: </b>{{spec.maxValue}}</li>
+</ul>

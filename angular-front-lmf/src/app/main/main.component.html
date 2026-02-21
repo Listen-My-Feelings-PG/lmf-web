@@ -1,0 +1,25 @@
+<div class="main-container">
+  <div class="menubar-container"
+    [ngClass]="{'show': menubarVisible, 'hide': !menubarVisible}"
+    [style.display]="menubarVisible ? 'block' : 'hidden'"
+    (mouseleave)="hideMenubar()"
+    (mouseenter)="clearTimer()">
+    <div class="flex items-center justify-between p-4 bg-purple-darker">
+      <img src="assets/img/profileempty.jpg"
+        alt="Logo"
+        class="logo w-10 h-10 rounded-full" />
+      <nav class="flex gap-4">
+        <a *ngFor="let item of menuItems"
+          [routerLink]="item.routerLink"
+          class="text-light hover:text-info transition-colors">
+          {{ item.label }}
+        </a>
+      </nav>
+    </div>
+  </div>
+  <div class="pullbar"
+    (mouseenter)="showMenuBar()"
+    [style.display]="menubarVisible ?'none':'block'"></div>
+  <router-outlet /><br><br>
+  <app-player class="fixed-player"></app-player>
+</div>
