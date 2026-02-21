@@ -1,11 +1,11 @@
 import { Routes } from '@angular/router';
 import { MainComponent } from './main/main.component';
-import { MenuComponent } from './main/menu/menu.component';
+import { HomeComponent } from './main/home/home.component';
 
 export const routes: Routes = [
   {
     path: 'main', component: MainComponent, children: [
-      { path: 'menu', component: MenuComponent },
+      { path: 'menu', component: HomeComponent },
       { path: '', redirectTo: 'menu', pathMatch: 'full' }
     ]
   },

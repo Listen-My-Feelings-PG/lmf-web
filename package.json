@@ -2,7 +2,10 @@
   "name": "lmf-app",
   "version": "0.0.1",
   "description": "proyecto IA de musica",
-  "scripts": {},
+  "scripts": {
+    "serve": "npm --prefix angular-front-lmf start",
+    "start": "npm --prefix express-server-lmf start"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Listen-My-Feelings-PG/lmf-web.git"
