@@ -1,1 +1,22 @@
 /* You can add global styles to this file, and also import other style files */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom color variables for reference */
+$base-color1: #46f0be;
+$base-color2: #f0c81e;
+$base-color3: #8278e6;
+$base-color4: #f0fafa;
+$base-color5: #0032c8;
+$base-color6: #00b400;
+$base-color7: #fadc00;
+$base-color8: #fa6400;
+
+/* Dark theme by default */
+@layer base {
+  body {
+    @apply bg-gray-900 text-gray-100;
+  }
+}
