@@ -5,8 +5,6 @@ export class Song {
   public tsScore: number = 0;
   public tsTrainLevelLocal: number = 0;
   public tsTrainLevelGlobal: number = 0;
-  public tsStatusLocal: 'trained' | 'error' | null = null;
-  public tsStatusGlobal: 'trained' | 'error' | null = null;
   public metadata?: {
     title: string,
     artist: string,
