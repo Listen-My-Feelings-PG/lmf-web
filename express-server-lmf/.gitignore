@@ -35,8 +35,6 @@ files/audio/*
 !files/audio/.gitkeep
 files/models/*
 !files/models/.gitkeep
-files/features/*
-!files/features/.gitkeep
 files/spectrograms/*
 !files/spectrograms/.gitkeep
 

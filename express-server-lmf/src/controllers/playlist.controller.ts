@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import PlaylistModel from "../models/playlist.model";
 import { BadRequest, InternalServerError, sendError, sendResponse } from "../services/http-response-handler.service";
+import SongModel from "../models/song.model";
 
 export async function getAllPlaylists(_req: Request, res: Response): Promise<void> {
   try {
@@ -14,11 +15,21 @@ export async function getAllPlaylists(_req: Request, res: Response): Promise<voi
 export async function getPlaylistContentById(req: Request, res: Response): Promise<void> {
   try {
     const playlistId = parseInt(req.params.idPlaylist, 10);
-    if (isNaN(playlistId)) {
+    if (isNaN(playlistId))
       sendError(res, 'ID de playlist inválido', BadRequest, null);
-    } else {
-
-
+    else {
+      const songs = await SongModel.getAllSongsByPlaylistId(playlistId);
+      sendResponse(res, true, songs.map((obj) => ({
+        id: obj.ca_id,
+        userScore: obj.ca_calif_usuario ? obj.ca_calif_usuario : undefined,
+        fileName: obj.ca_filename,
+        fileSize: obj.ca_filesize,
+        dataType: obj.ca_id_tipodato === 1 ? 'file' : 'link',
+        metadata: obj.ca_metadata ? JSON.parse(obj.ca_metadata) : undefined,
+        tsScore: obj.ca_ts_prediccion ? obj.ca_ts_prediccion : undefined,
+        tsTrainLevelLocal: obj.ca_train_level_local ? obj.ca_train_level_local : undefined,
+        tsTrainLevelGlobal: obj.ca_train_level_global ? obj.ca_train_level_global : undefined
+      })), 'Contenido de la playlist obtenido correctamente');
     }
   } catch (error) {
     sendError(res, 'Error al obtener el contenido de la playlist', InternalServerError, error instanceof Error ? error : null);

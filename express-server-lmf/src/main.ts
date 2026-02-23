@@ -23,10 +23,7 @@ const psql: Sql = postgres({
 });
 
 const directories: string[] = [
-  process.env.AUDIO_PATH || './files/audio',
-  process.env.MODELS_PATH || './files/models',
-  process.env.SPECTROGRAMS_PATH || './files/spectrograms',
-  './files/features'
+  process.env.AUDIO_PATH || './files/audio'
 ];
 
 directories.forEach(dir => {
@@ -52,8 +49,6 @@ app.use(express.json({ limit: '50mb' }));
 app.use(cookieParser());
 
 app.use('/audio', express.static(directories[0]));
-app.use('/models', express.static(directories[1]));
-app.use('/spectrograms', express.static(directories[2]));
 
 app.use((req: Request, _res: Response, next: NextFunction) => {
   const timestamp = new Date().toISOString();
@@ -62,10 +57,7 @@ app.use((req: Request, _res: Response, next: NextFunction) => {
 });
 
 const appPaths: AppPaths = {
-  audio: directories[0],
-  models: directories[1],
-  spectrograms: directories[2],
-  features: './files/features'
+  audio: directories[0]
 };
 
 export const config: AppConfig = {

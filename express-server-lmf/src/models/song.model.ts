@@ -85,8 +85,7 @@ class SongModel {
 
   static async getAll(): Promise<Song[]> {
     try {
-      const songs = await psql<any[]>`
-        SELECT 
+      const songs = await psql<any[]>`SELECT 
           ca_id as id,
           ca_calif_usuario as "userScore",
           ca_filename as "fileName",
@@ -97,8 +96,7 @@ class SongModel {
           ca_train_level_local as "tsTrainLevelLocal",
           ca_train_level_global as "tsTrainLevelGlobal"
         FROM public.canciones
-        WHERE ca_activo = true
-      `;
+        WHERE ca_activo = B'1'`;
       return songs.map(song => ({
         ...song,
         metadata: song.metadata && song.metadata.trim().startsWith('{') ? JSON.parse(song.metadata) : undefined
@@ -111,8 +109,7 @@ class SongModel {
 
   static async getByFileName(fileName: string): Promise<Song | null> {
     try {
-      const [song] = await psql<any[]>`
-        SELECT 
+      const [song] = await psql<any[]>`SELECT 
           ca_id as id,
           ca_calif_usuario as "userScore",
           ca_filename as "fileName",
@@ -123,8 +120,7 @@ class SongModel {
           ca_train_level_local as "tsTrainLevelLocal",
           ca_train_level_global as "tsTrainLevelGlobal"
         FROM public.canciones
-        WHERE ca_filename = ${fileName} AND ca_activo = true
-      `;
+        WHERE ca_filename = ${fileName} AND ca_activo = B'1'`;
       if (!song) return null;
       return {
         ...song,
@@ -132,6 +128,28 @@ class SongModel {
       };
     } catch (error) {
       console.error('Error al buscar canción por nombre:', error);
+      throw error;
+    }
+  }
+
+  static async getAllSongsByPlaylistId(idPlaylist: number): Promise<Array<any>> {
+    try {
+      const songs = await psql<any[]>`SELECT 
+          ca_id,
+          ca_calif_usuario,
+          ca_filesize,
+          ca_filename,
+          ca_train_level_local,
+          ca_train_level_global,
+          ca_id_tipodato,
+          ca_metadata,
+          ca_ts_prediccion
+      FROM rel_playlists_canciones
+      left join canciones on ca_id=pr_ca_id
+      where pr_pl_id=${idPlaylist} AND ca_activo = B'1'`;
+      return songs;
+    } catch (error) {
+      console.error('Error al obtener canciones por ID de playlist:', error);
       throw error;
     }
   }

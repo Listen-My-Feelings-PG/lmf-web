@@ -75,19 +75,6 @@ export default class PlaylistModel {
     }
   }
 
-  static async getPlaylistSongsById(playlistId: number): Promise<number[]> {
-    try {
-      const songs = await psql<{ pr_ca_id: number }[]>`
-        SELECT pr_ca_id FROM public.rel_playlists_canciones
-        WHERE pr_pl_id = ${playlistId}
-      `;
-      return songs.map(s => s.pr_ca_id);
-    } catch (error) {
-      console.error('Error al obtener canciones de playlist:', error);
-      throw error;
-    }
-  }
-
   static async getAll(): Promise<Playlist[]> {
     try {
       const playlists = await psql<any[]>`

@@ -11,9 +11,9 @@ export class HttpService {
   private apiUrl = 'http://localhost:3000/api/v1';
   getPlaylistContentByIdPlaylist(idPlaylist: number): Promise<Playlist> {
     return new Promise((resolve, reject) => {
-      this.http.get<HttpResponseSuccess>(`/playlists/${idPlaylist}`).subscribe({
-        next: (response) => resolve(response.data as Playlist),
-        error: (error) => reject(error)
+      this.http.get<HttpResponseSuccess>(this.apiUrl + `/playlists/content/${idPlaylist}`).subscribe({
+        next: (response: HttpResponseSuccess) => resolve(response.data as Playlist),
+        error: (error) => reject({ error, at: 'getPlaylistContentByIdPlaylist' })
       });
     });
   }

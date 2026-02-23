@@ -15,9 +15,6 @@ export interface AppConfig {
  */
 export interface AppPaths {
   audio: string;
-  models: string;
-  spectrograms: string;
-  features: string;
 }
 
 /**
@@ -29,13 +26,6 @@ export interface ApiResponse<T = any> {
   data?: T;
   error?: boolean;
   details?: string;
-}
-
-/**
- * Características de audio extraídas
- */
-export interface AudioFeatures {
-  [key: string]: any;
 }
 
 /**
