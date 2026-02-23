@@ -12,3 +12,10 @@ export interface Playlist {
   songs: Array<Song>
 }
 
+export interface HttpResponseSuccess {
+  sucess: true,
+  data: any,
+  message: string
+  timestamp: string
+}
+

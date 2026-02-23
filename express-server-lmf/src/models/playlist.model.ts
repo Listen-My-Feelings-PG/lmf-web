@@ -1,7 +1,7 @@
 import { psql } from "../main";
 import { Playlist } from "../types/generals.models";
 
-class PlaylistModel {
+export default class PlaylistModel {
   static async getGlobalPlaylist(): Promise<Playlist | null> {
     try {
       const [playlist] = await psql<Playlist[]>`
@@ -17,7 +17,7 @@ class PlaylistModel {
     }
   }
 
-  static async new(playlist: Playlist): Promise<{ id: number }> {
+  static async newPlaylist(playlist: Playlist): Promise<{ id: number }> {
     try {
       const [result] = await psql<{ pl_id: number }[]>`
         INSERT INTO public.playlists (
@@ -87,6 +87,41 @@ class PlaylistModel {
       throw error;
     }
   }
-}
 
-export default PlaylistModel;
+  static async getAll(): Promise<Playlist[]> {
+    try {
+      const playlists = await psql<any[]>`
+        SELECT 
+          pl_id as id,
+          pl_nombre as name,
+          pl_id_fecha_creacion as "dateCreated",
+          pl_is_global = B'1' as "isGlobal"
+        FROM public.playlists
+        WHERE pl_activo = B'1'
+        ORDER BY pl_id_fecha_creacion DESC
+      `;
+      return playlists;
+    } catch (error) {
+      console.error('Error al obtener todas las playlists:', error);
+      throw error;
+    }
+  }
+
+  static async getById(playlistId: number): Promise<Playlist | null> {
+    try {
+      const [playlist] = await psql<any[]>`
+        SELECT 
+          pl_id as id,
+          pl_nombre as name,
+          pl_id_fecha_creacion as "dateCreated",
+          pl_is_global = B'1' as "isGlobal"
+        FROM public.playlists
+        WHERE pl_id = ${playlistId} AND pl_activo = B'1'
+      `;
+      return playlist || null;
+    } catch (error) {
+      console.error('Error al obtener playlist por ID:', error);
+      throw error;
+    }
+  }
+}

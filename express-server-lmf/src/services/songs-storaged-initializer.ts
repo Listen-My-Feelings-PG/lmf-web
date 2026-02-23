@@ -60,7 +60,7 @@ export async function syncStoragedSongs(audioPath: string): Promise<void> {
           dataType: 'file'
         };
 
-        const result = await SongModel.new(newSong);
+        const result = await SongModel.newSong(newSong);
         newSongIds.push(result.id);
         console.info(`  ✅ Agregada: ${fileName} (ID: ${result.id})`);
       } catch (error) {

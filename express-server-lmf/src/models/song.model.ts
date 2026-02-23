@@ -8,7 +8,7 @@ class SongModel {
   /**
    * Crear una nueva canciÃ³n
    */
-  static async new(songData: Song): Promise<{ id: number }> {
+  static async newSong(songData: Song): Promise<{ id: number }> {
     try {
       const [song] = await psql<{ id: number }[]>`
         INSERT INTO public.canciones (
