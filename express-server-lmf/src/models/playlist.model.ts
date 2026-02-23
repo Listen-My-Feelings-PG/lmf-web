@@ -38,6 +38,55 @@ class PlaylistModel {
       throw error;
     }
   }
+
+  static async addSongToPlaylist(playlistId: number, songId: number): Promise<{ success: boolean }> {
+    try {
+      // Verificar si la relación ya existe
+      const [existing] = await psql<{ pc_id: number }[]>`
+        SELECT pc_id FROM public.rel_playlists_canciones
+        WHERE pr_pl_id = ${playlistId} AND pr_ca_id = ${songId}
+      `;
+
+      if (existing) {
+        return { success: true }; // Ya existe la relación
+      }
+
+      await psql`
+        INSERT INTO public.rel_playlists_canciones (pr_pl_id, pr_ca_id)
+        VALUES (${playlistId}, ${songId})
+      `;
+      return { success: true };
+    } catch (error) {
+      console.error('Error al agregar canción a playlist:', error);
+      throw error;
+    }
+  }
+
+  static async removeSongFromPlaylist(playlistId: number, songId: number): Promise<{ success: boolean }> {
+    try {
+      await psql`
+        DELETE FROM public.rel_playlists_canciones
+        WHERE pr_pl_id = ${playlistId} AND pr_ca_id = ${songId}
+      `;
+      return { success: true };
+    } catch (error) {
+      console.error('Error al eliminar canción de playlist:', error);
+      throw error;
+    }
+  }
+
+  static async getPlaylistSongs(playlistId: number): Promise<number[]> {
+    try {
+      const songs = await psql<{ pr_ca_id: number }[]>`
+        SELECT pr_ca_id FROM public.rel_playlists_canciones
+        WHERE pr_pl_id = ${playlistId}
+      `;
+      return songs.map(s => s.pr_ca_id);
+    } catch (error) {
+      console.error('Error al obtener canciones de playlist:', error);
+      throw error;
+    }
+  }
 }
 
 export default PlaylistModel;

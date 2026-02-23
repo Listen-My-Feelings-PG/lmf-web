@@ -84,7 +84,7 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 
 const port = parseInt(process.env.PORT || process.env.HTTP_PORT || '3000');
 
-httpServer.listen(port, (error?: Error) => {
+httpServer.listen(port, async (error?: Error) => {
   if (error) {
     console.error('Error al iniciar el servidor:', error);
     process.exit(1);
@@ -95,4 +95,8 @@ httpServer.listen(port, (error?: Error) => {
   console.info(`Entorno: ${process.env.NODE_ENV || 'development'}`);
   console.info(`Base de datos: ${process.env.DB_DATABASE}`);
   console.info('='.repeat(50));
+
+  // Inicializar sincronización de canciones almacenadas
+  const { initializeStoragedSongs } = await import('./services/songs-storaged-initializer');
+  await initializeStoragedSongs(directories[0]);
 });

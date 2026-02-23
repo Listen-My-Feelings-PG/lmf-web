@@ -66,7 +66,7 @@ Configurar `.env`:
 ```env
 DB_SERVER=localhost
 DB_PORT=5432
-DB_DATABASE=lmf_db_oneuser
+DB_DATABASE=lmf_db
 DB_USER=postgres
 DB_PASS=tu_password
 
