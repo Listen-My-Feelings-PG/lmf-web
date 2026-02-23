@@ -4,7 +4,7 @@ import SongModel from '../models/song.model';
 import PlaylistModel from '../models/playlist.model';
 import { Song } from '../types/generals.models';
 
-const GLOBAL_PLAYLIST_ID = 1;
+const DEFAULT_PLAYLIST_ID = 1;
 
 /**
  * Sincroniza el contenido del directorio de audio con la base de datos
@@ -12,7 +12,7 @@ const GLOBAL_PLAYLIST_ID = 1;
  * - Agrega canciones nuevas encontradas en el directorio
  * - Reactiva canciones inactivas si su archivo vuelve a existir
  * - Desactiva canciones (ca_activo = 0) que ya no existen en el directorio
- * - Asocia canciones nuevas a la playlist global
+ * - Asocia canciones nuevas a la playlist default
  * 
  * NOTA: Las canciones solo se desactivan, nunca se eliminan físicamente
  */
@@ -101,9 +101,9 @@ export async function syncStoragedSongs(audioPath: string): Promise<void> {
       }
     }
 
-    // 9. Sincronizar con la playlist global
+    // 9. Sincronizar con la playlist default
     if (newSongIds.length > 0 || reactivatedSongs.length > 0) {
-      await syncPlaylistGlobal([...newSongIds, ...reactivatedSongs]);
+      await syncPlaylistDefault([...newSongIds, ...reactivatedSongs]);
     }
 
     // Resumen
@@ -121,36 +121,36 @@ export async function syncStoragedSongs(audioPath: string): Promise<void> {
 }
 
 /**
- * Sincroniza la playlist global con las canciones nuevas y reactivadas
+ * Sincroniza la playlist default con las canciones nuevas y reactivadas
  * - Agrega nuevas canciones a la playlist
  * - Agrega canciones reactivadas a la playlist
  * 
  * NOTA: Las canciones desactivadas permanecen en la playlist para mantener el historial
  */
-async function syncPlaylistGlobal(songIds: number[]): Promise<void> {
+async function syncPlaylistDefault(songIds: number[]): Promise<void> {
   try {
-    // Verificar que existe la playlist global
-    const globalPlaylist = await PlaylistModel.getGlobalPlaylist();
-    if (!globalPlaylist) {
-      console.warn('⚠️  No existe una playlist global. Se omite la sincronización de playlist.');
+    // Verificar que existe la playlist default
+    const defaultPlaylist = await PlaylistModel.getDefaultPlaylist();
+    if (!defaultPlaylist) {
+      console.warn('⚠️  No existe una playlist default. Se omite la sincronización de playlist.');
       return;
     }
 
     // Agregar canciones nuevas y reactivadas a la playlist
     for (const songId of songIds) {
       try {
-        await PlaylistModel.addSongToPlaylist(GLOBAL_PLAYLIST_ID, songId);
+        await PlaylistModel.addSongToPlaylist(DEFAULT_PLAYLIST_ID, songId);
       } catch (error) {
-        console.error(`  ❌ Error al agregar canción ${songId} a playlist global:`, error);
+        console.error(`  ❌ Error al agregar canción ${songId} a playlist default:`, error);
       }
     }
 
     if (songIds.length > 0) {
-      console.info(`  🎵 Agregadas ${songIds.length} canciones a la playlist global`);
+      console.info(`  🎵 Agregadas ${songIds.length} canciones a la playlist default`);
     }
 
   } catch (error) {
-    console.error('❌ Error al sincronizar playlist global:', error);
+    console.error('❌ Error al sincronizar playlist default:', error);
     throw error;
   }
 }

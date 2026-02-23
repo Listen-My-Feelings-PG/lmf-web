@@ -21,7 +21,7 @@ export class Playlist {
     public name: string,
     public songs: Array<Song>,
     public model: TsModel | null,
-    public isGlobal: boolean,
+    public isDefault: boolean,
     public id?: number
   ) { }
 }

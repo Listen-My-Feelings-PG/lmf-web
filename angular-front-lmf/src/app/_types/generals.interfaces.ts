@@ -3,7 +3,7 @@ import { Song } from "./generals.models";
 export interface Playlist {
   id: number;
   name: string,
-  isGlobal: boolean,
+  isDefault: boolean,
   songs: Array<Song>
 }
 

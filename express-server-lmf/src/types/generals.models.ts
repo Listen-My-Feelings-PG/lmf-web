@@ -20,5 +20,5 @@ export interface Playlist {
   dateCreated?: Date;
   name: string;
   songs?: Song[];
-  isGlobal: boolean;
+  isDefault: boolean;
 }

@@ -2,17 +2,17 @@ import { psql } from "../main";
 import { Playlist } from "../types/generals.models";
 
 export default class PlaylistModel {
-  static async getGlobalPlaylist(): Promise<Playlist | null> {
+  static async getDefaultPlaylist(): Promise<Playlist | null> {
     try {
       const [playlist] = await psql<Playlist[]>`
       SELECT * FROM public.playlists 
-      WHERE pl_is_global = B'1' 
+      WHERE pl_is_default = B'1' 
       AND pl_activo = B'1'
       LIMIT 1
       `;
       return playlist || null;
     } catch (error) {
-      console.error('Error al obtener playlist global:', error);
+      console.error('Error al obtener playlist default:', error);
       throw error;
     }
   }
@@ -22,10 +22,10 @@ export default class PlaylistModel {
       const [result] = await psql<{ pl_id: number }[]>`
         INSERT INTO public.playlists (
           pl_nombre,
-          pl_is_global
+          pl_is_default
         ) VALUES (
           ${playlist.name},
-          ${playlist.isGlobal}
+          ${playlist.isDefault}
         )
         RETURNING pl_id
       `;
@@ -82,7 +82,7 @@ export default class PlaylistModel {
           pl_id as id,
           pl_nombre as name,
           pl_id_fecha_creacion as "dateCreated",
-          pl_is_global = B'1' as "isGlobal"
+          pl_is_default = B'1' as "isDefault"
         FROM public.playlists
         WHERE pl_activo = B'1'
         ORDER BY pl_id_fecha_creacion DESC
@@ -101,7 +101,7 @@ export default class PlaylistModel {
           pl_id as id,
           pl_nombre as name,
           pl_id_fecha_creacion as "dateCreated",
-          pl_is_global = B'1' as "isGlobal"
+          pl_is_default = B'1' as "isDefault"
         FROM public.playlists
         WHERE pl_id = ${playlistId} AND pl_activo = B'1'
       `;
