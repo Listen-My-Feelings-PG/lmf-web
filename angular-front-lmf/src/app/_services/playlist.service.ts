@@ -3,59 +3,85 @@ import { Playlist, Song } from '../_types/generals.models';
 import { BehaviorSubject, Subscription } from 'rxjs';
 export interface PlaylistSetup {
   list: Array<Playlist>,
-  selected: Playlist | null
+  selected: Playlist | null,
+  initialized?: boolean
 }
 @Injectable({
   providedIn: 'root'
 })
 export class PlaylistService {
-  private playlistGlobal: BehaviorSubject<PlaylistSetup>
+  private playlistGlobal: BehaviorSubject<PlaylistSetup>;
 
   constructor() {
-    this.playlistGlobal = new BehaviorSubject<{
-      list: Array<Playlist>,
-      selected: Playlist | null
-    }>({ list: [], selected: null });
+    this.playlistGlobal = new BehaviorSubject<PlaylistSetup>({
+      list: [],
+      selected: null,
+      initialized: false
+    });
   }
 
-  public getEventSubscriptor(cb: (value: PlaylistSetup) => void): Subscription {
-    return this.playlistGlobal.subscribe(cb);
+  public getEventSubscription(callback: (value: PlaylistSetup) => void): Subscription {
+    return this.playlistGlobal.subscribe((value) => {
+      if (value.initialized)
+        callback(value);
+    });
   }
 
-  public updateList(list: Array<Playlist>): void {
-    const currentData = this.playlistGlobal.value;
+
+  public updatePlaylistList(list: Array<Playlist>): void {
+    const current = this.playlistGlobal.getValue();
     this.playlistGlobal.next({
-      ...currentData,
+      ...current,
       list
     });
   }
 
-  public selectPlaylist(playlist: Playlist): void {
-    const currentData = this.playlistGlobal.value;
-    this.playlistGlobal.next({
-      ...currentData,
-      selected: playlist
+  public setSelectedPlaylist(playlist: Playlist): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const current = this.playlistGlobal.getValue();
+      if (current.initialized) {
+        const playlistExists = current.list.some(p => p.id === playlist.id);
+        if (playlistExists) {
+          this.playlistGlobal.next({
+            ...current,
+            selected: playlist
+          });
+          return resolve();
+        } else
+          return reject(new Error('La playlist seleccionada no existe en la lista global.'))
+      } else
+        return reject(new Error('La playlist global no ha sido inicializada. No se puede seleccionar una playlist.'))
     });
   }
 
-  public updateSongsOfSelectedPlaylist(songs: Array<Song>): void {
-    const currentData = this.playlistGlobal.value;
-    if (currentData.selected) {
-      const updatedSelected = {
-        ...currentData.selected,
-        songs
-      };
-      this.playlistGlobal.next({
-        ...currentData,
-        selected: updatedSelected
-      });
-    }
+  public getPlaylistSelected(): Playlist | null {
+    return this.playlistGlobal.getValue().selected;
   }
 
-  public initializePlaylistData(playlists: Array<Playlist>, selectedPlaylist: Playlist): void {
+  public updateContentOfSelectedPlaylist(songs: Array<Song>): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const current = this.playlistGlobal.getValue();
+      if (current.initialized) {
+        const selected = current.selected;
+        if (selected) {
+          const updatedPlaylist = { ...selected, songs };
+          this.playlistGlobal.next({
+            ...current,
+            selected: updatedPlaylist,
+            list: current.list.map(pl => pl.id === updatedPlaylist.id ? updatedPlaylist : pl)
+          });
+          return resolve();
+        } else
+          return reject(new Error('No hay una playlist seleccionada para actualizar su contenido.'))
+      } else
+        return reject(new Error('La playlist global no ha sido inicializada. No se puede actualizar el contenido de la playlist seleccionada.'))
+    });
+  }
+
+  public initializePlaylistGlobal(setup: PlaylistSetup): void {
     this.playlistGlobal.next({
-      list: playlists,
-      selected: selectedPlaylist
+      ...setup,
+      initialized: true
     });
   }
 }

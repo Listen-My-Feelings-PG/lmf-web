@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { PlayerComponent } from '../player/player.component';
-import { Playlist, Song } from '../_types/generals.models';
 import { HttpService } from '../_services/http.service';
 import { PlaylistService } from '../_services/playlist.service';
 
@@ -18,17 +17,17 @@ export class MainComponent implements OnInit {
     try {
       const playlists = await this.httpService.getAllPlaylists();
       if (playlists) {
+        const playlistSelected = this.playlistService.getPlaylistSelected();
         const globalPlaylist = playlists.find(pl => pl.isGlobal);
-        if (globalPlaylist) {
-          // Cargar el contenido de la playlist antes de inicializar el estado
-          const playlistContent = await this.httpService.getPlaylistContentByIdPlaylist(globalPlaylist.id!);
-          globalPlaylist.songs = playlistContent as unknown as Array<Song>;
-
-          // Inicializar todo el estado de una sola vez (una sola emisión)
-          this.playlistService.initializePlaylistData(playlists, globalPlaylist);
-        } else {
-          // Si no hay playlist global, solo actualizar la lista
-          this.playlistService.updateList(playlists);
+        if (!playlistSelected && globalPlaylist) {
+          const songList = await this.httpService.getPlaylistContentByIdPlaylist(globalPlaylist.id as number);
+          if (songList) {
+            globalPlaylist.songs = songList;
+            await this.playlistService.initializePlaylistGlobal({
+              list: playlists,
+              selected: globalPlaylist
+            });
+          }
         }
       }
     } catch (error) {
@@ -36,5 +35,7 @@ export class MainComponent implements OnInit {
     }
   }
 
+  newPlayList(confirm: boolean): void {
 
+  }
 }

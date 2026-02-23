@@ -83,6 +83,67 @@ class SongModel {
     }
   }
 
+  /**
+   * Borrado lógico de una canción (ca_activo = 0)
+   */
+  static async logicalDeleteById(id: number): Promise<{ success: boolean }> {
+    try {
+      await psql`
+        UPDATE public.canciones
+        SET ca_activo = B'0'
+        WHERE ca_id = ${id}
+      `;
+      return { success: true };
+    } catch (error) {
+      console.error('Error al desactivar canción:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Reactivar una canción (ca_activo = 1)
+   */
+  static async reactivateById(id: number): Promise<{ success: boolean }> {
+    try {
+      await psql`
+        UPDATE public.canciones
+        SET ca_activo = B'1'
+        WHERE ca_id = ${id}
+      `;
+      return { success: true };
+    } catch (error) {
+      console.error('Error al reactivar canción:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtener todas las canciones inactivas (ca_activo = 0)
+   */
+  static async getInactive(): Promise<Song[]> {
+    try {
+      const songs = await psql<any[]>`SELECT 
+          ca_id as id,
+          ca_calif_usuario as "userScore",
+          ca_filename as "fileName",
+          ca_filesize as "fileSize",
+          CASE WHEN ca_id_tipodato = 1 THEN 'file' ELSE 'link' END as "dataType",
+          ca_metadata as metadata,
+          ca_ts_prediccion as "tsScore",
+          ca_train_level_local as "tsTrainLevelLocal",
+          ca_train_level_global as "tsTrainLevelGlobal"
+        FROM public.canciones
+        WHERE ca_activo = B'0'`;
+      return songs.map(song => ({
+        ...song,
+        metadata: song.metadata && song.metadata.trim().startsWith('{') ? JSON.parse(song.metadata) : undefined
+      }));
+    } catch (error) {
+      console.error('Error al obtener canciones inactivas:', error);
+      throw error;
+    }
+  }
+
   static async getAll(): Promise<Song[]> {
     try {
       const songs = await psql<any[]>`SELECT 

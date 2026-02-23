@@ -8,13 +8,13 @@ const GLOBAL_PLAYLIST_ID = 1;
 
 /**
  * Sincroniza el contenido del directorio de audio con la base de datos
- * MODO ESPEJO:
+ * MODO ESPEJO CON BORRADO LÓGICO:
  * - Agrega canciones nuevas encontradas en el directorio
- * - Elimina canciones de la BD que ya no existen en el directorio
+ * - Reactiva canciones inactivas si su archivo vuelve a existir
+ * - Desactiva canciones (ca_activo = 0) que ya no existen en el directorio
  * - Asocia canciones nuevas a la playlist global
  * 
- * NOTA: Al eliminar una canción, su asociación con playlists también se elimina
- * automáticamente mediante la FK con ON DELETE CASCADE
+ * NOTA: Las canciones solo se desactivan, nunca se eliminan físicamente
  */
 export async function syncStoragedSongs(audioPath: string): Promise<void> {
   try {
@@ -35,19 +35,35 @@ export async function syncStoragedSongs(audioPath: string): Promise<void> {
 
     console.info(`📁 Archivos encontrados en directorio: ${filesInDirectory.length}`);
 
-    // 3. Obtener canciones de la base de datos
+    // 3. Verificar y reactivar canciones inactivas que vuelven a existir
+    const inactiveSongs = await SongModel.getInactive();
+    const reactivatedSongs: number[] = [];
+
+    for (const song of inactiveSongs) {
+      if (filesInDirectory.includes(song.fileName!)) {
+        try {
+          await SongModel.reactivateById(song.id!);
+          reactivatedSongs.push(song.id!);
+          console.info(`  ✅ Reactivada: ${song.fileName} (ID: ${song.id})`);
+        } catch (error) {
+          console.error(`  ❌ Error al reactivar ${song.fileName}:`, error);
+        }
+      }
+    }
+
+    // 4. Obtener canciones activas de la base de datos
     const songsInDB = await SongModel.getAll();
     const songsInDBMap = new Map(songsInDB.map(song => [song.fileName, song]));
 
-    console.info(`💾 Canciones en base de datos: ${songsInDB.length}`);
+    console.info(`💾 Canciones activas en base de datos: ${songsInDB.length}`);
 
-    // 4. Identificar canciones nuevas (en directorio pero no en BD)
+    // 5. Identificar canciones nuevas (en directorio pero no en BD activas)
     const newFiles = filesInDirectory.filter(file => !songsInDBMap.has(file));
 
-    // 5. Identificar canciones a eliminar (en BD pero no en directorio)
-    const songsToDelete = songsInDB.filter(song => !filesInDirectory.includes(song.fileName!));
+    // 6. Identificar canciones a desactivar (en BD activas pero no en directorio)
+    const songsToDeactivate = songsInDB.filter(song => !filesInDirectory.includes(song.fileName!));
 
-    // 6. Agregar canciones nuevas
+    // 7. Agregar canciones nuevas
     const newSongIds: number[] = [];
     for (const fileName of newFiles) {
       try {
@@ -68,33 +84,34 @@ export async function syncStoragedSongs(audioPath: string): Promise<void> {
       }
     }
 
-    // 7. Eliminar canciones que ya no existen
-    if (songsToDelete.length > 0) {
-      console.warn(`⚠️  Se eliminarán ${songsToDelete.length} canción(es) sin archivo físico:`);
-      for (const song of songsToDelete) {
+    // 8. Desactivar canciones que ya no existen (borrado lógico)
+    if (songsToDeactivate.length > 0) {
+      console.warn(`⚠️  Se desactivarán ${songsToDeactivate.length} canción(es) sin archivo físico:`);
+      for (const song of songsToDeactivate) {
         console.warn(`     - ${song.fileName} (ID: ${song.id})`);
       }
     }
 
-    for (const song of songsToDelete) {
+    for (const song of songsToDeactivate) {
       try {
-        await SongModel.physicalDeleteById(song.id!);
-        console.info(`  🗑️  Eliminada: ${song.fileName} (ID: ${song.id})`);
+        await SongModel.logicalDeleteById(song.id!);
+        console.info(`  🔒 Desactivada: ${song.fileName} (ID: ${song.id})`);
       } catch (error) {
-        console.error(`  ❌ Error al eliminar ${song.fileName}:`, error);
+        console.error(`  ❌ Error al desactivar ${song.fileName}:`, error);
       }
     }
 
-    // 8. Sincronizar con la playlist global
-    if (newSongIds.length > 0) {
-      await syncPlaylistGlobal(newSongIds);
+    // 9. Sincronizar con la playlist global
+    if (newSongIds.length > 0 || reactivatedSongs.length > 0) {
+      await syncPlaylistGlobal([...newSongIds, ...reactivatedSongs]);
     }
 
     // Resumen
     console.info('✨ Sincronización completada:');
+    console.info(`  • Canciones reactivadas: ${reactivatedSongs.length}`);
     console.info(`  • Canciones agregadas: ${newSongIds.length}`);
-    console.info(`  • Canciones eliminadas: ${songsToDelete.length}`);
-    console.info(`  • Total en BD: ${songsInDB.length + newSongIds.length - songsToDelete.length}`);
+    console.info(`  • Canciones desactivadas: ${songsToDeactivate.length}`);
+    console.info(`  • Total activas en BD: ${songsInDB.length + newSongIds.length + reactivatedSongs.length - songsToDeactivate.length}`);
     console.info(`  • Archivos en directorio: ${filesInDirectory.length}`);
 
   } catch (error) {
@@ -104,13 +121,13 @@ export async function syncStoragedSongs(audioPath: string): Promise<void> {
 }
 
 /**
- * Sincroniza la playlist global con las canciones nuevas
+ * Sincroniza la playlist global con las canciones nuevas y reactivadas
  * - Agrega nuevas canciones a la playlist
+ * - Agrega canciones reactivadas a la playlist
  * 
- * NOTA: Las relaciones con canciones eliminadas se gestionan automáticamente
- * mediante la FK con ON DELETE CASCADE (la eliminación de canciones elimina sus asociaciones)
+ * NOTA: Las canciones desactivadas permanecen en la playlist para mantener el historial
  */
-async function syncPlaylistGlobal(newSongIds: number[]): Promise<void> {
+async function syncPlaylistGlobal(songIds: number[]): Promise<void> {
   try {
     // Verificar que existe la playlist global
     const globalPlaylist = await PlaylistModel.getGlobalPlaylist();
@@ -119,8 +136,8 @@ async function syncPlaylistGlobal(newSongIds: number[]): Promise<void> {
       return;
     }
 
-    // Agregar nuevas canciones a la playlist
-    for (const songId of newSongIds) {
+    // Agregar canciones nuevas y reactivadas a la playlist
+    for (const songId of songIds) {
       try {
         await PlaylistModel.addSongToPlaylist(GLOBAL_PLAYLIST_ID, songId);
       } catch (error) {
@@ -128,8 +145,8 @@ async function syncPlaylistGlobal(newSongIds: number[]): Promise<void> {
       }
     }
 
-    if (newSongIds.length > 0) {
-      console.info(`  🎵 Agregadas ${newSongIds.length} canciones a la playlist global`);
+    if (songIds.length > 0) {
+      console.info(`  🎵 Agregadas ${songIds.length} canciones a la playlist global`);
     }
 
   } catch (error) {

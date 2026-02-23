@@ -1,11 +1,10 @@
-import { Component, OnInit, AfterViewInit, ViewChild, ElementRef, OnDestroy } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ViewChild, ElementRef, OnDestroy, Input } from '@angular/core';
 import { Song } from '../_types/generals.models';
-import { sampleList } from './examples';
+//import { sampleList } from './examples';
 import $ from 'jquery';
 import 'datatables.net';
-import { PlaylistService } from '../_services/playlist.service';
 import { Subscription } from 'rxjs';
-import { filter } from 'rxjs/operators';
+import { PlaylistService } from '../_services/playlist.service';
 
 @Component({
   selector: 'app-list',
@@ -15,8 +14,7 @@ import { filter } from 'rxjs/operators';
 })
 export class ListComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('songsTable', { static: false }) songsTable!: ElementRef;
-
-  private _list: Array<Song>;
+  @Input('list') _list: Array<Song>;
   private subscription!: Subscription;
   dataTable: any;
 
@@ -28,7 +26,9 @@ export class ListComponent implements OnInit, AfterViewInit, OnDestroy {
     this._list = value;
     // Si DataTables ya está inicializada, actualizar los datos
     if (this.dataTable) {
-      this.updateTableData();
+      this.dataTable.clear();
+      this.dataTable.rows.add(this._list);
+      this.dataTable.draw();
     }
   }
 
@@ -37,25 +37,8 @@ export class ListComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    // Filtrar solo las emisiones donde hay una playlist seleccionada con canciones
-    this.subscription = this.playlistService.getEventSubscriptor((value) => {
-      console.log('subscription triggered', value);
-
-      // Solo actualizar si hay una playlist seleccionada
-      if (value.selected && value.selected.songs) {
-        const newSongs = value.selected.songs;
-
-        // Solo actualizar si realmente hay cambios en la lista de canciones
-        if (this._list.length !== newSongs.length ||
-          !this._list.every((song, index) => song.id === newSongs[index]?.id)) {
-          this._list = newSongs;
-
-          // Si DataTables ya está inicializada, actualizar los datos
-          if (this.dataTable) {
-            this.updateTableData();
-          }
-        }
-      }
+    this.subscription = this.playlistService.getEventSubscription((value) => {
+      this._list = value.selected?.songs || [];
     });
   }
 
@@ -72,7 +55,7 @@ export class ListComponent implements OnInit, AfterViewInit, OnDestroy {
               return `<div class="flex items-center space-x-2"><i class="fas fa-play text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity"></i>${title}</div>`;
             }
           },
-          { data: null, className: 'text-gray-300', render: (data: any, type: any, row: Song) => row.metadata?.artist || '-' },
+          { data: null, className: 'text-gray-300', render: (_data, _type, row: Song) => row.metadata?.artist || '-' },
           { data: null, className: 'text-gray-400', render: (data: any, type: any, row: Song) => row.metadata?.album || '-' },
           {
             data: 'userScore', className: 'text-center', orderable: false, render: (score: number) => {
@@ -139,18 +122,9 @@ export class ListComponent implements OnInit, AfterViewInit, OnDestroy {
       }), 300);
   }
 
-  updateTableData(): void {
-    if (this.dataTable) {
-      this.dataTable.clear();
-      this.dataTable.rows.add(this._list);
-      this.dataTable.draw();
-    }
-  }
-
   ngOnDestroy(): void {
     if (this.subscription)
       this.subscription.unsubscribe();
-
     if (this.dataTable)
       this.dataTable.destroy();
 
