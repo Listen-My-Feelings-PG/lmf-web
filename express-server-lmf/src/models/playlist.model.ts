@@ -75,7 +75,7 @@ export default class PlaylistModel {
     }
   }
 
-  static async getPlaylistSongs(playlistId: number): Promise<number[]> {
+  static async getPlaylistSongsById(playlistId: number): Promise<number[]> {
     try {
       const songs = await psql<{ pr_ca_id: number }[]>`
         SELECT pr_ca_id FROM public.rel_playlists_canciones

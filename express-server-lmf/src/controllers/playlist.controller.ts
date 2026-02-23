@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import PlaylistModel from "../models/playlist.model";
-import { InternalServerError, sendError, sendResponse } from "../services/http-response-handler.service";
+import { BadRequest, InternalServerError, sendError, sendResponse } from "../services/http-response-handler.service";
 
 export async function getAllPlaylists(_req: Request, res: Response): Promise<void> {
   try {
@@ -13,7 +13,13 @@ export async function getAllPlaylists(_req: Request, res: Response): Promise<voi
 
 export async function getPlaylistContentById(req: Request, res: Response): Promise<void> {
   try {
+    const playlistId = parseInt(req.params.idPlaylist, 10);
+    if (isNaN(playlistId)) {
+      sendError(res, 'ID de playlist inválido', BadRequest, null);
+    } else {
 
+
+    }
   } catch (error) {
     sendError(res, 'Error al obtener el contenido de la playlist', InternalServerError, error instanceof Error ? error : null);
   }
