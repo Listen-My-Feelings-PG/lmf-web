@@ -1,40 +1,32 @@
-<!-- Playlist Container (Winamp Style) -->
-<div class="flex flex-col h-full bg-gray-900 text-gray-100 border-2 border-gray-700 rounded-lg shadow-2xl">
+<!-- Playlist Container (DataTables Style) -->
+<div class="flex flex-col h-full bg-gray-900 text-gray-100 border-2 border-gray-700 rounded-lg shadow-2xl p-6">
 
-  <!-- Top Row: Album Art & Song Metadata -->
-  <div class="flex items-stretch border-b-2 border-gray-700 bg-gradient-to-r from-gray-800 to-gray-900">
-
-    <!-- Album Art -->
-    <div class="flex-shrink-0 p-3">
-      <div class="w-16 h-16 bg-gray-950 border-2 border-primary rounded shadow-lg overflow-hidden">
-        <img src="https://via.placeholder.com/65x65/8278e6/ffffff?text=Album"
-          alt="Album Art"
-          class="w-full h-full object-cover">
-      </div>
-    </div>
-
-    <!-- Divider -->
-    <div class="w-px bg-gradient-to-b from-transparent via-gray-600 to-transparent"></div>
-
-    <!-- Song Metadata -->
-    <div class="flex-1 px-4 py-3 flex flex-col justify-center">
-      <div class="flex items-center justify-between mb-1">
-        <h3 class="text-lg font-bold text-primary truncate flex-1">
-          <i class="fas fa-music mr-2 text-sm"></i>
-          Current Playlist
-        </h3>
-        <div class="flex items-center space-x-3 text-sm text-gray-400">
-          <span>
-            <i class="fas fa-list-ol mr-1"></i>
-            <span class="font-mono">12</span> tracks
-          </span>
-          <span>
-            <i class="fas fa-clock mr-1"></i>
-            <span class="font-mono">48:32</span>
-          </span>
+  <!-- Header Section -->
+  <div class="mb-6">
+    <div class="flex items-center justify-between mb-4">
+      <div class="flex items-center space-x-3">
+        <div class="w-16 h-16 bg-gray-950 border-2 border-primary rounded shadow-lg overflow-hidden">
+          @if (list.length > 0 && list[0].metadata?.urlAlbumArt) {
+          <img [src]="list[0].metadata?.urlAlbumArt"
+            alt="Album Art"
+            class="w-full h-full object-cover">
+          } @else {
+          <img src="https://via.placeholder.com/65x65/8278e6/ffffff?text=Album"
+            alt="Album Art"
+            class="w-full h-full object-cover">
+          }
+        </div>
+        <div>
+          <h2 class="text-2xl font-bold text-primary">
+            <i class="fas fa-music mr-2"></i>
+            Current Playlist
+          </h2>
+          <p class="text-gray-400 text-sm">
+            <span class="font-mono">{{ list.length }}</span> canciones en total
+          </p>
         </div>
       </div>
-      <div class="flex items-center space-x-4 text-xs text-gray-500">
+      <div class="flex items-center space-x-4 text-sm text-gray-400">
         <span><i class="fas fa-user mr-1"></i>Various Artists</span>
         <span><i class="fas fa-calendar mr-1"></i>2024</span>
         <span><i class="fas fa-compact-disc mr-1"></i>Rock Collection</span>
@@ -42,289 +34,24 @@
     </div>
   </div>
 
-  <!-- Bottom Row: Song List -->
-  <div class="flex-1 overflow-hidden flex flex-col">
-
-    <!-- List Header -->
-    <div
-      class="bg-gradient-to-r from-gray-800 to-gray-700 border-b border-gray-600 px-4 py-2 flex items-center text-xs font-bold text-gray-400 uppercase tracking-wide">
-      <div class="w-10 text-center">#</div>
-      <div class="flex-1 px-2">Title</div>
-      <div class="w-48 px-2">Artist</div>
-      <div class="w-32 px-2">Album</div>
-      <div class="w-20 text-center">
-        <i class="far fa-star"></i>
-      </div>
-      <div class="w-20 text-right">Time</div>
-    </div>
-
-    <!-- Scrollable Song List -->
-    <div class="flex-1 overflow-y-auto bg-gray-950">
-
-      <!-- Song Item 1 -->
-      <div
-        class="flex items-center px-4 py-3 hover:bg-gradient-to-r hover:from-primary hover:to-accent hover:bg-opacity-10 border-b border-gray-800 cursor-pointer transition-all duration-150 group">
-        <div class="w-10 text-center text-gray-500 group-hover:text-primary font-mono text-sm">1</div>
-        <div class="flex-1 px-2">
-          <div class="flex items-center space-x-2">
-            <i class="fas fa-play text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity"></i>
-            <span class="font-semibold text-gray-200 truncate">Bohemian Rhapsody</span>
-          </div>
-        </div>
-        <div class="w-48 px-2 text-gray-400 truncate text-sm">Queen</div>
-        <div class="w-32 px-2 text-gray-500 truncate text-sm">A Night at the Opera</div>
-        <div class="w-20 text-center">
-          <div class="flex justify-center space-x-1">
-            <i class="fas fa-star text-yellow-400 text-sm"></i>
-            <i class="fas fa-star text-yellow-400 text-sm"></i>
-            <i class="fas fa-star text-yellow-400 text-sm"></i>
-          </div>
-        </div>
-        <div class="w-20 text-right text-gray-500 font-mono text-sm">5:55</div>
-      </div>
-
-      <!-- Song Item 2 -->
-      <div
-        class="flex items-center px-4 py-3 hover:bg-gradient-to-r hover:from-primary hover:to-accent hover:bg-opacity-10 border-b border-gray-800 cursor-pointer transition-all duration-150 group">
-        <div class="w-10 text-center text-gray-500 group-hover:text-primary font-mono text-sm">2</div>
-        <div class="flex-1 px-2">
-          <div class="flex items-center space-x-2">
-            <i class="fas fa-play text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity"></i>
-            <span class="font-semibold text-gray-200 truncate">Stairway to Heaven</span>
-          </div>
-        </div>
-        <div class="w-48 px-2 text-gray-400 truncate text-sm">Led Zeppelin</div>
-        <div class="w-32 px-2 text-gray-500 truncate text-sm">Led Zeppelin IV</div>
-        <div class="w-20 text-center">
-          <div class="flex justify-center space-x-1">
-            <i class="fas fa-star text-yellow-400 text-sm"></i>
-            <i class="fas fa-star text-yellow-400 text-sm"></i>
-            <i class="fas fa-star text-yellow-400 text-sm"></i>
-          </div>
-        </div>
-        <div class="w-20 text-right text-gray-500 font-mono text-sm">8:02</div>
-      </div>
-
-      <!-- Song Item 3 -->
-      <div
-        class="flex items-center px-4 py-3 hover:bg-gradient-to-r hover:from-primary hover:to-accent hover:bg-opacity-10 border-b border-gray-800 cursor-pointer transition-all duration-150 group">
-        <div class="w-10 text-center text-gray-500 group-hover:text-primary font-mono text-sm">3</div>
-        <div class="flex-1 px-2">
-          <div class="flex items-center space-x-2">
-            <i class="fas fa-play text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity"></i>
-            <span class="font-semibold text-gray-200 truncate">Hotel California</span>
-          </div>
-        </div>
-        <div class="w-48 px-2 text-gray-400 truncate text-sm">Eagles</div>
-        <div class="w-32 px-2 text-gray-500 truncate text-sm">Hotel California</div>
-        <div class="w-20 text-center">
-          <div class="flex justify-center space-x-1">
-            <i class="fas fa-star text-yellow-400 text-sm"></i>
-            <i class="fas fa-star text-yellow-400 text-sm"></i>
-            <i class="far fa-star text-gray-600 text-sm"></i>
-          </div>
-        </div>
-        <div class="w-20 text-right text-gray-500 font-mono text-sm">6:30</div>
-      </div>
-
-      <!-- Song Item 4 -->
-      <div
-        class="flex items-center px-4 py-3 hover:bg-gradient-to-r hover:from-primary hover:to-accent hover:bg-opacity-10 border-b border-gray-800 cursor-pointer transition-all duration-150 group">
-        <div class="w-10 text-center text-gray-500 group-hover:text-primary font-mono text-sm">4</div>
-        <div class="flex-1 px-2">
-          <div class="flex items-center space-x-2">
-            <i class="fas fa-play text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity"></i>
-            <span class="font-semibold text-gray-200 truncate">Comfortably Numb</span>
-          </div>
-        </div>
-        <div class="w-48 px-2 text-gray-400 truncate text-sm">Pink Floyd</div>
-        <div class="w-32 px-2 text-gray-500 truncate text-sm">The Wall</div>
-        <div class="w-20 text-center">
-          <div class="flex justify-center space-x-1">
-            <i class="fas fa-star text-yellow-400 text-sm"></i>
-            <i class="fas fa-star text-yellow-400 text-sm"></i>
-            <i class="fas fa-star text-yellow-400 text-sm"></i>
-          </div>
-        </div>
-        <div class="w-20 text-right text-gray-500 font-mono text-sm">6:23</div>
-      </div>
-
-      <!-- Song Item 5 -->
-      <div
-        class="flex items-center px-4 py-3 hover:bg-gradient-to-r hover:from-primary hover:to-accent hover:bg-opacity-10 border-b border-gray-800 cursor-pointer transition-all duration-150 group">
-        <div class="w-10 text-center text-gray-500 group-hover:text-primary font-mono text-sm">5</div>
-        <div class="flex-1 px-2">
-          <div class="flex items-center space-x-2">
-            <i class="fas fa-play text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity"></i>
-            <span class="font-semibold text-gray-200 truncate">Imagine</span>
-          </div>
-        </div>
-        <div class="w-48 px-2 text-gray-400 truncate text-sm">John Lennon</div>
-        <div class="w-32 px-2 text-gray-500 truncate text-sm">Imagine</div>
-        <div class="w-20 text-center">
-          <div class="flex justify-center space-x-1">
-            <i class="fas fa-star text-yellow-400 text-sm"></i>
-            <i class="fas fa-star text-yellow-400 text-sm"></i>
-            <i class="far fa-star text-gray-600 text-sm"></i>
-          </div>
-        </div>
-        <div class="w-20 text-right text-gray-500 font-mono text-sm">3:03</div>
-      </div>
-
-      <!-- Song Item 6 -->
-      <div
-        class="flex items-center px-4 py-3 hover:bg-gradient-to-r hover:from-primary hover:to-accent hover:bg-opacity-10 border-b border-gray-800 cursor-pointer transition-all duration-150 group">
-        <div class="w-10 text-center text-gray-500 group-hover:text-primary font-mono text-sm">6</div>
-        <div class="flex-1 px-2">
-          <div class="flex items-center space-x-2">
-            <i class="fas fa-play text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity"></i>
-            <span class="font-semibold text-gray-200 truncate">Sweet Child O' Mine</span>
-          </div>
-        </div>
-        <div class="w-48 px-2 text-gray-400 truncate text-sm">Guns N' Roses</div>
-        <div class="w-32 px-2 text-gray-500 truncate text-sm">Appetite for Destruction</div>
-        <div class="w-20 text-center">
-          <div class="flex justify-center space-x-1">
-            <i class="fas fa-star text-yellow-400 text-sm"></i>
-            <i class="fas fa-star text-yellow-400 text-sm"></i>
-            <i class="fas fa-star text-yellow-400 text-sm"></i>
-          </div>
-        </div>
-        <div class="w-20 text-right text-gray-500 font-mono text-sm">5:56</div>
-      </div>
-
-      <!-- Song Item 7 -->
-      <div
-        class="flex items-center px-4 py-3 hover:bg-gradient-to-r hover:from-primary hover:to-accent hover:bg-opacity-10 border-b border-gray-800 cursor-pointer transition-all duration-150 group">
-        <div class="w-10 text-center text-gray-500 group-hover:text-primary font-mono text-sm">7</div>
-        <div class="flex-1 px-2">
-          <div class="flex items-center space-x-2">
-            <i class="fas fa-play text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity"></i>
-            <span class="font-semibold text-gray-200 truncate">November Rain</span>
-          </div>
-        </div>
-        <div class="w-48 px-2 text-gray-400 truncate text-sm">Guns N' Roses</div>
-        <div class="w-32 px-2 text-gray-500 truncate text-sm">Use Your Illusion I</div>
-        <div class="w-20 text-center">
-          <div class="flex justify-center space-x-1">
-            <i class="fas fa-star text-yellow-400 text-sm"></i>
-            <i class="fas fa-star text-yellow-400 text-sm"></i>
-            <i class="far fa-star text-gray-600 text-sm"></i>
-          </div>
-        </div>
-        <div class="w-20 text-right text-gray-500 font-mono text-sm">8:57</div>
-      </div>
-
-      <!-- Song Item 8 -->
-      <div
-        class="flex items-center px-4 py-3 hover:bg-gradient-to-r hover:from-primary hover:to-accent hover:bg-opacity-10 border-b border-gray-800 cursor-pointer transition-all duration-150 group">
-        <div class="w-10 text-center text-gray-500 group-hover:text-primary font-mono text-sm">8</div>
-        <div class="flex-1 px-2">
-          <div class="flex items-center space-x-2">
-            <i class="fas fa-play text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity"></i>
-            <span class="font-semibold text-gray-200 truncate">While My Guitar Gently Weeps</span>
-          </div>
-        </div>
-        <div class="w-48 px-2 text-gray-400 truncate text-sm">The Beatles</div>
-        <div class="w-32 px-2 text-gray-500 truncate text-sm">The White Album</div>
-        <div class="w-20 text-center">
-          <div class="flex justify-center space-x-1">
-            <i class="fas fa-star text-yellow-400 text-sm"></i>
-            <i class="fas fa-star text-yellow-400 text-sm"></i>
-            <i class="fas fa-star text-yellow-400 text-sm"></i>
-          </div>
-        </div>
-        <div class="w-20 text-right text-gray-500 font-mono text-sm">4:45</div>
-      </div>
-
-      <!-- Song Item 9 -->
-      <div
-        class="flex items-center px-4 py-3 hover:bg-gradient-to-r hover:from-primary hover:to-accent hover:bg-opacity-10 border-b border-gray-800 cursor-pointer transition-all duration-150 group">
-        <div class="w-10 text-center text-gray-500 group-hover:text-primary font-mono text-sm">9</div>
-        <div class="flex-1 px-2">
-          <div class="flex items-center space-x-2">
-            <i class="fas fa-play text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity"></i>
-            <span class="font-semibold text-gray-200 truncate">Smells Like Teen Spirit</span>
-          </div>
-        </div>
-        <div class="w-48 px-2 text-gray-400 truncate text-sm">Nirvana</div>
-        <div class="w-32 px-2 text-gray-500 truncate text-sm">Nevermind</div>
-        <div class="w-20 text-center">
-          <div class="flex justify-center space-x-1">
-            <i class="fas fa-star text-yellow-400 text-sm"></i>
-            <i class="fas fa-star text-yellow-400 text-sm"></i>
-            <i class="far fa-star text-gray-600 text-sm"></i>
-          </div>
-        </div>
-        <div class="w-20 text-right text-gray-500 font-mono text-sm">5:01</div>
-      </div>
-
-      <!-- Song Item 10 -->
-      <div
-        class="flex items-center px-4 py-3 hover:bg-gradient-to-r hover:from-primary hover:to-accent hover:bg-opacity-10 border-b border-gray-800 cursor-pointer transition-all duration-150 group">
-        <div class="w-10 text-center text-gray-500 group-hover:text-primary font-mono text-sm">10</div>
-        <div class="flex-1 px-2">
-          <div class="flex items-center space-x-2">
-            <i class="fas fa-play text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity"></i>
-            <span class="font-semibold text-gray-200 truncate">Nothing Else Matters</span>
-          </div>
-        </div>
-        <div class="w-48 px-2 text-gray-400 truncate text-sm">Metallica</div>
-        <div class="w-32 px-2 text-gray-500 truncate text-sm">Metallica</div>
-        <div class="w-20 text-center">
-          <div class="flex justify-center space-x-1">
-            <i class="fas fa-star text-yellow-400 text-sm"></i>
-            <i class="fas fa-star text-yellow-400 text-sm"></i>
-            <i class="fas fa-star text-yellow-400 text-sm"></i>
-          </div>
-        </div>
-        <div class="w-20 text-right text-gray-500 font-mono text-sm">6:28</div>
-      </div>
-
-      <!-- Song Item 11 -->
-      <div
-        class="flex items-center px-4 py-3 hover:bg-gradient-to-r hover:from-primary hover:to-accent hover:bg-opacity-10 border-b border-gray-800 cursor-pointer transition-all duration-150 group">
-        <div class="w-10 text-center text-gray-500 group-hover:text-primary font-mono text-sm">11</div>
-        <div class="flex-1 px-2">
-          <div class="flex items-center space-x-2">
-            <i class="fas fa-play text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity"></i>
-            <span class="font-semibold text-gray-200 truncate">Wish You Were Here</span>
-          </div>
-        </div>
-        <div class="w-48 px-2 text-gray-400 truncate text-sm">Pink Floyd</div>
-        <div class="w-32 px-2 text-gray-500 truncate text-sm">Wish You Were Here</div>
-        <div class="w-20 text-center">
-          <div class="flex justify-center space-x-1">
-            <i class="fas fa-star text-yellow-400 text-sm"></i>
-            <i class="fas fa-star text-yellow-400 text-sm"></i>
-            <i class="fas fa-star text-yellow-400 text-sm"></i>
-          </div>
-        </div>
-        <div class="w-20 text-right text-gray-500 font-mono text-sm">5:34</div>
-      </div>
-
-      <!-- Song Item 12 -->
-      <div
-        class="flex items-center px-4 py-3 hover:bg-gradient-to-r hover:from-primary hover:to-accent hover:bg-opacity-10 border-b border-gray-800 cursor-pointer transition-all duration-150 group">
-        <div class="w-10 text-center text-gray-500 group-hover:text-primary font-mono text-sm">12</div>
-        <div class="flex-1 px-2">
-          <div class="flex items-center space-x-2">
-            <i class="fas fa-play text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity"></i>
-            <span class="font-semibold text-gray-200 truncate">The Sound of Silence</span>
-          </div>
-        </div>
-        <div class="w-48 px-2 text-gray-400 truncate text-sm">Simon & Garfunkel</div>
-        <div class="w-32 px-2 text-gray-500 truncate text-sm">Sounds of Silence</div>
-        <div class="w-20 text-center">
-          <div class="flex justify-center space-x-1">
-            <i class="fas fa-star text-yellow-400 text-sm"></i>
-            <i class="fas fa-star text-yellow-400 text-sm"></i>
-            <i class="far fa-star text-gray-600 text-sm"></i>
-          </div>
-        </div>
-        <div class="w-20 text-right text-gray-500 font-mono text-sm">3:08</div>
-      </div>
-
-    </div>
+  <!-- DataTable -->
+  <div class="flex-1 flex flex-col min-h-0">
+    <table #songsTable
+      class="display w-full"
+      style="width:100%">
+      <thead>
+        <tr>
+          <th class="text-left">#</th>
+          <th class="text-left">Título</th>
+          <th class="text-left">Artista</th>
+          <th class="text-left">Álbum</th>
+          <th class="text-center">Rating</th>
+          <th class="text-left">Nombre de archivo</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- DataTables llenará esto automáticamente -->
+      </tbody>
+    </table>
   </div>
 </div>
