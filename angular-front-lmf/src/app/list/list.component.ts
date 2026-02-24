@@ -52,7 +52,13 @@ export class ListComponent implements OnInit, AfterViewInit, OnDestroy {
       const playlistChanged = this.previousPlaylistId !== currentPlaylistId;
       const songsCountChanged = this.previousSongsCount !== currentSongsCount;
 
-      if (playlistChanged || songsCountChanged) {
+      // Detectar cambios en el contenido (ratings) comparando por referencia o valores
+      const songsContentChanged = currentSongs.some((song, index) => {
+        const existingSong = this._list[index];
+        return !existingSong || song.userScore !== existingSong.userScore;
+      });
+
+      if (playlistChanged || songsCountChanged || songsContentChanged) {
         this.previousPlaylistId = currentPlaylistId;
         this.previousSongsCount = currentSongsCount;
         this.list = currentSongs;
@@ -262,18 +268,25 @@ export class ListComponent implements OnInit, AfterViewInit, OnDestroy {
   rateSong(song: Song, score: 0 | 1 | 2 | 3): void {
     this.httpService.rateSongByIdSong(song.id!, score).then(async () => {
       try {
-        // Actualizar el score localmente
-        song.userScore = score;
+        // Crear una nueva copia del array con el score actualizado
+        const updatedList = this._list.map(s =>
+          s.id === song.id
+            ? { ...s, userScore: score }
+            : s
+        );
+
+        // Actualizar la lista local
+        this._list = updatedList;
 
         // Actualizar la fila en DataTable
         if (this.dataTable) {
-          const rowIndex = this._list.findIndex(s => s.id === song.id);
+          const rowIndex = updatedList.findIndex(s => s.id === song.id);
           if (rowIndex !== -1) {
-            this.dataTable.row(rowIndex).data(song).draw(false);
+            this.dataTable.row(rowIndex).data(updatedList[rowIndex]).draw(false);
           }
         }
 
-        await this.playlistService.updateContentOfSelectedPlaylist(this._list);
+        await this.playlistService.updateContentOfSelectedPlaylist(updatedList);
       } catch (error) {
         console.error('Error al actualizar el rating localmente después de calificar la canción:', error);
       }

@@ -41,12 +41,26 @@ export class PlayerComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.playlistService.getEventSubscription((value) => {
+      const currentSongs = value.selected?.songs || [];
+
+      // Detectar si la canción que se está reproduciendo cambió
       if (value.songPlaying) {
         const songPlaying = this.setup.list[this.setup.playingIndex!];
         if (!songPlaying || (songPlaying.id !== value.songPlaying.id)) {
-          this.setup.list = value.selected?.songs || [];
+          this.setup.list = currentSongs;
           this.play(value.songPlaying!);
         }
+      }
+
+      // Detectar cambios en el contenido (ratings) incluso si no cambió la canción
+      const songsContentChanged = currentSongs.some((song, index) => {
+        const existingSong = this.setup.list[index];
+        return !existingSong || song.userScore !== existingSong.userScore;
+      });
+
+      if (songsContentChanged) {
+        // Actualizar la lista manteniendo el índice de reproducción
+        this.setup.list = currentSongs;
       }
     });
   }
@@ -94,6 +108,8 @@ export class PlayerComponent implements OnInit, OnDestroy {
   async play(song: Song): Promise<void> {
     return new Promise(async (resolve, reject) => {
       const songIndex = this.setup.list.findIndex(s => s.id === song.id);
+      const song2 = this.setup.list[this.setup.playingIndex as number];
+      console.log('song', song2);
       if (songIndex !== -1) {
         try {
           // Si es la misma canción y está pausada, solo reanudar
@@ -231,6 +247,39 @@ export class PlayerComponent implements OnInit, OnDestroy {
       default:
         return '';
     }
+  }
+
+  rateSong(score: number): void {
+    // Validar que el score sea válido
+    if (score < 0 || score > 3) {
+      console.error('Score inválido:', score);
+      return;
+    }
+
+    const currentSong = this.getCurrentSong();
+    if (!currentSong || !currentSong.id) {
+      console.error('No hay canción activa para calificar');
+      return;
+    }
+
+    this.httpService.rateSongByIdSong(currentSong.id, score as 0 | 1 | 2 | 3).then(async () => {
+      try {
+        // Crear una nueva copia del array con el score actualizado
+        const updatedList = this.setup.list.map(song =>
+          song.id === currentSong.id
+            ? { ...song, userScore: score as 0 | 1 | 2 | 3 }
+            : song
+        );
+
+        // Actualizar la lista local
+        this.setup.list = updatedList;
+
+        // Actualizar en el servicio para que la tabla también se actualice
+        await this.playlistService.updateContentOfSelectedPlaylist(updatedList);
+      } catch (error) {
+        console.error('Error al actualizar el rating localmente:', error);
+      }
+    }).catch(error => console.error('Error al calificar la canción:', error));
   }
 
   ngOnDestroy(): void {
