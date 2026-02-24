@@ -44,4 +44,8 @@ export class HttpService {
       });
     });
   }
+
+  getSongsScoredByUser(): Promise<Array<Song & { idPlaylist: number }>> {
+    return new Promise((resolve, reject) => { });
+  }
 }

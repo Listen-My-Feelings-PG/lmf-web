@@ -4,7 +4,8 @@ export interface Playlist {
   id: number;
   name: string,
   isDefault: boolean,
-  songs: Array<Song>
+  songs: Array<Song>,
+  modelId?: number
 }
 
 export interface HttpResponseSuccess {

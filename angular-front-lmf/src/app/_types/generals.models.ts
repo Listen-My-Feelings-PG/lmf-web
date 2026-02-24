@@ -4,9 +4,13 @@ export class Song {
   public id?: number;
   public fileName!: string;
   public userScore: UserScore = null;
-  public tsScore: number | null = null;
+  public tsGlobalScore: number | null = null;
   public tsTrainLevelLocal: number = 0;
   public tsTrainLevelGlobal: number = 0;
+  public tsProbScore0: number | null = null;
+  public tsProbScore1: number | null = null;
+  public tsProbScore2: number | null = null;
+  public tsProbScore3: number | null = null;
   public metadata?: {
     title: string,
     artist: string,

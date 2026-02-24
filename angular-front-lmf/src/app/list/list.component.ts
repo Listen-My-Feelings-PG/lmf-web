@@ -1,6 +1,5 @@
 import { Component, OnInit, AfterViewInit, ViewChild, ElementRef, OnDestroy, Input } from '@angular/core';
-import { Song } from '../_types/generals.models';
-//import { sampleList } from './examples';
+import { Playlist, Song } from '../_types/generals.models';
 import $ from 'jquery';
 import 'datatables.net';
 import { Subscription } from 'rxjs';
@@ -19,6 +18,7 @@ export class ListComponent implements OnInit, AfterViewInit, OnDestroy {
   private subscription!: Subscription;
   private previousPlaylistId: number | null;
   private previousSongsCount: number;
+  currentPlaylist: Playlist | null;
   dataTable: any;
   songPlaying: Song | null
   get list(): Array<Song> {
@@ -42,6 +42,7 @@ export class ListComponent implements OnInit, AfterViewInit, OnDestroy {
     this.songPlaying = null;
     this.previousPlaylistId = null;
     this.previousSongsCount = 0;
+    this.currentPlaylist = null;
   }
 
   ngOnInit(): void {
@@ -54,6 +55,7 @@ export class ListComponent implements OnInit, AfterViewInit, OnDestroy {
 
       // Detectar cambios en el contenido (ratings) comparando por referencia o valores
       const songsContentChanged = currentSongs.some((song, index) => {
+        this.currentPlaylist = value.selected as Playlist;
         const existingSong = this._list[index];
         return !existingSong || song.userScore !== existingSong.userScore;
       });

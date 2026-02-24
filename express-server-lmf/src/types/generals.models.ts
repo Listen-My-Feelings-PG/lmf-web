@@ -10,9 +10,13 @@ export interface Song {
     album: string,
     urlAlbumArt: string
   };
-  tsScore?: number;
+  tsGlobalScore?: number;
   tsTrainLevelLocal?: number;
-  tsTrainLevelGlobal?: number
+  tsTrainLevelGlobal?: number;
+  tsProbScore0?: number;
+  tsProbScore1?: number;
+  tsProbScore2?: number;
+  tsProbScore3?: number;
 }
 
 export interface Playlist {
@@ -21,4 +25,5 @@ export interface Playlist {
   name: string;
   songs?: Song[];
   isDefault: boolean;
+  modelId?: number;
 }

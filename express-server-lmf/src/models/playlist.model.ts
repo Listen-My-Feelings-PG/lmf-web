@@ -82,7 +82,8 @@ export default class PlaylistModel {
           pl_id as id,
           pl_nombre as name,
           pl_id_fecha_creacion as "dateCreated",
-          pl_is_default = B'1' as "isDefault"
+          pl_is_default = B'1' as "isDefault",
+          pl_id_ts_modelo as "modelId"
         FROM public.playlists
         WHERE pl_activo = B'1'
         ORDER BY pl_id_fecha_creacion DESC
@@ -101,7 +102,8 @@ export default class PlaylistModel {
           pl_id as id,
           pl_nombre as name,
           pl_id_fecha_creacion as "dateCreated",
-          pl_is_default = B'1' as "isDefault"
+          pl_is_default = B'1' as "isDefault",
+          pl_id_ts_modelo as "modelId"
         FROM public.playlists
         WHERE pl_id = ${playlistId} AND pl_activo = B'1'
       `;

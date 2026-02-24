@@ -42,8 +42,8 @@ class SongModel {
         updates.push('ca_metadata = ' + psql([songData.metadata ? JSON.stringify(songData.metadata) : null]));
       if (songData.dataType !== undefined)
         updates.push('ca_id_tipodato = ' + psql([songData.dataType === 'file' ? 1 : 2]));
-      if (songData.tsScore !== undefined)
-        updates.push('ca_ts_prediccion = ' + psql([songData.tsScore]));
+      if (songData.tsGlobalScore !== undefined)
+        updates.push('ca_ts_calif_global = ' + psql([songData.tsGlobalScore]));
       if (songData.tsTrainLevelLocal !== undefined)
         updates.push('ca_train_level_local = ' + psql([songData.tsTrainLevelLocal]));
       if (songData.tsTrainLevelGlobal !== undefined)
@@ -57,9 +57,13 @@ class SongModel {
           ${songData.userScore !== undefined ? psql`, ca_calif_usuario = ${songData.userScore}` : psql``}
           ${songData.metadata !== undefined ? psql`, ca_metadata = ${songData.metadata ? JSON.stringify(songData.metadata) : null}` : psql``}
           ${songData.dataType !== undefined ? psql`, ca_id_tipodato = ${songData.dataType === 'file' ? 1 : 2}` : psql``}
-          ${songData.tsScore !== undefined ? psql`, ca_ts_prediccion = ${songData.tsScore}` : psql``}
+          ${songData.tsGlobalScore !== undefined ? psql`, ca_ts_calif_global = ${songData.tsGlobalScore}` : psql``}
           ${songData.tsTrainLevelLocal !== undefined ? psql`, ca_train_level_local = ${songData.tsTrainLevelLocal}` : psql``}
           ${songData.tsTrainLevelGlobal !== undefined ? psql`, ca_train_level_global = ${songData.tsTrainLevelGlobal}` : psql``}
+          ${songData.tsProbScore0 !== undefined ? psql`, ca_ts_prob_calif_0 = ${songData.tsProbScore0}` : psql``}
+          ${songData.tsProbScore1 !== undefined ? psql`, ca_ts_prob_calif_1 = ${songData.tsProbScore1}` : psql``}
+          ${songData.tsProbScore2 !== undefined ? psql`, ca_ts_prob_calif_2 = ${songData.tsProbScore2}` : psql``}
+          ${songData.tsProbScore3 !== undefined ? psql`, ca_ts_prob_calif_3 = ${songData.tsProbScore3}` : psql``}
         WHERE ca_id = ${id}
       `;
 
@@ -129,15 +133,23 @@ class SongModel {
           ca_filesize as "fileSize",
           CASE WHEN ca_id_tipodato = 1 THEN 'file' ELSE 'link' END as "dataType",
           ca_metadata as metadata,
-          ca_ts_prediccion as "tsScore",
+          ca_ts_calif_global as "tsGlobalScore",
           ca_train_level_local as "tsTrainLevelLocal",
-          ca_train_level_global as "tsTrainLevelGlobal"
+          ca_train_level_global as "tsTrainLevelGlobal",
+          ca_ts_prob_calif_0 as "tsProbScore0",
+          ca_ts_prob_calif_1 as "tsProbScore1",
+          ca_ts_prob_calif_2 as "tsProbScore2",
+          ca_ts_prob_calif_3 as "tsProbScore3"
         FROM public.canciones
         WHERE ca_activo = B'0'`;
       return songs.map(song => ({
         ...song,
         userScore: song.userScore ?? null,
-        tsScore: song.tsScore ?? null,
+        tsGlobalScore: song.tsGlobalScore ?? null,
+        tsProbScore0: song.tsProbScore0 ?? null,
+        tsProbScore1: song.tsProbScore1 ?? null,
+        tsProbScore2: song.tsProbScore2 ?? null,
+        tsProbScore3: song.tsProbScore3 ?? null,
         metadata: song.metadata && song.metadata.trim().startsWith('{') ? JSON.parse(song.metadata) : undefined
       }));
     } catch (error) {
@@ -155,15 +167,23 @@ class SongModel {
           ca_filesize as "fileSize",
           CASE WHEN ca_id_tipodato = 1 THEN 'file' ELSE 'link' END as "dataType",
           ca_metadata as metadata,
-          ca_ts_prediccion as "tsScore",
+          ca_ts_calif_global as "tsGlobalScore",
           ca_train_level_local as "tsTrainLevelLocal",
-          ca_train_level_global as "tsTrainLevelGlobal"
+          ca_train_level_global as "tsTrainLevelGlobal",
+          ca_ts_prob_calif_0 as "tsProbScore0",
+          ca_ts_prob_calif_1 as "tsProbScore1",
+          ca_ts_prob_calif_2 as "tsProbScore2",
+          ca_ts_prob_calif_3 as "tsProbScore3"
         FROM public.canciones
         WHERE ca_activo = B'1'`;
       return songs.map(song => ({
         ...song,
         userScore: song.userScore ?? null,
-        tsScore: song.tsScore ?? null,
+        tsGlobalScore: song.tsGlobalScore ?? null,
+        tsProbScore0: song.tsProbScore0 ?? null,
+        tsProbScore1: song.tsProbScore1 ?? null,
+        tsProbScore2: song.tsProbScore2 ?? null,
+        tsProbScore3: song.tsProbScore3 ?? null,
         metadata: song.metadata && song.metadata.trim().startsWith('{') ? JSON.parse(song.metadata) : undefined
       }));
     } catch (error) {
@@ -181,16 +201,24 @@ class SongModel {
           ca_filesize as "fileSize",
           CASE WHEN ca_id_tipodato = 1 THEN 'file' ELSE 'link' END as "dataType",
           ca_metadata as metadata,
-          ca_ts_prediccion as "tsScore",
+          ca_ts_calif_global as "tsGlobalScore",
           ca_train_level_local as "tsTrainLevelLocal",
-          ca_train_level_global as "tsTrainLevelGlobal"
+          ca_train_level_global as "tsTrainLevelGlobal",
+          ca_ts_prob_calif_0 as "tsProbScore0",
+          ca_ts_prob_calif_1 as "tsProbScore1",
+          ca_ts_prob_calif_2 as "tsProbScore2",
+          ca_ts_prob_calif_3 as "tsProbScore3"
         FROM public.canciones
         WHERE ca_id = ${id} AND ca_activo = B'1'`;
       if (!song) return null;
       return {
         ...song,
         userScore: song.userScore ?? null,
-        tsScore: song.tsScore ?? null,
+        tsGlobalScore: song.tsGlobalScore ?? null,
+        tsProbScore0: song.tsProbScore0 ?? null,
+        tsProbScore1: song.tsProbScore1 ?? null,
+        tsProbScore2: song.tsProbScore2 ?? null,
+        tsProbScore3: song.tsProbScore3 ?? null,
         metadata: song.metadata && song.metadata.trim().startsWith('{') ? JSON.parse(song.metadata) : undefined
       };
     } catch (error) {
@@ -208,15 +236,24 @@ class SongModel {
           ca_filesize as "fileSize",
           CASE WHEN ca_id_tipodato = 1 THEN 'file' ELSE 'link' END as "dataType",
           ca_metadata as metadata,
-          ca_ts_prediccion as "tsScore",
+          ca_ts_calif_global as "tsGlobalScore",
           ca_train_level_local as "tsTrainLevelLocal",
-          ca_train_level_global as "tsTrainLevelGlobal"
+          ca_train_level_global as "tsTrainLevelGlobal",
+          ca_ts_prob_calif_0 as "tsProbScore0",
+          ca_ts_prob_calif_1 as "tsProbScore1",
+          ca_ts_prob_calif_2 as "tsProbScore2",
+          ca_ts_prob_calif_3 as "tsProbScore3"
         FROM public.canciones
         WHERE ca_filename = ${fileName} AND ca_activo = B'1'`;
       if (!song) return null;
       return {
         ...song, userScore: song.userScore ?? null,
-        tsScore: song.tsScore ?? null, metadata: song.metadata && song.metadata.trim().startsWith('{') ? JSON.parse(song.metadata) : undefined
+        tsGlobalScore: song.tsGlobalScore ?? null,
+        tsProbScore0: song.tsProbScore0 ?? null,
+        tsProbScore1: song.tsProbScore1 ?? null,
+        tsProbScore2: song.tsProbScore2 ?? null,
+        tsProbScore3: song.tsProbScore3 ?? null,
+        metadata: song.metadata && song.metadata.trim().startsWith('{') ? JSON.parse(song.metadata) : undefined
       };
     } catch (error) {
       console.error('Error al buscar canción por nombre:', error);
@@ -235,7 +272,11 @@ class SongModel {
           ca_train_level_global,
           ca_id_tipodato,
           ca_metadata,
-          ca_ts_prediccion
+          ca_ts_calif_global,
+          ca_ts_prob_calif_0,
+          ca_ts_prob_calif_1,
+          ca_ts_prob_calif_2,
+          ca_ts_prob_calif_3
       FROM rel_playlists_canciones
       left join canciones on ca_id=pr_ca_id
       where pr_pl_id=${idPlaylist} AND ca_activo = B'1'`;
