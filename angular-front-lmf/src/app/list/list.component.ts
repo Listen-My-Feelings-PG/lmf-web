@@ -5,6 +5,7 @@ import $ from 'jquery';
 import 'datatables.net';
 import { Subscription } from 'rxjs';
 import { PlaylistService } from '../_services/playlist.service';
+import { HttpService } from '../_services/http.service';
 
 @Component({
   selector: 'app-list',
@@ -36,7 +37,7 @@ export class ListComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  constructor(private playlistService: PlaylistService) {
+  constructor(private playlistService: PlaylistService, private httpService: HttpService) {
     this._list = [];
     this.songPlaying = null;
     this.previousPlaylistId = null;
@@ -119,29 +120,25 @@ export class ListComponent implements OnInit, AfterViewInit, OnDestroy {
           { data: null, className: 'text-gray-300', render: (_data, _type, row: Song) => row.metadata?.artist || '-' },
           { data: null, className: 'text-gray-400', render: (data: any, type: any, row: Song) => row.metadata?.album || '-' },
           {
-            data: 'userScore', className: 'text-center', orderable: false, render: (score: number | null) => {
-              console.log('🎯 Score recibido:', score, '| Tipo:', typeof score, '| Es null?', score === null, '| Es undefined?', score === undefined);
+            data: 'userScore', className: 'text-center', orderable: false, render: (score: number | null, type: any, row: Song) => {
               let html = '<div style="display: flex; justify-content: center; align-items: center; gap: 0.25rem;">';
 
-              // Thumbs down icon (outline for null, solid for 0)
+              // Thumbs down icon (outline for null, solid for 0) - clickable
               if (score === null || score === 0) {
                 const thumbClass = score === 0 ? 'fas' : 'far';
                 const thumbColor = score === 0 ? 'color: #ef4444;' : 'color: #4b5563;';
-                console.log('👎 Agregando thumbs down - clase:', thumbClass, 'color:', thumbColor);
-                html += `<i class="${thumbClass} fa-thumbs-down" style="font-size: 0.875rem; ${thumbColor}"></i>`;
+                html += `<button class="rating-btn rating-btn-0" data-song-id="${row.id}" data-score="0" style="background: none; border: none; cursor: pointer; padding: 2px; transition: transform 0.1s;"><i class="${thumbClass} fa-thumbs-down" style="font-size: 0.875rem; ${thumbColor}"></i></button>`;
               }
 
-              // Stars (1-3)
+              // Stars (1-3) - clickable
               for (let i = 1; i <= 3; i++) {
-                if (score !== null && score >= i) {
-                  html += '<i class="fas fa-star" style="font-size: 0.875rem; color: #facc15;"></i>';
-                } else {
-                  html += '<i class="far fa-star" style="font-size: 0.875rem; color: #4b5563;"></i>';
-                }
+                const isFilled = score !== null && score >= i;
+                const starClass = isFilled ? 'fas' : 'far';
+                const starColor = isFilled ? 'color: #facc15;' : 'color: #4b5563;';
+                html += `<button class="rating-btn rating-btn-${i}" data-song-id="${row.id}" data-score="${i}" style="background: none; border: none; cursor: pointer; padding: 2px; transition: transform 0.1s;"><i class="${starClass} fa-star" style="font-size: 0.875rem; ${starColor}"></i></button>`;
               }
 
               html += '</div>';
-              console.log('📦 HTML final:', html);
               return html;
             }
           },
@@ -152,12 +149,37 @@ export class ListComponent implements OnInit, AfterViewInit, OnDestroy {
           '<"flex items-center gap-3"l>' + '<"flex items-center gap-3"f>' +
           '>t<"flex flex-col md:flex-row justify-between items-center mt-4 gap-4"' + '<"text-gray-400"i>' + '<"flex items-center gap-2"p>>',
         rowCallback: (row: Node, data: any) => {
-          $(row).addClass('hover:bg-primary hover:bg-opacity-10 cursor-pointer transition-colors group');
-          $(row).off('click').on('click', () => {
-            const song = data as Song;
-            if (song.id)
-              this.playSong(song.id);
+          const $row = $(row);
+          $row.addClass('hover:bg-primary hover:bg-opacity-10 cursor-pointer transition-colors group');
+
+          // Click en la fila para reproducir
+          $row.off('click').on('click', (e) => {
+            // No reproducir si se hizo click en un botón de rating
+            if (!$(e.target).closest('.rating-btn').length) {
+              const song = data as Song;
+              if (song.id)
+                this.playSong(song.id);
+            }
           });
+
+          // Event listeners para los botones de rating
+          $row.find('.rating-btn').off('click').on('click', (e) => {
+            e.stopPropagation(); // Prevenir que se dispare el evento de reproducción
+            const $btn = $(e.currentTarget);
+            const songId = parseInt($btn.attr('data-song-id') || '0', 10);
+            const score = parseInt($btn.attr('data-score') || '0', 10) as 0 | 1 | 2 | 3;
+            const song = this._list.find(s => s.id === songId);
+
+            if (song) {
+              this.rateSong(song, score);
+            }
+          });
+
+          // Efecto hover en botones de rating
+          $row.find('.rating-btn').hover(
+            function () { $(this).css('transform', 'scale(1.2)'); },
+            function () { $(this).css('transform', 'scale(1)'); }
+          );
         },
         initComplete: function () {
           $('.dataTables_filter input').addClass('border-2 border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:border-primary transition-colors').attr('placeholder', 'Buscar canciones...');
@@ -201,6 +223,27 @@ export class ListComponent implements OnInit, AfterViewInit, OnDestroy {
                 $(this).css({ 'background-color': '#1f2937', 'border-color': '#4b5563' });
             }
           );
+
+          // Re-aplicar event listeners a los botones de rating después del redibujado
+          const self = this;
+          $('.rating-btn').off('click').on('click', function (e) {
+            e.stopPropagation();
+            const $btn = $(this);
+            const songId = parseInt($btn.attr('data-song-id') || '0', 10);
+            const score = parseInt($btn.attr('data-score') || '0', 10) as 0 | 1 | 2 | 3;
+            const song = self._list.find(s => s.id === songId);
+
+            if (song) {
+              self.rateSong(song, score);
+            }
+          });
+
+          // Efecto hover en botones de rating
+          $('.rating-btn').hover(
+            function () { $(this).css('transform', 'scale(1.2)'); },
+            function () { $(this).css('transform', 'scale(1)'); }
+          );
+
           // Resaltar la canción en reproducción después de cada redibujado
           this.highlightPlayingSong();
         }).bind(this),
@@ -214,6 +257,27 @@ export class ListComponent implements OnInit, AfterViewInit, OnDestroy {
       // Resaltar canción actual si existe (con delay para que DataTable termine de inicializar)
       setTimeout(() => this.highlightPlayingSong(), 100);
     }, 300);
+  }
+
+  rateSong(song: Song, score: 0 | 1 | 2 | 3): void {
+    this.httpService.rateSongByIdSong(song.id!, score).then(async () => {
+      try {
+        // Actualizar el score localmente
+        song.userScore = score;
+
+        // Actualizar la fila en DataTable
+        if (this.dataTable) {
+          const rowIndex = this._list.findIndex(s => s.id === song.id);
+          if (rowIndex !== -1) {
+            this.dataTable.row(rowIndex).data(song).draw(false);
+          }
+        }
+
+        await this.playlistService.updateContentOfSelectedPlaylist(this._list);
+      } catch (error) {
+        console.error('Error al actualizar el rating localmente después de calificar la canción:', error);
+      }
+    }).catch(error => console.error('Error al calificar la canción:', error));
   }
 
   ngOnDestroy(): void {

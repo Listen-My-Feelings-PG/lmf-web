@@ -245,6 +245,20 @@ class SongModel {
       throw error;
     }
   }
+
+  static async setSongUserScoreByIdSong(idSong: number, userScore: number): Promise<{ success: boolean }> {
+    try {
+      await psql`
+        UPDATE public.canciones
+        SET ca_calif_usuario = ${userScore}
+        WHERE ca_id = ${idSong} AND ca_activo = B'1'
+      `;
+      return { success: true };
+    } catch (error) {
+      console.error('Error al actualizar la calificación de la canción:', error);
+      throw error;
+    }
+  }
 }
 
 export default SongModel;

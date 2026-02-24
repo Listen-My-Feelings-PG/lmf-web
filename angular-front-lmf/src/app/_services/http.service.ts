@@ -35,4 +35,13 @@ export class HttpService {
       });
     });
   }
+
+  rateSongByIdSong(idSong: number, score: 0 | 1 | 2 | 3): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.http.post(this.apiUrl + `/songs/rate/${idSong}`, { score }).subscribe({
+        next: () => resolve(),
+        error: (error) => reject({ error, at: 'rateSongByIdSong' })
+      });
+    });
+  }
 }

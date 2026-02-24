@@ -4,6 +4,7 @@ import postgres, { Sql } from 'postgres';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import compression from 'compression';
+import multer from 'multer';
 import fs from 'fs';
 import dotenv from 'dotenv';
 import { AppConfig, AppPaths } from './types/generals.types';
@@ -46,6 +47,7 @@ app.use(cors({
 }));
 app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 app.use(express.json({ limit: '50mb' }));
+app.use(multer().none()); // Parse FormData text fields (no file uploads)
 app.use(cookieParser());
 
 app.use((req: Request, _res: Response, next: NextFunction) => {
