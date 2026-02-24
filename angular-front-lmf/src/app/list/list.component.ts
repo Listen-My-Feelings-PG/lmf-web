@@ -146,7 +146,7 @@ export class ListComponent implements OnInit, AfterViewInit, OnDestroy {
               return html;
             }
           },
-          { data: 'fileName', className: 'text-gray-500 text-sm font-mono' }
+          { data: 'fileName', className: 'text-sm font-mono' }
         ],
         pageLength: 25, lengthMenu: [10, 25, 50, 100], order: [[0, 'asc']], scrollY: '350px', scrollCollapse: false, paging: true,
         dom: '<"flex flex-col md:flex-row justify-between items-center mb-4 gap-4"' +

@@ -177,7 +177,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
     if (this.setup.playingIndex !== null && this.setup.playingIndex < this.setup.list.length - 1) {
       const nextIndex = this.setup.playingIndex + 1;
       const nextSong = this.setup.list[nextIndex];
-      this.play(nextSong).catch(err => console.error('Error al reproducir siguiente canción:', err));
+      this.playlistService.setSongPlaying(nextSong).catch(err => console.error('Error al reproducir siguiente canción:', err));
     }
   }
 
@@ -185,7 +185,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
     if (this.setup.playingIndex !== null && this.setup.playingIndex > 0) {
       const previousIndex = this.setup.playingIndex - 1;
       const previousSong = this.setup.list[previousIndex];
-      this.play(previousSong).catch(err => console.error('Error al reproducir canción anterior:', err));
+      this.playlistService.setSongPlaying(previousSong).catch(err => console.error('Error al reproducir canción anterior:', err));
     }
   }
 
