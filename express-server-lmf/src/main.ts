@@ -48,8 +48,6 @@ app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 app.use(express.json({ limit: '50mb' }));
 app.use(cookieParser());
 
-app.use('/audio', express.static(directories[0]));
-
 app.use((req: Request, _res: Response, next: NextFunction) => {
   const timestamp = new Date().toISOString();
   console.info(`[${timestamp}] ${req.method} ${req.url}`);

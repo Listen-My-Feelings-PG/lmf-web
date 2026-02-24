@@ -5,23 +5,38 @@
 
       <!-- Left: Playback Controls -->
       <div class="flex items-center space-x-3">
-        <button
+        <button (click)="previous()"
+          [disabled]="setup.playingIndex === null || setup.playingIndex === 0"
+          [class.opacity-50]="setup.playingIndex === null || setup.playingIndex === 0"
+          [class.cursor-not-allowed]="setup.playingIndex === null || setup.playingIndex === 0"
           class="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center hover:bg-primary hover:text-gray-900 transition-all duration-200 shadow-md hover:shadow-lg">
           <i class="fas fa-step-backward"></i>
         </button>
-        <button
+        <button *ngIf="!isPlaying"
+          (click)="resume()"
+          [disabled]="setup.playingIndex === null"
+          [class.opacity-50]="setup.playingIndex === null"
           class="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center hover:opacity-80 transition-all duration-200 shadow-lg hover:shadow-xl">
-          <i class="fas fa-play text-gray-900"></i>
+          <i *ngIf="!isLoading"
+            class="fas fa-play text-gray-900"></i>
+          <i *ngIf="isLoading"
+            class="fas fa-spinner fa-spin text-gray-900"></i>
         </button>
-        <button
-          class="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center hover:bg-secondary hover:text-gray-900 transition-all duration-200 shadow-md hover:shadow-lg">
+        <button *ngIf="isPlaying"
+          (click)="pause()"
+          class="w-12 h-12 bg-gray-900 rounded-full flex items-center justify-center hover:bg-secondary hover:text-gray-900 transition-all duration-200 shadow-md hover:shadow-lg">
           <i class="fas fa-pause"></i>
         </button>
-        <button
+        <button (click)="stop()"
+          [disabled]="setup.playingIndex === null"
+          [class.opacity-50]="setup.playingIndex === null"
           class="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center hover:bg-orange-custom hover:text-white transition-all duration-200 shadow-md hover:shadow-lg">
           <i class="fas fa-stop"></i>
         </button>
-        <button
+        <button (click)="next()"
+          [disabled]="setup.playingIndex === null || setup.playingIndex === setup.list.length - 1"
+          [class.opacity-50]="setup.playingIndex === null || setup.playingIndex === setup.list.length - 1"
+          [class.cursor-not-allowed]="setup.playingIndex === null || setup.playingIndex === setup.list.length - 1"
           class="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center hover:bg-primary hover:text-gray-900 transition-all duration-200 shadow-md hover:shadow-lg">
           <i class="fas fa-step-forward"></i>
         </button>
@@ -31,8 +46,13 @@
       <div class="flex-1 mx-8 bg-gray-900 rounded-lg p-3 border border-gray-700 shadow-inner">
         <div class="flex items-center justify-between">
           <div class="flex-1">
-            <p class="font-bold text-lg text-primary truncate">Bohemian Rhapsody</p>
-            <p class="text-sm text-gray-400 truncate">Queen • A Night at the Opera</p>
+            <p class="font-bold text-lg text-primary truncate">
+              {{ setSongTitles(getCurrentSong(),'title')}}
+            </p>
+            <p class="text-sm text-gray-400 truncate">
+              {{ setSongTitles(getCurrentSong(),'artist') }}
+              <span *ngIf="getCurrentSong()">• {{ setSongTitles(getCurrentSong(),'album') }}</span>
+            </p>
           </div>
         </div>
       </div>
@@ -40,26 +60,30 @@
       <!-- Right: Rating Stars -->
       <div class="flex items-center space-x-1 bg-gray-900 rounded-lg px-4 py-3 border border-gray-700">
         <span class="text-xs text-gray-400 mr-2">Rating:</span>
-        <button class="text-yellow-400 hover:text-yellow-300 transition-colors duration-150">
-          <i class="fas fa-star text-xl"></i>
-        </button>
-        <button class="text-yellow-400 hover:text-yellow-300 transition-colors duration-150">
-          <i class="fas fa-star text-xl"></i>
-        </button>
-        <button class="text-yellow-400 hover:text-yellow-300 transition-colors duration-150">
-          <i class="fas fa-star text-xl"></i>
+        <button *ngFor="let star of [1, 2, 3]"
+          [class.text-yellow-400]="getCurrentSong()?.userScore && star <= getCurrentSong()!.userScore"
+          [class.text-gray-600]="!getCurrentSong()?.userScore || star > getCurrentSong()!.userScore"
+          class="hover:text-yellow-300 transition-colors duration-150">
+          <i [class.fas]="getCurrentSong()?.userScore && star <= getCurrentSong()!.userScore"
+            [class.far]="!getCurrentSong()?.userScore || star > getCurrentSong()!.userScore"
+            class="fa-star text-xl"></i>
         </button>
       </div>
     </div>
 
     <!-- Progress Bar -->
     <div class="flex items-center space-x-4">
-      <span class="text-xs text-gray-400 font-mono w-12 text-right">2:45</span>
-      <div class="flex-1 h-2 bg-gray-900 rounded-full overflow-hidden shadow-inner border border-gray-700">
+      <span class="text-xs text-gray-400 font-mono w-12 text-right">
+        {{ formatTime(currentTime) }}
+      </span>
+      <div class="flex-1 h-2 bg-gray-900 rounded-full overflow-hidden shadow-inner border border-gray-700 cursor-pointer"
+        (click)="onProgressBarClick($event)">
         <div class="h-full bg-gradient-to-r from-primary via-secondary to-accent rounded-full shadow-lg"
-          style="width: 45%;"></div>
+          [style.width.%]="duration > 0 ? (currentTime / duration) * 100 : 0"></div>
       </div>
-      <span class="text-xs text-gray-400 font-mono w-12">5:55</span>
+      <span class="text-xs text-gray-400 font-mono w-12">
+        {{ formatTime(duration) }}
+      </span>
     </div>
   </div>
 </footer>

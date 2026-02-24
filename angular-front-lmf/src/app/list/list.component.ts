@@ -16,10 +16,10 @@ export class ListComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('songsTable', { static: false }) songsTable!: ElementRef;
   @Input('list') _list: Array<Song>;
   private subscription!: Subscription;
-  private previousPlaylistId: number | null = null;
-  private previousSongsCount: number = 0;
+  private previousPlaylistId: number | null;
+  private previousSongsCount: number;
   dataTable: any;
-
+  songPlaying: Song | null
   get list(): Array<Song> {
     return this._list;
   }
@@ -36,6 +36,9 @@ export class ListComponent implements OnInit, AfterViewInit, OnDestroy {
 
   constructor(private playlistService: PlaylistService) {
     this._list = [];
+    this.songPlaying = null;
+    this.previousPlaylistId = null;
+    this.previousSongsCount = 0;
   }
 
   ngOnInit(): void {
@@ -51,6 +54,10 @@ export class ListComponent implements OnInit, AfterViewInit, OnDestroy {
         this.previousSongsCount = currentSongsCount;
         this.list = currentSongs;
       }
+
+      if (value.songPlaying && (value.songPlaying.id !== this.songPlaying?.id))
+        this.songPlaying = value.songPlaying;
+
     });
   }
 

@@ -13,12 +13,14 @@ export async function serveSongById(req: Request, res: Response): Promise<void> 
     else {
       const song = await SongModel.getById(idSong);
       if (song) {
-        const filePath = path.join(paths.audio, song.fileName);
+        const filePath = path.resolve(paths.audio, song.fileName);
+
         // Verificar que el archivo existe
         if (!fs.existsSync(filePath)) {
           sendError(res, 'Archivo de audio no encontrado', NotFound, null);
           return;
         }
+
         // Enviar el archivo
         res.sendFile(filePath, (err) => {
           if (err) {
