@@ -129,12 +129,10 @@ export class ListComponent implements OnInit, AfterViewInit, OnDestroy {
             data: 'userScore', className: 'text-center', orderable: false, render: (score: number | null, type: any, row: Song) => {
               let html = '<div style="display: flex; justify-content: center; align-items: center; gap: 0.25rem;">';
 
-              // Thumbs down icon (outline for null, solid for 0) - clickable
-              if (score === null || score === 0) {
-                const thumbClass = score === 0 ? 'fas' : 'far';
-                const thumbColor = score === 0 ? 'color: #ef4444;' : 'color: #4b5563;';
-                html += `<button class="rating-btn rating-btn-0" data-song-id="${row.id}" data-score="0" style="background: none; border: none; cursor: pointer; padding: 2px; transition: transform 0.1s;"><i class="${thumbClass} fa-thumbs-down" style="font-size: 0.875rem; ${thumbColor}"></i></button>`;
-              }
+              // Thumbs down icon - always visible (solid for 0, outline otherwise)
+              const thumbClass = score === 0 ? 'fas' : 'far';
+              const thumbColor = score === 0 ? 'color: #ef4444;' : 'color: #4b5563;';
+              html += `<button class="rating-btn rating-btn-0" data-song-id="${row.id}" data-score="0" style="background: none; border: none; cursor: pointer; padding: 2px; transition: transform 0.1s;"><i class="${thumbClass} fa-thumbs-down" style="font-size: 0.875rem; ${thumbColor}"></i></button>`;
 
               // Stars (1-3) - clickable
               for (let i = 1; i <= 3; i++) {
