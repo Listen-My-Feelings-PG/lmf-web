@@ -31,6 +31,8 @@ export class ListComponent implements OnInit, AfterViewInit, OnDestroy {
       this.dataTable.clear();
       this.dataTable.rows.add(this._list);
       this.dataTable.draw();
+      // Resaltar canción en reproducción después de actualizar (con pequeño delay para que el DOM se actualice)
+      setTimeout(() => this.highlightPlayingSong(), 50);
     }
   }
 
@@ -55,10 +57,40 @@ export class ListComponent implements OnInit, AfterViewInit, OnDestroy {
         this.list = currentSongs;
       }
 
-      if (value.songPlaying && (value.songPlaying.id !== this.songPlaying?.id))
+      if (value.songPlaying && (value.songPlaying.id !== this.songPlaying?.id)) {
         this.songPlaying = value.songPlaying;
+        setTimeout(() => this.highlightPlayingSong(), 50);
+      }
 
     });
+  }
+
+  private highlightPlayingSong(): void {
+    if (!this.dataTable) return;
+
+    // Remover resaltado anterior de todas las filas
+    const allRows = $(this.dataTable.rows().nodes());
+    allRows.removeClass('playing-song');
+    allRows.attr('style', '');
+
+    // Resaltar la canción actual
+    if (this.songPlaying && this.songPlaying.id) {
+      const songId = this.songPlaying.id;
+      const rows = this.dataTable.rows().nodes();
+
+      $(rows).each((index: number, node: HTMLElement) => {
+        const rowData = this.dataTable.row(node).data() as Song;
+        if (rowData && rowData.id === songId) {
+          const $node = $(node);
+          $node.addClass('playing-song');
+          // Aplicar estilos inline para forzar el resaltado sobre las clases de Tailwind
+          const currentStyle = $node.attr('style') || '';
+          $node.attr('style', currentStyle +
+            '; background: linear-gradient(to right, rgba(130, 120, 230, 0.25), rgba(185, 98, 231, 0.25)) !important' +
+            '; border-left: 4px solid #8278e6 !important');
+        }
+      });
+    }
   }
 
   async playSong(idSong: number): Promise<void> {
@@ -73,7 +105,7 @@ export class ListComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     // Pequeña espera para asegurar que el DOM está completamente renderizado
-    setTimeout(() =>
+    setTimeout(() => {
       this.dataTable = $(this.songsTable.nativeElement).DataTable({
         data: this._list,
         columns: [
@@ -127,7 +159,7 @@ export class ListComponent implements OnInit, AfterViewInit, OnDestroy {
             if (!$(this).hasClass('current')) $(this).css({ 'background-color': '#1f2937', 'border-color': '#4b5563' });
           });
         },
-        drawCallback: function () {
+        drawCallback: (function (this: ListComponent) {
           $('.dataTables_paginate .paginate_button').each(function () {
             const $btn = $(this);
             $btn.css({
@@ -149,13 +181,19 @@ export class ListComponent implements OnInit, AfterViewInit, OnDestroy {
                 $(this).css({ 'background-color': '#1f2937', 'border-color': '#4b5563' });
             }
           );
-        },
+          // Resaltar la canción en reproducción después de cada redibujado
+          this.highlightPlayingSong();
+        }).bind(this),
         language: {
           search: "Buscar:", lengthMenu: "Mostrar _MENU_ canciones", info: "Mostrando _START_ a _END_ de _TOTAL_ canciones", infoEmpty: "Mostrando 0 a 0 de 0 canciones",
           infoFiltered: "(filtrado de _MAX_ canciones totales)", paginate: { first: "Primero", last: "Último", next: "Siguiente", previous: "Anterior" },
           zeroRecords: "No se encontraron canciones",
         }
-      }), 300);
+      });
+
+      // Resaltar canción actual si existe (con delay para que DataTable termine de inicializar)
+      setTimeout(() => this.highlightPlayingSong(), 100);
+    }, 300);
   }
 
   ngOnDestroy(): void {

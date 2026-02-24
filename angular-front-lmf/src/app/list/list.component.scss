@@ -115,6 +115,29 @@
             background-color: rgba(130, 120, 230, 0.2);
           }
 
+          &.playing-song {
+            background: linear-gradient(to right, rgba(130, 120, 230, 0.25), rgba(185, 98, 231, 0.25)) !important;
+            border-left: 4px solid #8278e6;
+            position: relative;
+
+            &::before {
+              content: '\f01d'; // Font Awesome play icon
+              font-family: "Font Awesome 6 Free";
+              font-weight: 900;
+              position: absolute;
+              left: -2px;
+              top: 50%;
+              transform: translateY(-50%);
+              color: #8278e6;
+              font-size: 0.75rem;
+              animation: pulse 2s ease-in-out infinite;
+            }
+
+            &:hover {
+              background: linear-gradient(to right, rgba(130, 120, 230, 0.3), rgba(185, 98, 231, 0.3)) !important;
+            }
+          }
+
           td {
             padding: 12px 16px;
             color: #e5e7eb;
@@ -276,5 +299,18 @@
       opacity: 1;
       color: #8278e6;
     }
+  }
+}
+
+// Animación para el icono de la canción en reproducción
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
   }
 }
