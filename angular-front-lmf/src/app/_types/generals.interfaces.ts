@@ -14,3 +14,12 @@ export interface HttpResponseSuccess {
   timestamp: string
 }
 
+export interface PlaylistSetup {
+  list: Array<Playlist>,
+  selected: Playlist | null,
+  songPlaying?: Song,
+  initialized?: boolean
+}
+
+export type UserScore = 1 | 2 | 3;
+

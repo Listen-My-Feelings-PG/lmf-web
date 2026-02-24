@@ -1,7 +1,9 @@
+import { UserScore } from "./generals.interfaces";
+
 export class Song {
   public id?: number;
   public fileName!: string;
-  public userScore!: number;
+  public userScore!: UserScore;
   public tsScore: number = 0;
   public tsTrainLevelLocal: number = 0;
   public tsTrainLevelGlobal: number = 0;

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Playlist, Song } from '../_types/generals.models';
-import { HttpResponseSuccess } from '../_types/generals.interfaces';
+import { Song } from '../_types/generals.models';
+import { HttpResponseSuccess, Playlist } from '../_types/generals.interfaces';
 
 @Injectable({
   providedIn: 'root'
@@ -22,7 +22,16 @@ export class HttpService {
     return new Promise((resolve, reject) => {
       this.http.get<HttpResponseSuccess>(this.apiUrl + `/playlists/all`).subscribe({
         next: (response) => resolve(response.data as Playlist[]),
-        error: (error) => reject(error)
+        error: (error) => reject({ error, at: 'getAllPlaylists' })
+      });
+    });
+  }
+
+  downloadSongByIdSong(idSong: number): Promise<Blob> {
+    return new Promise((resolve, reject) => {
+      this.http.get(this.apiUrl + `/songs/song-by-id/${idSong}`, { responseType: 'blob' }).subscribe({
+        next: (response) => resolve(response),
+        error: (error) => reject({ error, at: 'downloadSongByIdSong' })
       });
     });
   }

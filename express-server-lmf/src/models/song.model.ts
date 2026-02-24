@@ -168,6 +168,31 @@ class SongModel {
     }
   }
 
+  static async getById(id: number): Promise<Song | null> {
+    try {
+      const [song] = await psql<any[]>`SELECT 
+          ca_id as id,
+          ca_calif_usuario as "userScore",
+          ca_filename as "fileName",
+          ca_filesize as "fileSize",
+          CASE WHEN ca_id_tipodato = 1 THEN 'file' ELSE 'link' END as "dataType",
+          ca_metadata as metadata,
+          ca_ts_prediccion as "tsScore",
+          ca_train_level_local as "tsTrainLevelLocal",
+          ca_train_level_global as "tsTrainLevelGlobal"
+        FROM public.canciones
+        WHERE ca_id = ${id} AND ca_activo = B'1'`;
+      if (!song) return null;
+      return {
+        ...song,
+        metadata: song.metadata && song.metadata.trim().startsWith('{') ? JSON.parse(song.metadata) : undefined
+      };
+    } catch (error) {
+      console.error('Error al buscar canción por ID:', error);
+      throw error;
+    }
+  }
+
   static async getByFileName(fileName: string): Promise<Song | null> {
     try {
       const [song] = await psql<any[]>`SELECT 

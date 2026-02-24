@@ -1,11 +1,7 @@
 import { Injectable } from '@angular/core';
-import { Playlist, Song } from '../_types/generals.models';
+import { Song } from '../_types/generals.models';
 import { BehaviorSubject, Subscription } from 'rxjs';
-export interface PlaylistSetup {
-  list: Array<Playlist>,
-  selected: Playlist | null,
-  initialized?: boolean
-}
+import { Playlist, PlaylistSetup } from '../_types/generals.interfaces';
 @Injectable({
   providedIn: 'root'
 })
@@ -16,7 +12,29 @@ export class PlaylistService {
     this.playlistGlobal = new BehaviorSubject<PlaylistSetup>({
       list: [],
       selected: null,
-      initialized: false
+      initialized: false,
+    });
+  }
+
+  setSongPlaying(song: Song): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const current = this.playlistGlobal.getValue();
+      if (current.initialized) {
+        const playListSelected = current.selected;
+        if (playListSelected) {
+          const songExists = playListSelected.songs.some(s => s.id === song.id);
+          if (songExists) {
+            this.playlistGlobal.next({
+              ...current,
+              songPlaying: song
+            });
+            return resolve();
+          } else
+            return reject(new Error('La canción seleccionada no existe en la playlist seleccionada.'))
+        }
+      } else {
+        return reject(new Error('La playlist global no ha sido inicializada. No se puede reproducir una canción.'))
+      }
     });
   }
 

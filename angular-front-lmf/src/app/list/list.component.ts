@@ -16,6 +16,8 @@ export class ListComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('songsTable', { static: false }) songsTable!: ElementRef;
   @Input('list') _list: Array<Song>;
   private subscription!: Subscription;
+  private previousPlaylistId: number | null = null;
+  private previousSongsCount: number = 0;
   dataTable: any;
 
   get list(): Array<Song> {
@@ -38,8 +40,28 @@ export class ListComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit(): void {
     this.subscription = this.playlistService.getEventSubscription((value) => {
-      this._list = value.selected?.songs || [];
+      const currentPlaylistId = value.selected?.id || null;
+      const currentSongs = value.selected?.songs || [];
+      const currentSongsCount = currentSongs.length;
+      const playlistChanged = this.previousPlaylistId !== currentPlaylistId;
+      const songsCountChanged = this.previousSongsCount !== currentSongsCount;
+
+      if (playlistChanged || songsCountChanged) {
+        this.previousPlaylistId = currentPlaylistId;
+        this.previousSongsCount = currentSongsCount;
+        this.list = currentSongs;
+      }
     });
+  }
+
+  async playSong(idSong: number): Promise<void> {
+    try {
+      const song = this._list.find(s => s.id === idSong);
+      if (song)
+        await this.playlistService.setSongPlaying(song);
+    } catch (error) {
+      console.error('Error al reproducir la canción:', error);
+    }
   }
 
   ngAfterViewInit(): void {
@@ -70,7 +92,14 @@ export class ListComponent implements OnInit, AfterViewInit, OnDestroy {
         dom: '<"flex flex-col md:flex-row justify-between items-center mb-4 gap-4"' +
           '<"flex items-center gap-3"l>' + '<"flex items-center gap-3"f>' +
           '>t<"flex flex-col md:flex-row justify-between items-center mt-4 gap-4"' + '<"text-gray-400"i>' + '<"flex items-center gap-2"p>>',
-        rowCallback: (row: Node) => { $(row).addClass('hover:bg-primary hover:bg-opacity-10 cursor-pointer transition-colors group'); },
+        rowCallback: (row: Node, data: any) => {
+          $(row).addClass('hover:bg-primary hover:bg-opacity-10 cursor-pointer transition-colors group');
+          $(row).off('click').on('click', () => {
+            const song = data as Song;
+            if (song.id)
+              this.playSong(song.id);
+          });
+        },
         initComplete: function () {
           $('.dataTables_filter input').addClass('border-2 border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:border-primary transition-colors').attr('placeholder', 'Buscar canciones...');
           $('.dataTables_filter label').addClass('flex items-center gap-3 text-gray-300 font-semibold');
