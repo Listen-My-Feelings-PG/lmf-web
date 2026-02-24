@@ -21,14 +21,14 @@ export async function getPlaylistContentById(req: Request, res: Response): Promi
       const songs = await SongModel.getAllSongsByPlaylistId(playlistId);
       sendResponse(res, true, songs.map((obj) => ({
         id: obj.ca_id,
-        userScore: obj.ca_calif_usuario ? obj.ca_calif_usuario : undefined,
+        userScore: obj.ca_calif_usuario ?? null,
         fileName: obj.ca_filename,
         fileSize: obj.ca_filesize,
         dataType: obj.ca_id_tipodato === 1 ? 'file' : 'link',
         metadata: obj.ca_metadata ? JSON.parse(obj.ca_metadata) : undefined,
-        tsScore: obj.ca_ts_prediccion ? obj.ca_ts_prediccion : undefined,
-        tsTrainLevelLocal: obj.ca_train_level_local ? obj.ca_train_level_local : undefined,
-        tsTrainLevelGlobal: obj.ca_train_level_global ? obj.ca_train_level_global : undefined
+        tsScore: obj.ca_ts_prediccion ?? null,
+        tsTrainLevelLocal: obj.ca_train_level_local ?? 0,
+        tsTrainLevelGlobal: obj.ca_train_level_global ?? 0
       })), 'Contenido de la playlist obtenido correctamente');
     }
   } catch (error) {

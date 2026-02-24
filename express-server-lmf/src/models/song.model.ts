@@ -136,6 +136,8 @@ class SongModel {
         WHERE ca_activo = B'0'`;
       return songs.map(song => ({
         ...song,
+        userScore: song.userScore ?? null,
+        tsScore: song.tsScore ?? null,
         metadata: song.metadata && song.metadata.trim().startsWith('{') ? JSON.parse(song.metadata) : undefined
       }));
     } catch (error) {
@@ -160,6 +162,8 @@ class SongModel {
         WHERE ca_activo = B'1'`;
       return songs.map(song => ({
         ...song,
+        userScore: song.userScore ?? null,
+        tsScore: song.tsScore ?? null,
         metadata: song.metadata && song.metadata.trim().startsWith('{') ? JSON.parse(song.metadata) : undefined
       }));
     } catch (error) {
@@ -185,6 +189,8 @@ class SongModel {
       if (!song) return null;
       return {
         ...song,
+        userScore: song.userScore ?? null,
+        tsScore: song.tsScore ?? null,
         metadata: song.metadata && song.metadata.trim().startsWith('{') ? JSON.parse(song.metadata) : undefined
       };
     } catch (error) {
@@ -209,8 +215,8 @@ class SongModel {
         WHERE ca_filename = ${fileName} AND ca_activo = B'1'`;
       if (!song) return null;
       return {
-        ...song,
-        metadata: song.metadata && song.metadata.trim().startsWith('{') ? JSON.parse(song.metadata) : undefined
+        ...song, userScore: song.userScore ?? null,
+        tsScore: song.tsScore ?? null, metadata: song.metadata && song.metadata.trim().startsWith('{') ? JSON.parse(song.metadata) : undefined
       };
     } catch (error) {
       console.error('Error al buscar canción por nombre:', error);

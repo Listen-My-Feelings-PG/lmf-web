@@ -21,5 +21,5 @@ export interface PlaylistSetup {
   initialized?: boolean
 }
 
-export type UserScore = 1 | 2 | 3;
+export type UserScore = 0 | 1 | 2 | 3 | null;
 

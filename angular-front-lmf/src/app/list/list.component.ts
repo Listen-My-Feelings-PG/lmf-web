@@ -119,10 +119,30 @@ export class ListComponent implements OnInit, AfterViewInit, OnDestroy {
           { data: null, className: 'text-gray-300', render: (_data, _type, row: Song) => row.metadata?.artist || '-' },
           { data: null, className: 'text-gray-400', render: (data: any, type: any, row: Song) => row.metadata?.album || '-' },
           {
-            data: 'userScore', className: 'text-center', orderable: false, render: (score: number) => {
-              let stars = '';
-              for (let i = 1; i <= 3; i++) stars += i <= score ? '<i class="fas fa-star text-yellow-400 text-sm"></i> ' : '<i class="far fa-star text-gray-600 text-sm"></i> ';
-              return `<div class="flex justify-center space-x-1">${stars}</div>`;
+            data: 'userScore', className: 'text-center', orderable: false, render: (score: number | null) => {
+              console.log('🎯 Score recibido:', score, '| Tipo:', typeof score, '| Es null?', score === null, '| Es undefined?', score === undefined);
+              let html = '<div style="display: flex; justify-content: center; align-items: center; gap: 0.25rem;">';
+
+              // Thumbs down icon (outline for null, solid for 0)
+              if (score === null || score === 0) {
+                const thumbClass = score === 0 ? 'fas' : 'far';
+                const thumbColor = score === 0 ? 'color: #ef4444;' : 'color: #4b5563;';
+                console.log('👎 Agregando thumbs down - clase:', thumbClass, 'color:', thumbColor);
+                html += `<i class="${thumbClass} fa-thumbs-down" style="font-size: 0.875rem; ${thumbColor}"></i>`;
+              }
+
+              // Stars (1-3)
+              for (let i = 1; i <= 3; i++) {
+                if (score !== null && score >= i) {
+                  html += '<i class="fas fa-star" style="font-size: 0.875rem; color: #facc15;"></i>';
+                } else {
+                  html += '<i class="far fa-star" style="font-size: 0.875rem; color: #4b5563;"></i>';
+                }
+              }
+
+              html += '</div>';
+              console.log('📦 HTML final:', html);
+              return html;
             }
           },
           { data: 'fileName', className: 'text-gray-500 text-sm font-mono' }

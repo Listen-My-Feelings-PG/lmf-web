@@ -3,8 +3,8 @@ import { UserScore } from "./generals.interfaces";
 export class Song {
   public id?: number;
   public fileName!: string;
-  public userScore!: UserScore;
-  public tsScore: number = 0;
+  public userScore: UserScore = null;
+  public tsScore: number | null = null;
   public tsTrainLevelLocal: number = 0;
   public tsTrainLevelGlobal: number = 0;
   public metadata?: {

@@ -60,12 +60,22 @@
       <!-- Right: Rating Stars -->
       <div class="flex items-center space-x-1 bg-gray-900 rounded-lg px-4 py-3 border border-gray-700">
         <span class="text-xs text-gray-400 mr-2">Rating:</span>
+        <!-- Thumbs Down (solid when score is 0, outline when null/unrated) -->
+        <button *ngIf="getCurrentSong()?.userScore === null || getCurrentSong()?.userScore === 0"
+          [class.text-red-500]="getCurrentSong()?.userScore === 0"
+          [class.text-gray-600]="getCurrentSong()?.userScore === null"
+          class="transition-colors duration-150">
+          <i [class.fas]="getCurrentSong()?.userScore === 0"
+            [class.far]="getCurrentSong()?.userScore === null"
+            class="fa-thumbs-down text-xl"></i>
+        </button>
+        <!-- Stars for scores 1-3 -->
         <button *ngFor="let star of [1, 2, 3]"
-          [class.text-yellow-400]="getCurrentSong()?.userScore && star <= getCurrentSong()!.userScore"
-          [class.text-gray-600]="!getCurrentSong()?.userScore || star > getCurrentSong()!.userScore"
+          [class.text-yellow-400]="getCurrentSong()?.userScore != null && (getCurrentSong()?.userScore ?? 0) >= star"
+          [class.text-gray-600]="getCurrentSong()?.userScore == null || (getCurrentSong()?.userScore ?? 0) < star"
           class="hover:text-yellow-300 transition-colors duration-150">
-          <i [class.fas]="getCurrentSong()?.userScore && star <= getCurrentSong()!.userScore"
-            [class.far]="!getCurrentSong()?.userScore || star > getCurrentSong()!.userScore"
+          <i [class.fas]="getCurrentSong()?.userScore != null && (getCurrentSong()?.userScore ?? 0) >= star"
+            [class.far]="getCurrentSong()?.userScore == null || (getCurrentSong()?.userScore ?? 0) < star"
             class="fa-star text-xl"></i>
         </button>
       </div>
