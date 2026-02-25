@@ -114,7 +114,6 @@ export class ListComponent implements OnInit, AfterViewInit, OnDestroy {
         if (this.componentMode == 'child')
           await this.playlistService.updateSongList(this._list, true);
       }
-
     } catch (error) {
       console.error('Error al reproducir la canción:', error);
     }

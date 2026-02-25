@@ -43,9 +43,6 @@ export async function rateSongById(req: Request, res: Response): Promise<void> {
     const idSong = parseInt(req.params.idSong, 10);
     const score = parseInt(req.body.score, 10);
 
-    console.log('req.body:', req.body);
-    console.log('score:', score, 'typeof:', typeof score);
-
     if (isNaN(idSong) || isNaN(score) || score < 0 || score > 3)
       sendError(res, 'ID de canción o puntuación inválidos', BadRequest, null);
     else {

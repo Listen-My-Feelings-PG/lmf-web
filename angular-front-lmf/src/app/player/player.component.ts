@@ -108,8 +108,6 @@ export class PlayerComponent implements OnInit, OnDestroy {
   async play(song: Song): Promise<void> {
     return new Promise(async (resolve, reject) => {
       const songIndex = this.setup.list.findIndex(s => s.id === song.id);
-      const song2 = this.setup.list[this.setup.playingIndex as number];
-      console.log('song', song2);
       if (songIndex !== -1) {
         try {
           // Si es la misma canción y está pausada, solo reanudar

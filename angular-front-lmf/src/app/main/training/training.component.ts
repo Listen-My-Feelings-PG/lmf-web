@@ -25,7 +25,6 @@ export class TrainingComponent implements OnInit {
   async ngOnInit(): Promise<void> {
     try {
       const scoredSongs = await this.httpService.getSongsScoredByUser();
-      console.log('Songs scored by user:', scoredSongs);
       this.listForTraining.list = scoredSongs;
       this.listForTraining.playlistMode = 'multiple';
     } catch (error) {
