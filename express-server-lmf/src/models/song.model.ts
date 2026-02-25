@@ -131,7 +131,7 @@ class SongModel {
           ca_calif_usuario as "userScore",
           ca_filename as "fileName",
           ca_filesize as "fileSize",
-          CASE WHEN ca_id_tipodato = 1 THEN 'file' ELSE 'link' END as "dataType",
+          ca_id_tipodato,
           ca_metadata as metadata,
           ca_ts_calif_global as "tsGlobalScore",
           ca_train_level_local as "tsTrainLevelLocal",
@@ -143,14 +143,19 @@ class SongModel {
         FROM public.canciones
         WHERE ca_activo = B'0'`;
       return songs.map(song => ({
-        ...song,
+        id: song.id,
         userScore: song.userScore ?? null,
+        fileName: song.fileName,
+        fileSize: song.fileSize,
+        dataType: song.ca_id_tipodato === 1 ? 'file' : 'link',
+        metadata: song.metadata && song.metadata.trim().startsWith('{') ? JSON.parse(song.metadata) : undefined,
         tsGlobalScore: song.tsGlobalScore ?? null,
+        tsTrainLevelLocal: song.tsTrainLevelLocal ?? null,
+        tsTrainLevelGlobal: song.tsTrainLevelGlobal ?? null,
         tsProbScore0: song.tsProbScore0 ?? null,
         tsProbScore1: song.tsProbScore1 ?? null,
         tsProbScore2: song.tsProbScore2 ?? null,
-        tsProbScore3: song.tsProbScore3 ?? null,
-        metadata: song.metadata && song.metadata.trim().startsWith('{') ? JSON.parse(song.metadata) : undefined
+        tsProbScore3: song.tsProbScore3 ?? null
       }));
     } catch (error) {
       console.error('Error al obtener canciones inactivas:', error);
@@ -165,7 +170,7 @@ class SongModel {
           ca_calif_usuario as "userScore",
           ca_filename as "fileName",
           ca_filesize as "fileSize",
-          CASE WHEN ca_id_tipodato = 1 THEN 'file' ELSE 'link' END as "dataType",
+          ca_id_tipodato,
           ca_metadata as metadata,
           ca_ts_calif_global as "tsGlobalScore",
           ca_train_level_local as "tsTrainLevelLocal",
@@ -177,14 +182,19 @@ class SongModel {
         FROM public.canciones
         WHERE ca_activo = B'1'`;
       return songs.map(song => ({
-        ...song,
+        id: song.id,
         userScore: song.userScore ?? null,
+        fileName: song.fileName,
+        fileSize: song.fileSize,
+        dataType: song.ca_id_tipodato === 1 ? 'file' : 'link',
+        metadata: song.metadata && song.metadata.trim().startsWith('{') ? JSON.parse(song.metadata) : undefined,
         tsGlobalScore: song.tsGlobalScore ?? null,
+        tsTrainLevelLocal: song.tsTrainLevelLocal ?? null,
+        tsTrainLevelGlobal: song.tsTrainLevelGlobal ?? null,
         tsProbScore0: song.tsProbScore0 ?? null,
         tsProbScore1: song.tsProbScore1 ?? null,
         tsProbScore2: song.tsProbScore2 ?? null,
-        tsProbScore3: song.tsProbScore3 ?? null,
-        metadata: song.metadata && song.metadata.trim().startsWith('{') ? JSON.parse(song.metadata) : undefined
+        tsProbScore3: song.tsProbScore3 ?? null
       }));
     } catch (error) {
       console.error('Error al obtener todas las canciones:', error);
@@ -192,14 +202,14 @@ class SongModel {
     }
   }
 
-  static async getById(id: number): Promise<Song | null> {
+  static async getSongById(id: number): Promise<Song | null> {
     try {
       const [song] = await psql<any[]>`SELECT 
           ca_id as id,
           ca_calif_usuario as "userScore",
           ca_filename as "fileName",
           ca_filesize as "fileSize",
-          CASE WHEN ca_id_tipodato = 1 THEN 'file' ELSE 'link' END as "dataType",
+          ca_id_tipodato,
           ca_metadata as metadata,
           ca_ts_calif_global as "tsGlobalScore",
           ca_train_level_local as "tsTrainLevelLocal",
@@ -212,14 +222,19 @@ class SongModel {
         WHERE ca_id = ${id} AND ca_activo = B'1'`;
       if (!song) return null;
       return {
-        ...song,
+        id: song.id,
         userScore: song.userScore ?? null,
+        fileName: song.fileName,
+        fileSize: song.fileSize,
+        dataType: song.ca_id_tipodato === 1 ? 'file' : 'link',
+        metadata: song.metadata && song.metadata.trim().startsWith('{') ? JSON.parse(song.metadata) : undefined,
         tsGlobalScore: song.tsGlobalScore ?? null,
+        tsTrainLevelLocal: song.tsTrainLevelLocal ?? null,
+        tsTrainLevelGlobal: song.tsTrainLevelGlobal ?? null,
         tsProbScore0: song.tsProbScore0 ?? null,
         tsProbScore1: song.tsProbScore1 ?? null,
         tsProbScore2: song.tsProbScore2 ?? null,
-        tsProbScore3: song.tsProbScore3 ?? null,
-        metadata: song.metadata && song.metadata.trim().startsWith('{') ? JSON.parse(song.metadata) : undefined
+        tsProbScore3: song.tsProbScore3 ?? null
       };
     } catch (error) {
       console.error('Error al buscar canción por ID:', error);
@@ -234,7 +249,7 @@ class SongModel {
           ca_calif_usuario as "userScore",
           ca_filename as "fileName",
           ca_filesize as "fileSize",
-          CASE WHEN ca_id_tipodato = 1 THEN 'file' ELSE 'link' END as "dataType",
+          ca_id_tipodato,
           ca_metadata as metadata,
           ca_ts_calif_global as "tsGlobalScore",
           ca_train_level_local as "tsTrainLevelLocal",
@@ -247,13 +262,19 @@ class SongModel {
         WHERE ca_filename = ${fileName} AND ca_activo = B'1'`;
       if (!song) return null;
       return {
-        ...song, userScore: song.userScore ?? null,
+        id: song.id,
+        userScore: song.userScore ?? null,
+        fileName: song.fileName,
+        fileSize: song.fileSize,
+        dataType: song.ca_id_tipodato === 1 ? 'file' : 'link',
+        metadata: song.metadata && song.metadata.trim().startsWith('{') ? JSON.parse(song.metadata) : undefined,
         tsGlobalScore: song.tsGlobalScore ?? null,
+        tsTrainLevelLocal: song.tsTrainLevelLocal ?? null,
+        tsTrainLevelGlobal: song.tsTrainLevelGlobal ?? null,
         tsProbScore0: song.tsProbScore0 ?? null,
         tsProbScore1: song.tsProbScore1 ?? null,
         tsProbScore2: song.tsProbScore2 ?? null,
-        tsProbScore3: song.tsProbScore3 ?? null,
-        metadata: song.metadata && song.metadata.trim().startsWith('{') ? JSON.parse(song.metadata) : undefined
+        tsProbScore3: song.tsProbScore3 ?? null
       };
     } catch (error) {
       console.error('Error al buscar canción por nombre:', error);
@@ -261,7 +282,7 @@ class SongModel {
     }
   }
 
-  static async getAllSongsByPlaylistId(idPlaylist: number): Promise<Array<any>> {
+  static async getAllSongsByPlaylistId(idPlaylist: number): Promise<Array<Song>> {
     try {
       const songs = await psql<any[]>`SELECT 
           ca_id,
@@ -280,7 +301,22 @@ class SongModel {
       FROM rel_playlists_canciones
       left join canciones on ca_id=pr_ca_id
       where pr_pl_id=${idPlaylist} AND ca_activo = B'1'`;
-      return songs;
+      return songs.map(song => ({
+        id: song.ca_id,
+        userScore: song.ca_calif_usuario ?? null,
+        fileName: song.ca_filename,
+        fileSize: song.ca_filesize,
+        dataType: song.ca_id_tipodato === 1 ? 'file' : 'link',
+        metadata: song.ca_metadata && song.ca_metadata.trim().startsWith('{') ? JSON.parse(song.ca_metadata) : undefined,
+        tsGlobalScore: song.ca_ts_calif_global ?? null,
+        tsTrainLevelLocal: song.ca_train_level_local ?? null,
+        tsTrainLevelGlobal: song.ca_train_level_global ?? null,
+        tsProbScore0: song.ca_ts_prob_calif_0 ?? null,
+        tsProbScore1: song.ca_ts_prob_calif_1 ?? null,
+        tsProbScore2: song.ca_ts_prob_calif_2 ?? null,
+        tsProbScore3: song.ca_ts_prob_calif_3 ?? null,
+        idPlaylist: idPlaylist
+      }));
     } catch (error) {
       console.error('Error al obtener canciones por ID de playlist:', error);
       throw error;
@@ -297,6 +333,48 @@ class SongModel {
       return { success: true };
     } catch (error) {
       console.error('Error al actualizar la calificación de la canción:', error);
+      throw error;
+    }
+  }
+
+  static async getAllSongsScoredByUser(): Promise<Array<Song>> {
+    try {
+      const songs = await psql<any[]>`SELECT 
+          ca_id,
+          ca_calif_usuario,
+          ca_filesize,
+          ca_filename,
+          ca_train_level_local,
+          ca_train_level_global,
+          ca_id_tipodato,
+          ca_metadata,
+          ca_ts_calif_global,
+          ca_ts_prob_calif_0,
+          ca_ts_prob_calif_1,
+          ca_ts_prob_calif_2,
+          ca_ts_prob_calif_3,
+          pr_pl_id as "idPlaylist"
+      FROM rel_playlists_canciones
+      left join canciones on ca_id=pr_ca_id
+      where ca_calif_usuario is not null AND ca_activo = B'1'`;
+      return songs.map(song => ({
+        id: song.ca_id,
+        userScore: song.ca_calif_usuario ?? null,
+        fileName: song.ca_filename,
+        fileSize: song.ca_filesize,
+        dataType: song.ca_id_tipodato === 1 ? 'file' : 'link',
+        metadata: song.ca_metadata && song.ca_metadata.trim().startsWith('{') ? JSON.parse(song.ca_metadata) : undefined,
+        tsGlobalScore: song.ca_ts_calif_global ?? null,
+        tsTrainLevelLocal: song.ca_train_level_local ?? null,
+        tsTrainLevelGlobal: song.ca_train_level_global ?? null,
+        tsProbScore0: song.ca_ts_prob_calif_0 ?? null,
+        tsProbScore1: song.ca_ts_prob_calif_1 ?? null,
+        tsProbScore2: song.ca_ts_prob_calif_2 ?? null,
+        tsProbScore3: song.ca_ts_prob_calif_3 ?? null,
+        idPlaylist: song.idPlaylist
+      }));
+    } catch (error) {
+      console.error('Error al obtener canciones calificadas por el usuario:', error);
       throw error;
     }
   }

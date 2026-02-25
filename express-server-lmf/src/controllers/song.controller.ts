@@ -11,7 +11,7 @@ export async function serveSongById(req: Request, res: Response): Promise<void> 
     if (isNaN(idSong))
       sendError(res, 'ID de canción inválido', BadRequest, null);
     else {
-      const song = await SongModel.getById(idSong);
+      const song = await SongModel.getSongById(idSong);
       if (song) {
         const filePath = path.resolve(paths.audio, song.fileName);
 
@@ -54,5 +54,14 @@ export async function rateSongById(req: Request, res: Response): Promise<void> {
     }
   } catch (error) {
     sendError(res, 'Error al actualizar la puntuación de la canción', InternalServerError, error instanceof Error ? error : null);
+  }
+}
+
+export async function getAllSongsScoredByUser(_req: Request, res: Response): Promise<void> {
+  try {
+    const songs = await SongModel.getAllSongsScoredByUser();
+    res.status(200).json({ success: true, data: songs, message: 'Canciones puntuadas por el usuario obtenidas correctamente' });
+  } catch (error) {
+    sendError(res, 'Error al obtener las canciones puntuadas por el usuario', InternalServerError, error instanceof Error ? error : null);
   }
 }

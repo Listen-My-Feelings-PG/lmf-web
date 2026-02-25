@@ -41,7 +41,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.playlistService.getEventSubscription((value) => {
-      const currentSongs = value.selected?.songs || [];
+      const currentSongs = value.songList || [];
 
       // Detectar si la canción que se está reproduciendo cambió
       if (value.songPlaying) {
@@ -275,7 +275,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
         this.setup.list = updatedList;
 
         // Actualizar en el servicio para que la tabla también se actualice
-        await this.playlistService.updateContentOfSelectedPlaylist(updatedList);
+        await this.playlistService.updateSongList(updatedList, false);
       } catch (error) {
         console.error('Error al actualizar el rating localmente:', error);
       }

@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Router, RouterOutlet } from '@angular/router';
 import { PlayerComponent } from '../player/player.component';
 import { HttpService } from '../_services/http.service';
 import { PlaylistService } from '../_services/playlist.service';
@@ -11,7 +11,11 @@ import { PlaylistService } from '../_services/playlist.service';
   styleUrl: './main.component.scss'
 })
 export class MainComponent implements OnInit {
-  constructor(private httpService: HttpService, private playlistService: PlaylistService) { }
+  constructor(
+    private httpService: HttpService,
+    private playlistService: PlaylistService,
+    private router: Router
+  ) { }
 
   async ngOnInit(): Promise<void> {
     try {
@@ -22,9 +26,9 @@ export class MainComponent implements OnInit {
         if (!playlistSelected && defaultPlaylist) {
           const songList = await this.httpService.getPlaylistContentByIdPlaylist(defaultPlaylist.id as number);
           if (songList) {
-            defaultPlaylist.songs = songList;
             await this.playlistService.initializePlaylistGlobal({
-              list: playlists,
+              playlists: playlists,
+              songList: songList,
               selected: defaultPlaylist
             });
           }
@@ -35,7 +39,7 @@ export class MainComponent implements OnInit {
     }
   }
 
-  newPlayList(confirm: boolean): void {
-
+  navigateToTraining(): void {
+    this.router.navigate(['/main/training']);
   }
 }

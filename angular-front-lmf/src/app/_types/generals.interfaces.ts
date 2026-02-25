@@ -4,7 +4,6 @@ export interface Playlist {
   id: number;
   name: string,
   isDefault: boolean,
-  songs: Array<Song>,
   modelId?: number
 }
 
@@ -15,8 +14,9 @@ export interface HttpResponseSuccess {
   timestamp: string
 }
 
-export interface PlaylistSetup {
-  list: Array<Playlist>,
+export interface GlobalPlaylistSetup {
+  playlists: Array<Playlist>,
+  songList: Array<Song>,
   selected: Playlist | null,
   songPlaying?: Song,
   initialized?: boolean

@@ -1,16 +1,17 @@
 import { Component, OnInit } from '@angular/core';
 import { Song } from '../../_types/generals.models';
 import { HttpService } from '../../_services/http.service';
+import { ListComponent } from "../../list/list.component";
 
 @Component({
   selector: 'app-training',
-  imports: [],
+  imports: [ListComponent],
   templateUrl: './training.component.html',
   styleUrl: './training.component.scss'
 })
 export class TrainingComponent implements OnInit {
   listForTraining: {
-    list: Array<Song & { idPlaylist: number }>,
+    list: Array<Song>,
     playlistMode: 'multiple' | 'single'
   }
 
@@ -21,6 +22,15 @@ export class TrainingComponent implements OnInit {
     }
   }
 
-  ngOnInit(): void { }
+  async ngOnInit(): Promise<void> {
+    try {
+      const scoredSongs = await this.httpService.getSongsScoredByUser();
+      console.log('Songs scored by user:', scoredSongs);
+      this.listForTraining.list = scoredSongs;
+      this.listForTraining.playlistMode = 'multiple';
+    } catch (error) {
+      console.error('Error al cargar datos para entrenamiento:', error);
+    }
+  }
 
 }

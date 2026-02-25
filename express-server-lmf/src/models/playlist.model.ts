@@ -4,8 +4,14 @@ import { Playlist } from "../types/generals.models";
 export default class PlaylistModel {
   static async getDefaultPlaylist(): Promise<Playlist | null> {
     try {
-      const [playlist] = await psql<Playlist[]>`
-      SELECT * FROM public.playlists 
+      const [playlist] = await psql<any[]>`
+      SELECT 
+        pl_id as id,
+        pl_nombre as name,
+        pl_id_fecha_creacion as "dateCreated",
+        pl_is_default = B'1' as "isDefault",
+        pl_id_ts_modelo as "modelId"
+      FROM public.playlists 
       WHERE pl_is_default = B'1' 
       AND pl_activo = B'1'
       LIMIT 1

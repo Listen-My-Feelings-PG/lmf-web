@@ -19,21 +19,7 @@ export async function getPlaylistContentById(req: Request, res: Response): Promi
       sendError(res, 'ID de playlist inválido', BadRequest, null);
     else {
       const songs = await SongModel.getAllSongsByPlaylistId(playlistId);
-      sendResponse(res, true, songs.map((obj) => ({
-        id: obj.ca_id,
-        userScore: obj.ca_calif_usuario ?? null,
-        fileName: obj.ca_filename,
-        fileSize: obj.ca_filesize,
-        dataType: obj.ca_id_tipodato === 1 ? 'file' : 'link',
-        metadata: obj.ca_metadata ? JSON.parse(obj.ca_metadata) : undefined,
-        tsGlobalScore: obj.ca_ts_calif_global ?? null,
-        tsTrainLevelLocal: obj.ca_train_level_local ?? 0,
-        tsTrainLevelGlobal: obj.ca_train_level_global ?? 0,
-        tsProbScore0: obj.ca_ts_prob_calif_0 ?? null,
-        tsProbScore1: obj.ca_ts_prob_calif_1 ?? null,
-        tsProbScore2: obj.ca_ts_prob_calif_2 ?? null,
-        tsProbScore3: obj.ca_ts_prob_calif_3 ?? null
-      })), 'Contenido de la playlist obtenido correctamente');
+      sendResponse(res, true, songs, 'Contenido de la playlist obtenido correctamente');
     }
   } catch (error) {
     sendError(res, 'Error al obtener el contenido de la playlist', InternalServerError, error instanceof Error ? error : null);

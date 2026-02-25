@@ -45,7 +45,12 @@ export class HttpService {
     });
   }
 
-  getSongsScoredByUser(): Promise<Array<Song & { idPlaylist: number }>> {
-    return new Promise((resolve, reject) => { });
+  getSongsScoredByUser(): Promise<Array<Song>> {
+    return new Promise((resolve, reject) => {
+      this.http.get<HttpResponseSuccess>(this.apiUrl + `/songs/scored-by-user`).subscribe({
+        next: (response) => resolve(response.data as Array<Song>),
+        error: (error) => reject({ error, at: 'getSongsScoredByUser' })
+      });
+    });
   }
 }

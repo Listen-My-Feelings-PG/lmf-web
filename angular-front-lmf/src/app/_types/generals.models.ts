@@ -11,6 +11,7 @@ export class Song {
   public tsProbScore1: number | null = null;
   public tsProbScore2: number | null = null;
   public tsProbScore3: number | null = null;
+  public idPlaylist?: number;
   public metadata?: {
     title: string,
     artist: string,

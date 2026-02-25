@@ -5,16 +5,18 @@ import 'datatables.net';
 import { Subscription } from 'rxjs';
 import { PlaylistService } from '../_services/playlist.service';
 import { HttpService } from '../_services/http.service';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-list',
-  imports: [],
+  imports: [CommonModule],
   templateUrl: './list.component.html',
   styleUrl: './list.component.scss'
 })
 export class ListComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('songsTable', { static: false }) songsTable!: ElementRef;
   @Input('list') _list: Array<Song>;
+  @Input('componentMode') componentMode: 'outlet' | 'child';
   private subscription!: Subscription;
   private previousPlaylistId: number | null;
   private previousSongsCount: number;
@@ -43,34 +45,36 @@ export class ListComponent implements OnInit, AfterViewInit, OnDestroy {
     this.previousPlaylistId = null;
     this.previousSongsCount = 0;
     this.currentPlaylist = null;
+    this.componentMode = 'outlet';
   }
 
   ngOnInit(): void {
     this.subscription = this.playlistService.getEventSubscription((value) => {
-      const currentPlaylistId = value.selected?.id || null;
-      const currentSongs = value.selected?.songs || [];
-      const currentSongsCount = currentSongs.length;
-      const playlistChanged = this.previousPlaylistId !== currentPlaylistId;
-      const songsCountChanged = this.previousSongsCount !== currentSongsCount;
+      if (this.componentMode == 'outlet') {
+        const currentPlaylistId = value.selected?.id || null;
+        const currentSongs = value.songList || [];
+        const currentSongsCount = currentSongs.length;
+        const playlistChanged = this.previousPlaylistId !== currentPlaylistId;
+        const songsCountChanged = this.previousSongsCount !== currentSongsCount;
 
-      // Detectar cambios en el contenido (ratings) comparando por referencia o valores
-      const songsContentChanged = currentSongs.some((song, index) => {
-        this.currentPlaylist = value.selected as Playlist;
-        const existingSong = this._list[index];
-        return !existingSong || song.userScore !== existingSong.userScore;
-      });
+        // Detectar cambios en el contenido (ratings) comparando por referencia o valores
+        const songsContentChanged = currentSongs.some((song, index) => {
+          this.currentPlaylist = value.selected as Playlist;
+          const existingSong = this._list[index];
+          return !existingSong || song.userScore !== existingSong.userScore;
+        });
 
-      if (playlistChanged || songsCountChanged || songsContentChanged) {
-        this.previousPlaylistId = currentPlaylistId;
-        this.previousSongsCount = currentSongsCount;
-        this.list = currentSongs;
+        if (playlistChanged || songsCountChanged || songsContentChanged) {
+          this.previousPlaylistId = currentPlaylistId;
+          this.previousSongsCount = currentSongsCount;
+          this.list = currentSongs;
+        }
+
+        if (value.songPlaying && (value.songPlaying.id !== this.songPlaying?.id)) {
+          this.songPlaying = value.songPlaying;
+          setTimeout(() => this.highlightPlayingSong(), 50);
+        }
       }
-
-      if (value.songPlaying && (value.songPlaying.id !== this.songPlaying?.id)) {
-        this.songPlaying = value.songPlaying;
-        setTimeout(() => this.highlightPlayingSong(), 50);
-      }
-
     });
   }
 
@@ -105,8 +109,12 @@ export class ListComponent implements OnInit, AfterViewInit, OnDestroy {
   async playSong(idSong: number): Promise<void> {
     try {
       const song = this._list.find(s => s.id === idSong);
-      if (song)
+      if (song) {
         await this.playlistService.setSongPlaying(song);
+        if (this.componentMode == 'child')
+          await this.playlistService.updateSongList(this._list, true);
+      }
+
     } catch (error) {
       console.error('Error al reproducir la canción:', error);
     }
@@ -269,24 +277,24 @@ export class ListComponent implements OnInit, AfterViewInit, OnDestroy {
     this.httpService.rateSongByIdSong(song.id!, score).then(async () => {
       try {
         // Crear una nueva copia del array con el score actualizado
-        const updatedList = this._list.map(s =>
+        const updatedSongList = this._list.map(s =>
           s.id === song.id
             ? { ...s, userScore: score }
             : s
         );
 
         // Actualizar la lista local
-        this._list = updatedList;
+        this._list = updatedSongList;
 
         // Actualizar la fila en DataTable
         if (this.dataTable) {
-          const rowIndex = updatedList.findIndex(s => s.id === song.id);
+          const rowIndex = updatedSongList.findIndex(s => s.id === song.id);
           if (rowIndex !== -1) {
-            this.dataTable.row(rowIndex).data(updatedList[rowIndex]).draw(false);
+            this.dataTable.row(rowIndex).data(updatedSongList[rowIndex]).draw(false);
           }
         }
 
-        await this.playlistService.updateContentOfSelectedPlaylist(updatedList);
+        await this.playlistService.updateSongList(updatedSongList, false);
       } catch (error) {
         console.error('Error al actualizar el rating localmente después de calificar la canción:', error);
       }
