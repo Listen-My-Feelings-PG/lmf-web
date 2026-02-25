@@ -1,5 +1,8 @@
-<!-- Playlist Container (DataTables Style) -->
-<div class="flex flex-col h-full bg-gray-900 text-gray-100 border-2 border-gray-700 rounded-lg shadow-2xl p-6">
+<!-- Playlist Container -->
+<div [ngClass]="{
+  'flex flex-col h-full bg-gray-900 text-gray-100 border-2 border-gray-700 rounded-lg shadow-2xl p-6': componentMode !== 'child',
+  'flex flex-col h-full': componentMode === 'child'
+}">
 
   <!-- Header Section -->
   <div *ngIf="componentMode=='outlet'"
@@ -40,24 +43,228 @@
     </div>
   </div>
 
-  <!-- DataTable -->
-  <div class="flex-1 flex flex-col min-h-0">
-    <table #songsTable
-      class="display w-full"
-      style="width:100%">
-      <thead>
+  <!-- Controls Section -->
+  <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+    <!-- Page Size Selector -->
+    <div class="flex items-center gap-3">
+      <label class="text-gray-300 font-semibold">Mostrar</label>
+      <select (change)="setPageSize(+$any($event.target).value)"
+        [value]="table.getState().pagination.pageSize"
+        class="border-2 border-gray-600 bg-gray-800 text-gray-100 rounded-lg px-3 py-2 focus:outline-none focus:border-primary transition-colors cursor-pointer">
+        <option [value]="10">10</option>
+        <option [value]="25">25</option>
+        <option [value]="50">50</option>
+        <option [value]="100">100</option>
+      </select>
+      <span class="text-gray-300 font-semibold">canciones</span>
+    </div>
+
+    <!-- Search Input -->
+    <div class="flex items-center gap-3">
+      <label class="text-gray-300 font-semibold">Buscar:</label>
+      <input type="text"
+        [value]="globalFilter()"
+        (input)="onSearchChange($any($event.target).value)"
+        placeholder="Buscar canciones..."
+        class="border-2 border-gray-600 bg-gray-800 text-gray-100 rounded-lg px-4 py-2 focus:outline-none focus:border-primary transition-colors">
+    </div>
+  </div>
+
+  <!-- Table Container with Scroll -->
+  <div class="flex-1 overflow-auto rounded-lg border-2 border-gray-700"
+    [style.maxHeight]="componentMode === 'child' ? '500px' : '350px'">
+    <table class="w-full text-xs">
+      <!-- Table Header (Sticky) -->
+      <thead class="bg-gray-800 sticky top-0 z-10 border-b-2 border-gray-700">
+        @for (headerGroup of table.getHeaderGroups(); track headerGroup.id) {
         <tr>
-          <th class="text-left">#</th>
-          <th class="text-left">Título</th>
-          <th class="text-left">Artista</th>
-          <th class="text-left">Álbum</th>
-          <th class="text-center">Rating</th>
-          <th class="text-left">Nombre de archivo</th>
+          <!-- Checkbox column for selection -->
+          <th class="px-2 py-2 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider w-10">
+            <div class="flex items-center justify-center">
+              <i class="far fa-square text-gray-500 text-xs"></i>
+            </div>
+          </th>
+
+          @for (header of headerGroup.headers; track header.id) {
+          <th
+            [class]="'px-2 py-2 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider relative ' + (header.column.getCanSort() ? 'cursor-pointer select-none hover:bg-gray-700' : '')"
+            (click)="header.column.getCanSort() ? header.column.getToggleSortingHandler()?.($event) : null"
+            [style.width]="header.column.id === 'fileName' ? 'auto' : header.getSize() + 'px'"
+            [style.minWidth.px]="header.column.columnDef.minSize">
+            <div class="flex items-center gap-2">
+              @if (!header.isPlaceholder) {
+              <span>{{ header.column.columnDef.header }}</span>
+              }
+              @if (header.column.getCanSort()) {
+              <span class="text-gray-500">
+                @if (header.column.getIsSorted() === 'asc') {
+                <i class="fas fa-sort-up"></i>
+                } @else if (header.column.getIsSorted() === 'desc') {
+                <i class="fas fa-sort-down"></i>
+                } @else {
+                <i class="fas fa-sort opacity-50"></i>
+                }
+              </span>
+              }
+            </div>
+
+            <!-- Column Resizer -->
+            @if (header.column.getCanResize()) {
+            <div (mousedown)="header.getResizeHandler()($event)"
+              (touchstart)="header.getResizeHandler()($event)"
+              [class]="'absolute top-0 right-0 h-full w-1 cursor-col-resize select-none touch-none ' + (header.column.getIsResizing() ? 'bg-primary' : 'hover:bg-primary/50')"
+              style="user-select: none;">
+            </div>
+            }
+          </th>
+          }
         </tr>
+        }
       </thead>
-      <tbody>
-        <!-- DataTables llenará esto automáticamente -->
+
+      <!-- Table Body -->
+      <tbody class="bg-gray-900 divide-y divide-gray-800">
+        @if (table.getRowModel().rows.length === 0) {
+        <tr>
+          <td [colSpan]="table.getAllColumns().length + 1"
+            class="px-4 py-8 text-center text-gray-500">
+            No se encontraron canciones
+          </td>
+        </tr>
+        }
+
+        @for (row of table.getRowModel().rows; track row.id) {
+        <tr (mouseenter)="hoveredRow.set(row.original.id!)"
+          (mouseleave)="hoveredRow.set(null)"
+          (click)="playSong(row.original)"
+          [class]="'cursor-pointer transition-all duration-150 group ' + 
+              (isPlaying(row.original) ? 'bg-gradient-to-r from-purple-900/25 to-pink-900/25 border-l-4 border-primary' : 'hover:bg-gray-800')">
+
+          <!-- Checkbox column (visible on hover) -->
+          <td class="px-2 py-2 text-center">
+            <div class="flex items-center justify-center">
+              <button (click)="toggleRowSelection(row.original.id!); $event.stopPropagation()"
+                class="transition-opacity"
+                [class.opacity-0]="hoveredRow() !== row.original.id && !isRowSelected(row.original.id!)"
+                [class.opacity-100]="hoveredRow() === row.original.id || isRowSelected(row.original.id!)">
+                <i
+                  [class]="isRowSelected(row.original.id!) ? 'fas fa-check-square text-primary' : 'far fa-square text-gray-500'"></i>
+              </button>
+            </div>
+          </td>
+
+          @for (cell of row.getVisibleCells(); track cell.id) {
+          @if (cell.column.id === 'id') {
+          <!-- ID Column -->
+          <td class="px-2 py-2 font-mono text-xs text-gray-400">
+            {{ cell.getValue() }}
+          </td>
+          } @else if (cell.column.id === 'title') {
+          <!-- Title Column with Play Icon -->
+          <td class="px-2 py-2 font-semibold text-xs text-gray-100">
+            <div class="flex items-center space-x-1">
+              <i class="fas fa-play text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity"></i>
+              <span>{{ cell.getValue() || '-' }}</span>
+            </div>
+          </td>
+          } @else if (cell.column.id === 'artist') {
+          <!-- Artist Column -->
+          <td class="px-2 py-2 text-xs text-gray-300">
+            {{ cell.getValue() || '-' }}
+          </td>
+          } @else if (cell.column.id === 'album') {
+          <!-- Album Column -->
+          <td class="px-2 py-2 text-xs text-gray-400">
+            {{ cell.getValue() || '-' }}
+          </td>
+          } @else if (cell.column.id === 'userScore') {
+          <!-- Rating Column -->
+          <td class="px-2 py-2"
+            (click)="$event.stopPropagation()">
+            <div class="flex justify-center items-center gap-1">
+              <!-- Thumbs Down (Score 0) -->
+              <button (click)="rateSong(row.original, 0)"
+                class="p-1 hover:scale-125 transition-transform">
+                <i
+                  [class]="row.original.userScore === 0 ? 'fas fa-thumbs-down text-red-500' : 'far fa-thumbs-down text-gray-600'"></i>
+              </button>
+
+              <!-- Stars (Score 1-3) -->
+              @for (star of [1, 2, 3]; track star) {
+              <button (click)="rateSong(row.original, $any(star))"
+                class="p-1 hover:scale-125 transition-transform">
+                <i
+                  [class]="(row.original.userScore ?? 0) >= star ? 'fas fa-star text-yellow-400' : 'far fa-star text-gray-600'"></i>
+              </button>
+              }
+            </div>
+          </td>
+          } @else if (cell.column.id === 'fileName') {
+          <!-- FileName Column -->
+          <td class="px-2 py-2 text-xs font-mono text-gray-500">
+            {{ cell.getValue() }}
+          </td>
+          }
+          }
+        </tr>
+        }
       </tbody>
     </table>
+  </div>
+
+  <!-- Pagination and Info -->
+  <div class="flex flex-col md:flex-row justify-between items-center mt-4 gap-4">
+    <!-- Info Text -->
+    <div class="text-gray-400 text-sm">
+      Mostrando {{ table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1 }}
+      a
+      {{ Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, table.getFilteredRowModel().rows.length) }}
+      de {{ table.getFilteredRowModel().rows.length }} canciones
+      @if (table.getFilteredRowModel().rows.length !== data().length) {
+      <span>(filtrado de {{ data().length }} canciones totales)</span>
+      }
+    </div>
+
+    <!-- Pagination Buttons -->
+    <div class="flex items-center gap-2">
+      <button (click)="table.firstPage()"
+        [disabled]="!table.getCanPreviousPage()"
+        class="inline-block px-3 py-2 min-w-[2.5rem] bg-gray-800 border-2 border-gray-600 text-gray-300 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-700 hover:border-primary">
+        Primero
+      </button>
+
+      <button (click)="table.previousPage()"
+        [disabled]="!table.getCanPreviousPage()"
+        class="inline-block px-3 py-2 min-w-[2.5rem] bg-gray-800 border-2 border-gray-600 text-gray-300 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-700 hover:border-primary">
+        Anterior
+      </button>
+
+      <!-- Page Numbers -->
+      @for (pageNum of getPageNumbers(); track pageNum) {
+      @if (pageNum === '...') {
+      <span class="px-2 text-gray-500">...</span>
+      } @else {
+      <button (click)="table.setPageIndex(pageNum)"
+        [class]="'inline-block px-3 py-2 min-w-[2.5rem] text-center rounded-lg font-medium transition-all ' + 
+              (table.getState().pagination.pageIndex === pageNum 
+                ? 'bg-primary border-2 border-primary text-white font-bold' 
+                : 'bg-gray-800 border-2 border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-primary')">
+        {{ pageNum + 1 }}
+      </button>
+      }
+      }
+
+      <button (click)="table.nextPage()"
+        [disabled]="!table.getCanNextPage()"
+        class="inline-block px-3 py-2 min-w-[2.5rem] bg-gray-800 border-2 border-gray-600 text-gray-300 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-700 hover:border-primary">
+        Siguiente
+      </button>
+
+      <button (click)="table.lastPage()"
+        [disabled]="!table.getCanNextPage()"
+        class="inline-block px-3 py-2 min-w-[2.5rem] bg-gray-800 border-2 border-gray-600 text-gray-300 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-700 hover:border-primary">
+        Último
+      </button>
+    </div>
   </div>
 </div>
