@@ -9,157 +9,203 @@
   </div>
 
   <!-- Panel de Configuración -->
-  <div class="bg-gray-800 border-2 border-gray-700 rounded-lg shadow-lg p-6">
-    <h3 class="text-xl font-semibold text-secondary mb-6 flex items-center gap-2">
-      <i class="fas fa-sliders-h"></i>
-      Configuración
-    </h3>
+  <div class="bg-gray-800 border-2 border-gray-700 rounded-lg shadow-lg">
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-      <!-- Columna Izquierda -->
-      <div class="space-y-6">
-
-        <!-- 1. Modalidad (Toggle) -->
-        <div class="bg-gray-900 border border-gray-600 rounded-lg p-4">
-          <label class="block text-sm font-semibold text-gray-300 mb-3">
-            <i class="fas fa-exchange-alt mr-2 text-primary"></i>
-            Modalidad
-          </label>
-          <div class="flex items-center justify-center bg-gray-950 rounded-lg p-2 border border-gray-700">
-            <button class="flex-1 px-4 py-3 rounded-md font-semibold transition-all duration-200 bg-primary text-white shadow-lg">
-              <i class="fas fa-graduation-cap mr-2"></i>
-              Entrenamiento Limpio
-            </button>
-            <button
-              class="flex-1 px-4 py-3 rounded-md font-semibold transition-all duration-200 text-gray-400 hover:text-gray-200 hover:bg-gray-800">
-              <i class="fas fa-magic mr-2"></i>
-              Inferir
-            </button>
-          </div>
-          <p class="text-xs text-gray-500 mt-2 italic">
-            Entrenamiento limpio crea un modelo nuevo. Inferir usa un modelo existente para predecir.
-          </p>
-        </div>
-
-        <!-- 2. Incluir entrenamiento por playlist -->
-        <div class="bg-gray-900 border border-gray-600 rounded-lg p-4">
-          <label class="flex items-center justify-between cursor-pointer group">
-            <div class="flex items-center gap-3">
-              <div class="w-12 h-6 bg-gray-700 rounded-full relative transition-colors duration-200 group-hover:bg-gray-600">
-                <div class="absolute left-1 top-1 w-4 h-4 bg-gray-400 rounded-full transition-transform duration-200"></div>
-              </div>
-              <div>
-                <span class="text-sm font-semibold text-gray-300 flex items-center gap-2">
-                  <i class="fas fa-list-ul text-secondary"></i>
-                  Incluir entrenamiento por playlist
-                </span>
-                <p class="text-xs text-gray-500 mt-1">
-                  Genera un modelo específico para esta playlist además del modelo global.
-                </p>
-              </div>
-            </div>
-            <input type="checkbox"
-              class="sr-only">
-          </label>
-        </div>
-
+    <!-- Header del Panel con Toggle -->
+    <div class="flex items-center justify-between p-4 transition-colors"
+      [class.cursor-pointer]="!configPanelCollapsed"
+      [class.hover:bg-gray-750]="!configPanelCollapsed">
+      <div class="flex items-center gap-3 flex-1 cursor-pointer"
+        (click)="toggleConfigPanel()">
+        <h3 class="text-xl font-semibold text-secondary flex items-center gap-2">
+          <i class="fas fa-sliders-h"></i>
+          Configuración
+        </h3>
+        @if (configPanelCollapsed) {
+        <span class="text-sm text-gray-400 ml-4">{{ getActiveFiltersText() }}</span>
+        }
       </div>
-
-      <!-- Columna Derecha -->
-      <div class="space-y-6">
-
-        <!-- 3. Agrupar por calificación -->
-        <div class="bg-gray-900 border border-gray-600 rounded-lg p-4">
-          <label class="block text-sm font-semibold text-gray-300 mb-3">
-            <i class="fas fa-filter mr-2 text-secondary"></i>
-            Filtrar por Calificación
-          </label>
-          <div class="space-y-3">
-
-            <!-- Rating 0 (Thumbs Down) -->
-            <label
-              class="flex items-center gap-3 p-3 bg-gray-950 rounded-lg border border-gray-700 cursor-pointer hover:border-red-500 transition-all duration-200 group">
-              <input type="checkbox"
-                class="w-5 h-5 rounded border-gray-600 text-red-500 focus:ring-red-500 focus:ring-offset-gray-900">
-              <div class="flex items-center gap-2 flex-1">
-                <i class="far fa-thumbs-down text-red-500 text-lg"></i>
-                <span class="text-gray-300 font-medium group-hover:text-white">Rating 0</span>
-                <span class="text-xs text-gray-500">(No me gusta)</span>
-              </div>
-              <span class="text-xs font-mono text-gray-600 bg-gray-800 px-2 py-1 rounded">0 canciones</span>
-            </label>
-
-            <!-- Rating 1 -->
-            <label
-              class="flex items-center gap-3 p-3 bg-gray-950 rounded-lg border border-gray-700 cursor-pointer hover:border-yellow-500 transition-all duration-200 group">
-              <input type="checkbox"
-                class="w-5 h-5 rounded border-gray-600 text-yellow-500 focus:ring-yellow-500 focus:ring-offset-gray-900">
-              <div class="flex items-center gap-2 flex-1">
-                <i class="fas fa-star text-yellow-400 text-lg"></i>
-                <span class="text-gray-300 font-medium group-hover:text-white">Rating 1</span>
-                <span class="text-xs text-gray-500">(Regular)</span>
-              </div>
-              <span class="text-xs font-mono text-gray-600 bg-gray-800 px-2 py-1 rounded">0 canciones</span>
-            </label>
-
-            <!-- Rating 2 -->
-            <label
-              class="flex items-center gap-3 p-3 bg-gray-950 rounded-lg border border-gray-700 cursor-pointer hover:border-yellow-500 transition-all duration-200 group">
-              <input type="checkbox"
-                class="w-5 h-5 rounded border-gray-600 text-yellow-500 focus:ring-yellow-500 focus:ring-offset-gray-900">
-              <div class="flex items-center gap-2 flex-1">
-                <div class="flex">
-                  <i class="fas fa-star text-yellow-400 text-lg"></i>
-                  <i class="fas fa-star text-yellow-400 text-lg"></i>
-                </div>
-                <span class="text-gray-300 font-medium group-hover:text-white">Rating 2</span>
-                <span class="text-xs text-gray-500">(Me gusta)</span>
-              </div>
-              <span class="text-xs font-mono text-gray-600 bg-gray-800 px-2 py-1 rounded">0 canciones</span>
-            </label>
-
-            <!-- Rating 3 -->
-            <label
-              class="flex items-center gap-3 p-3 bg-gray-950 rounded-lg border border-gray-700 cursor-pointer hover:border-yellow-500 transition-all duration-200 group">
-              <input type="checkbox"
-                class="w-5 h-5 rounded border-gray-600 text-yellow-500 focus:ring-yellow-500 focus:ring-offset-gray-900">
-              <div class="flex items-center gap-2 flex-1">
-                <div class="flex">
-                  <i class="fas fa-star text-yellow-400 text-lg"></i>
-                  <i class="fas fa-star text-yellow-400 text-lg"></i>
-                  <i class="fas fa-star text-yellow-400 text-lg"></i>
-                </div>
-                <span class="text-gray-300 font-medium group-hover:text-white">Rating 3</span>
-                <span class="text-xs text-gray-500">(Me encanta)</span>
-              </div>
-              <span class="text-xs font-mono text-gray-600 bg-gray-800 px-2 py-1 rounded">0 canciones</span>
-            </label>
-
-          </div>
-          <p class="text-xs text-gray-500 mt-3 italic">
-            Selecciona las calificaciones que deseas incluir en el entrenamiento.
-          </p>
-        </div>
-
-      </div>
-
-    </div>
-
-    <!-- 4. Botón Submit -->
-    <div class="mt-6 pt-6 border-t border-gray-700">
-      <div class="flex items-center justify-between">
-        <div class="text-sm text-gray-400">
-          <i class="fas fa-info-circle mr-2"></i>
-          <span class="font-mono">0</span> canciones seleccionadas para entrenamiento
-        </div>
+      <div class="flex items-center gap-3">
+        @if (configPanelCollapsed) {
         <button
-          class="px-6 py-3 bg-gradient-to-r from-primary via-secondary to-accent hover:opacity-90 text-white font-bold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed">
-          <i class="fas fa-play-circle text-xl"></i>
+          class="px-6 py-2 bg-gradient-to-r from-primary via-secondary to-accent hover:opacity-90 text-white font-bold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+          <i class="fas fa-play-circle"></i>
           Iniciar Entrenamiento
+        </button>
+        }
+        <button class="text-gray-400 hover:text-white transition-colors"
+          (click)="toggleConfigPanel()">
+          <i [class]="configPanelCollapsed ? 'fas fa-chevron-down' : 'fas fa-chevron-up'"></i>
         </button>
       </div>
     </div>
+
+    <!-- Contenido Expandido -->
+    @if (!configPanelCollapsed) {
+    <div class="p-6 pt-0">
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- Columna Izquierda -->
+        <div class="space-y-6">
+
+          <!-- 1. Modalidad (Toggle) -->
+          <div class="bg-gray-900 border border-gray-600 rounded-lg p-4">
+            <label class="block text-sm font-semibold text-gray-300 mb-3">
+              <i class="fas fa-exchange-alt mr-2 text-primary"></i>
+              Modalidad
+            </label>
+            <div class="flex items-center justify-center bg-gray-950 rounded-lg p-2 border border-gray-700">
+              <button (click)="selectedMode = 'clean'"
+                [class]="selectedMode === 'clean' ? 'flex-1 px-4 py-3 rounded-md font-semibold transition-all duration-200 bg-primary text-white shadow-lg' : 'flex-1 px-4 py-3 rounded-md font-semibold transition-all duration-200 text-gray-400 hover:text-gray-200 hover:bg-gray-800'">
+                <i class="fas fa-graduation-cap mr-2"></i>
+                Entrenamiento Limpio
+              </button>
+              <button (click)="selectedMode = 'infer'"
+                [class]="selectedMode === 'infer' ? 'flex-1 px-4 py-3 rounded-md font-semibold transition-all duration-200 bg-primary text-white shadow-lg' : 'flex-1 px-4 py-3 rounded-md font-semibold transition-all duration-200 text-gray-400 hover:text-gray-200 hover:bg-gray-800'">
+                <i class="fas fa-magic mr-2"></i>
+                Inferir
+              </button>
+            </div>
+            <p class="text-xs text-gray-500 mt-2 italic">
+              Entrenamiento limpio solo carga las canciones calificadas y que no hayan sido entrenadas previamente.
+              Inferir usa las canciones calificadas y entrenadas previamente.
+            </p>
+          </div>
+
+          <!-- 2. Incluir entrenamiento por playlist -->
+          <div class="bg-gray-900 border border-gray-600 rounded-lg p-4">
+            <label class="flex items-center justify-between cursor-pointer group">
+              <div class="flex items-center gap-3">
+                <div
+                  [class]="includePlaylistTraining ? 'w-12 h-6 bg-primary rounded-full relative transition-colors duration-200' : 'w-12 h-6 bg-gray-700 rounded-full relative transition-colors duration-200 group-hover:bg-gray-600'">
+                  <div
+                    [class]="includePlaylistTraining ? 'absolute right-1 top-1 w-4 h-4 bg-white rounded-full transition-transform duration-200' : 'absolute left-1 top-1 w-4 h-4 bg-gray-400 rounded-full transition-transform duration-200'">
+                  </div>
+                </div>
+                <div>
+                  <span class="text-sm font-semibold text-gray-300 flex items-center gap-2">
+                    <i class="fas fa-list-ul text-secondary"></i>
+                    Incluir entrenamiento por playlist
+                  </span>
+                  <p class="text-xs text-gray-500 mt-1">
+                    Genera un modelo específico para esta playlist además del modelo global.
+                  </p>
+                </div>
+              </div>
+              <input type="checkbox"
+                [(ngModel)]="includePlaylistTraining"
+                class="sr-only">
+            </label>
+          </div>
+
+        </div>
+
+        <!-- Columna Derecha -->
+        <div class="space-y-6">
+
+          <!-- 3. Agrupar por calificación -->
+          <div class="bg-gray-900 border border-gray-600 rounded-lg p-4">
+            <label class="block text-sm font-semibold text-gray-300 mb-3">
+              <i class="fas fa-filter mr-2 text-secondary"></i>
+              Filtrar por Calificación
+            </label>
+            <div class="space-y-3">
+
+              <!-- Rating 0 (Thumbs Down) -->
+              <label
+                class="flex items-center gap-3 p-3 bg-gray-950 rounded-lg border border-gray-700 cursor-pointer hover:border-red-500 transition-all duration-200 group">
+                <input type="checkbox"
+                  [checked]="isRatingSelected(0)"
+                  (change)="toggleRating(0)"
+                  class="w-5 h-5 rounded border-gray-600 text-red-500 focus:ring-red-500 focus:ring-offset-gray-900">
+                <div class="flex items-center gap-2 flex-1">
+                  <i class="far fa-thumbs-down text-red-500 text-lg"></i>
+                  <span class="text-gray-300 font-medium group-hover:text-white">Rating 0</span>
+                  <span class="text-xs text-gray-500">(No me gusta)</span>
+                </div>
+                <span class="text-xs font-mono text-gray-600 bg-gray-800 px-2 py-1 rounded">0 canciones</span>
+              </label>
+
+              <!-- Rating 1 -->
+              <label
+                class="flex items-center gap-3 p-3 bg-gray-950 rounded-lg border border-gray-700 cursor-pointer hover:border-yellow-500 transition-all duration-200 group">
+                <input type="checkbox"
+                  [checked]="isRatingSelected(1)"
+                  (change)="toggleRating(1)"
+                  class="w-5 h-5 rounded border-gray-600 text-yellow-500 focus:ring-yellow-500 focus:ring-offset-gray-900">
+                <div class="flex items-center gap-2 flex-1">
+                  <i class="fas fa-star text-yellow-400 text-lg"></i>
+                  <span class="text-gray-300 font-medium group-hover:text-white">Rating 1</span>
+                  <span class="text-xs text-gray-500">(Regular)</span>
+                </div>
+                <span class="text-xs font-mono text-gray-600 bg-gray-800 px-2 py-1 rounded">0 canciones</span>
+              </label>
+
+              <!-- Rating 2 -->
+              <label
+                class="flex items-center gap-3 p-3 bg-gray-950 rounded-lg border border-gray-700 cursor-pointer hover:border-yellow-500 transition-all duration-200 group">
+                <input type="checkbox"
+                  [checked]="isRatingSelected(2)"
+                  (change)="toggleRating(2)"
+                  class="w-5 h-5 rounded border-gray-600 text-yellow-500 focus:ring-yellow-500 focus:ring-offset-gray-900">
+                <div class="flex items-center gap-2 flex-1">
+                  <div class="flex">
+                    <i class="fas fa-star text-yellow-400 text-lg"></i>
+                    <i class="fas fa-star text-yellow-400 text-lg"></i>
+                  </div>
+                  <span class="text-gray-300 font-medium group-hover:text-white">Rating 2</span>
+                  <span class="text-xs text-gray-500">(Me gusta)</span>
+                </div>
+                <span class="text-xs font-mono text-gray-600 bg-gray-800 px-2 py-1 rounded">0 canciones</span>
+              </label>
+
+              <!-- Rating 3 -->
+              <label
+                class="flex items-center gap-3 p-3 bg-gray-950 rounded-lg border border-gray-700 cursor-pointer hover:border-yellow-500 transition-all duration-200 group">
+                <input type="checkbox"
+                  [checked]="isRatingSelected(3)"
+                  (change)="toggleRating(3)"
+                  class="w-5 h-5 rounded border-gray-600 text-yellow-500 focus:ring-yellow-500 focus:ring-offset-gray-900">
+                <div class="flex items-center gap-2 flex-1">
+                  <div class="flex">
+                    <i class="fas fa-star text-yellow-400 text-lg"></i>
+                    <i class="fas fa-star text-yellow-400 text-lg"></i>
+                    <i class="fas fa-star text-yellow-400 text-lg"></i>
+                  </div>
+                  <span class="text-gray-300 font-medium group-hover:text-white">Rating 3</span>
+                  <span class="text-xs text-gray-500">(Me encanta)</span>
+                </div>
+                <span class="text-xs font-mono text-gray-600 bg-gray-800 px-2 py-1 rounded">0 canciones</span>
+              </label>
+
+            </div>
+            <p class="text-xs text-gray-500 mt-3 italic">
+              Selecciona las calificaciones que deseas incluir en el entrenamiento.
+            </p>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- 4. Botón Submit -->
+      <div class="mt-6 pt-6 border-t border-gray-700">
+        <div class="flex items-center justify-between">
+          <div class="text-sm text-gray-400">
+            <i class="fas fa-info-circle mr-2"></i>
+            <span class="font-mono">0</span> canciones seleccionadas para entrenamiento
+          </div>
+          <button
+            class="px-6 py-3 bg-gradient-to-r from-primary via-secondary to-accent hover:opacity-90 text-white font-bold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed">
+            <i class="fas fa-play-circle text-xl"></i>
+            Iniciar Entrenamiento
+          </button>
+        </div>
+      </div>
+
+    </div>
+    }
 
   </div>
 

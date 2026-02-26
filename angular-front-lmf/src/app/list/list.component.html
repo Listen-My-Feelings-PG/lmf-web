@@ -1,7 +1,7 @@
 <!-- Playlist Container -->
 <div [ngClass]="{
   'flex flex-col h-full bg-gray-900 text-gray-100 border-2 border-gray-700 rounded-lg shadow-2xl p-6': componentMode !== 'child',
-  'flex flex-col h-full': componentMode === 'child'
+  'flex flex-col h-full min-h-0': componentMode === 'child'
 }">
 
   <!-- Header Section -->
@@ -71,8 +71,7 @@
   </div>
 
   <!-- Table Container with Scroll -->
-  <div class="flex-1 overflow-auto rounded-lg border-2 border-gray-700"
-    [style.maxHeight]="componentMode === 'child' ? '900px' : '47vh'">
+  <div class="flex-1 min-h-0 overflow-y-auto rounded-lg border-2 border-gray-700">
     <table class="w-full text-xs">
       <!-- Table Header (Sticky) -->
       <thead class="bg-gray-800 sticky top-0 z-10 border-b-2 border-gray-700">
@@ -86,6 +85,9 @@
           </th>
 
           @for (header of headerGroup.headers; track header.id) {
+          @if (header.column.id === 'modelPrediction' && componentMode !== 'child') {
+          <!-- Skip prediction column in outlet mode -->
+          } @else {
           <th
             [class]="'px-2 py-2 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider relative ' + (header.column.getCanSort() ? 'cursor-pointer select-none hover:bg-gray-700' : '')"
             (click)="header.column.getCanSort() ? header.column.getToggleSortingHandler()?.($event) : null"
@@ -117,6 +119,7 @@
             </div>
             }
           </th>
+          }
           }
         </tr>
         }
@@ -154,7 +157,9 @@
           </td>
 
           @for (cell of row.getVisibleCells(); track cell.id) {
-          @if (cell.column.id === 'id') {
+          @if (cell.column.id === 'modelPrediction' && componentMode !== 'child') {
+          <!-- Skip prediction column in outlet mode -->
+          } @else if (cell.column.id === 'id') {
           <!-- ID Column -->
           <td class="px-2 py-2 font-mono text-xs text-gray-400">
             {{ cell.getValue() }}
@@ -197,6 +202,47 @@
                   [class]="(row.original.userScore ?? 0) >= star ? 'fas fa-star text-yellow-400' : 'far fa-star text-gray-600'"></i>
               </button>
               }
+            </div>
+          </td>
+          } @else if (cell.column.id === 'modelPrediction' && componentMode === 'child') {
+          <!-- Model Prediction Column -->
+          <td class="px-2 py-2">
+            <div class="flex justify-center items-center gap-2">
+              <!-- Thumbs Down (Score 0 Prediction) -->
+              <div class="relative w-8 h-8 flex items-center justify-center group cursor-help"
+                [title]="row.original.tsProbScore0 !== null ? Math.round(row.original.tsProbScore0) + '%' : 'Sin predicción'">
+                <div class="absolute inset-0 rounded-full"
+                  [style.background]="getCircularProgressStyle(row.original.tsProbScore0)"></div>
+                <div class="absolute inset-1 bg-gray-900 rounded-full"></div>
+                <i [class]="row.original.tsProbScore0 !== null ? 'far fa-thumbs-down text-red-500 text-xs relative z-10' : 'far fa-thumbs-down text-gray-600 text-xs relative z-10'"></i>
+              </div>
+
+              <!-- Star 1 (Score 1 Prediction) -->
+              <div class="relative w-8 h-8 flex items-center justify-center group cursor-help"
+                [title]="row.original.tsProbScore1 !== null ? Math.round(row.original.tsProbScore1) + '%' : 'Sin predicción'">
+                <div class="absolute inset-0 rounded-full"
+                  [style.background]="getCircularProgressStyle(row.original.tsProbScore1)"></div>
+                <div class="absolute inset-1 bg-gray-900 rounded-full"></div>
+                <i [class]="row.original.tsProbScore1 !== null ? 'fas fa-star text-yellow-400 text-xs relative z-10' : 'far fa-star text-gray-600 text-xs relative z-10'"></i>
+              </div>
+
+              <!-- Star 2 (Score 2 Prediction) -->
+              <div class="relative w-8 h-8 flex items-center justify-center group cursor-help"
+                [title]="row.original.tsProbScore2 !== null ? Math.round(row.original.tsProbScore2) + '%' : 'Sin predicción'">
+                <div class="absolute inset-0 rounded-full"
+                  [style.background]="getCircularProgressStyle(row.original.tsProbScore2)"></div>
+                <div class="absolute inset-1 bg-gray-900 rounded-full"></div>
+                <i [class]="row.original.tsProbScore2 !== null ? 'fas fa-star text-yellow-400 text-xs relative z-10' : 'far fa-star text-gray-600 text-xs relative z-10'"></i>
+              </div>
+
+              <!-- Star 3 (Score 3 Prediction) -->
+              <div class="relative w-8 h-8 flex items-center justify-center group cursor-help"
+                [title]="row.original.tsProbScore3 !== null ? Math.round(row.original.tsProbScore3) + '%' : 'Sin predicción'">
+                <div class="absolute inset-0 rounded-full"
+                  [style.background]="getCircularProgressStyle(row.original.tsProbScore3)"></div>
+                <div class="absolute inset-1 bg-gray-900 rounded-full"></div>
+                <i [class]="row.original.tsProbScore3 !== null ? 'fas fa-star text-yellow-400 text-xs relative z-10' : 'far fa-star text-gray-600 text-xs relative z-10'"></i>
+              </div>
             </div>
           </td>
           } @else if (cell.column.id === 'fileName') {

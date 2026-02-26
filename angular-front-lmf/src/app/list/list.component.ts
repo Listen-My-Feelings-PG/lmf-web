@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, Input, computed, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, OnChanges, SimpleChanges, Input, computed, signal } from '@angular/core';
 import { Playlist, Song } from '../_types/generals.models';
 import { Subscription } from 'rxjs';
 import { PlaylistService } from '../_services/playlist.service';
@@ -20,7 +20,7 @@ import {
   templateUrl: './list.component.html',
   styleUrl: './list.component.scss'
 })
-export class ListComponent implements OnInit, OnDestroy {
+export class ListComponent implements OnInit, OnDestroy, OnChanges {
   @Input('list') _list: Array<Song> = [];
   @Input('componentMode') componentMode: 'outlet' | 'child' = 'outlet';
 
@@ -33,7 +33,7 @@ export class ListComponent implements OnInit, OnDestroy {
   // TanStack Table signals
   data = signal<Song[]>([]);
   globalFilter = signal('');
-  columnOrder = signal<string[]>(['id', 'title', 'artist', 'album', 'userScore', 'fileName']);
+  columnOrder = signal<string[]>(['id', 'title', 'artist', 'album', 'userScore', 'modelPrediction', 'fileName']);
   selectedRows = signal<Set<number>>(new Set());
   hoveredRow = signal<number | null>(null);
 
@@ -64,7 +64,7 @@ export class ListComponent implements OnInit, OnDestroy {
       maxSize: 80,
     },
     {
-      accessorKey: 'metadata.title',
+      accessorFn: row => row.metadata?.title,
       id: 'title',
       header: 'Título',
       cell: info => info.getValue() || '-',
@@ -72,7 +72,7 @@ export class ListComponent implements OnInit, OnDestroy {
       minSize: 150,
     },
     {
-      accessorKey: 'metadata.artist',
+      accessorFn: row => row.metadata?.artist,
       id: 'artist',
       header: 'Artista',
       cell: info => info.getValue() || '-',
@@ -80,7 +80,7 @@ export class ListComponent implements OnInit, OnDestroy {
       minSize: 120,
     },
     {
-      accessorKey: 'metadata.album',
+      accessorFn: row => row.metadata?.album,
       id: 'album',
       header: 'Álbum',
       cell: info => info.getValue() || '-',
@@ -96,6 +96,16 @@ export class ListComponent implements OnInit, OnDestroy {
       size: 130,
       minSize: 130,
       maxSize: 130,
+    },
+    {
+      accessorFn: row => row,
+      id: 'modelPrediction',
+      header: 'Predicción',
+      cell: info => info.getValue(),
+      enableSorting: false,
+      size: 180,
+      minSize: 180,
+      maxSize: 180,
     },
     {
       accessorKey: 'fileName',
@@ -143,6 +153,13 @@ export class ListComponent implements OnInit, OnDestroy {
   }));
 
   constructor(private playlistService: PlaylistService, private httpService: HttpService) { }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    // Detectar cambios en el input _list
+    if (changes['_list'] && changes['_list'].currentValue) {
+      this.data.set(changes['_list'].currentValue);
+    }
+  }
 
   ngOnInit(): void {
     this.data.set(this._list);
@@ -277,6 +294,13 @@ export class ListComponent implements OnInit, OnDestroy {
     }
 
     return pages;
+  }
+
+  getCircularProgressStyle(value: number | null): string {
+    if (value === null) return 'conic-gradient(#4b5563 360deg, #4b5563 0deg)';
+    const percentage = Math.round(value);
+    const degrees = (percentage / 100) * 360;
+    return `conic-gradient(#46f0be ${degrees}deg, #374151 ${degrees}deg)`;
   }
 
   ngOnDestroy(): void {
