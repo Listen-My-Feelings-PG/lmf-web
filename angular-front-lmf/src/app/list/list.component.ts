@@ -22,12 +22,11 @@ import { UserScore } from '../_types/generals.interfaces';
   styleUrl: './list.component.scss'
 })
 export class ListComponent implements OnInit, OnDestroy, OnChanges {
-  @Input('list') _list: Array<Song>;
+  @Input('list') list: Array<Song>;
   @Input('componentMode') componentMode: 'outlet' | 'child';
   @Input('songPlaying') songPlaying: Song | null;
   @Output('onSelectSong') onSelectSong: EventEmitter<Song>;
   @Output('onRateSong') onRateSong: EventEmitter<{ song: Song, score: UserScore }>;
-
 
   private subscription!: Subscription;
   private previousPlaylistId: number | null;
@@ -48,15 +47,6 @@ export class ListComponent implements OnInit, OnDestroy, OnChanges {
 
   // Configuración de paginación
   maxPageButtons = 7; // Número de botones de página a mostrar
-
-  get list(): Array<Song> {
-    return this._list;
-  }
-
-  set list(value: Array<Song>) {
-    this._list = value;
-    this.data.set(value);
-  }
 
   // Define columns for TanStack Table
   columns: ColumnDef<Song>[] = [
@@ -93,7 +83,7 @@ export class ListComponent implements OnInit, OnDestroy, OnChanges {
   }));
 
   constructor(private globalPlaylist: GlobalPlaylistService, private httpService: HttpService) {
-    this._list = [];
+    this.list = [];
     this.previousPlaylistId = null;
     this.previousSongsCount = 0;
     this.currentPlaylist = null;
@@ -104,14 +94,13 @@ export class ListComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    // Detectar cambios en el input _list
-    if (changes['_list'] && changes['_list'].currentValue) {
-      this.data.set(changes['_list'].currentValue);
-    }
+    // Detectar cambios en el input list
+    if (changes['list'] && changes['list'].currentValue)
+      this.data.set(changes['list'].currentValue);
   }
 
   ngOnInit(): void {
-    this.data.set(this._list);
+    this.data.set(this.list);
 
     this.subscription = this.globalPlaylist.getEventSubscription((value) => {
       if (this.componentMode == 'outlet') {
@@ -124,7 +113,7 @@ export class ListComponent implements OnInit, OnDestroy, OnChanges {
         // Detectar cambios en el contenido (ratings) comparando por referencia o valores
         const songsContentChanged = currentSongs.some((song, index) => {
           this.currentPlaylist = value.selected as Playlist;
-          const existingSong = this._list[index];
+          const existingSong = this.list[index];
           return !existingSong || song.userScore !== existingSong.userScore;
         });
 
@@ -132,6 +121,7 @@ export class ListComponent implements OnInit, OnDestroy, OnChanges {
           this.previousPlaylistId = currentPlaylistId;
           this.previousSongsCount = currentSongsCount;
           this.list = currentSongs;
+          this.data.set(currentSongs);
         }
 
         if (value.songPlaying && (value.songPlaying.id !== this.songPlaying?.id)) {
@@ -161,14 +151,14 @@ export class ListComponent implements OnInit, OnDestroy, OnChanges {
       this.httpService.rateSongByIdSong(song.id!, score).then(async () => {
         try {
           // Crear una nueva copia del array con el score actualizado
-          const updatedSongList = this._list.map(s =>
+          const updatedSongList = this.list.map(s =>
             s.id === song.id
               ? { ...s, userScore: score }
               : s
           );
 
           // Actualizar la lista local
-          this._list = updatedSongList;
+          this.list = updatedSongList;
           this.data.set(updatedSongList);
 
           await this.globalPlaylist.songList('set', updatedSongList);

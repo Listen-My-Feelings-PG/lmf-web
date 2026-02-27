@@ -157,7 +157,9 @@ export class GlobalPlaylistService {
           ...current,
           songList: updatedList
         });
-      }
+        return resolve();
+      } else
+        return reject(new Error('La playlist global no ha sido inicializada. No se puede actualizar el rating de la canción.'));
     });
   }
 
@@ -174,6 +176,4 @@ export class GlobalPlaylistService {
         callback(value);
     });
   }
-
-
 }
