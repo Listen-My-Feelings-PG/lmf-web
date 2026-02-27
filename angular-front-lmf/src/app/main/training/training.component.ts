@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { Song } from '../../_types/generals.models';
 import { HttpService } from '../../_services/http.service';
 import { ListComponent } from "../../list/list.component";
+import { GlobalPlaylistService } from '../../_services/global-playlist.service';
+import { UserScore } from '../../_types/generals.interfaces';
 
 @Component({
   selector: 'app-training',
@@ -22,7 +24,7 @@ export class TrainingComponent implements OnInit {
   includePlaylistTraining = false;
   selectedRatings: Set<number> = new Set();
 
-  constructor(private httpService: HttpService) {
+  constructor(private httpService: HttpService, private globalPlaylistService: GlobalPlaylistService) {
     this.listForTraining = {
       list: [],
       playlistMode: 'single'
@@ -39,6 +41,24 @@ export class TrainingComponent implements OnInit {
       };
     } catch (error) {
       console.error('Error al cargar datos para entrenamiento:', error);
+    }
+  }
+
+  async playSong(event: Song): Promise<void> {
+    try {
+      await this.globalPlaylistService.songList('set', this.listForTraining.list, true, true);
+      await this.globalPlaylistService.songPlaying('set', event);
+    } catch (error) {
+      console.error('Error al reproducir canción:', error);
+    }
+  }
+
+  async rateSongByUser(event: { song: Song, score: UserScore }): Promise<void> {
+    try {
+      await this.httpService.rateSongByIdSong(event.song.id as number, event.score as UserScore);
+      await this.globalPlaylistService.songList('set', this.listForTraining.list, true, true);
+    } catch (error) {
+      console.error('Error al calificar canción:', error);
     }
   }
 
@@ -61,13 +81,12 @@ export class TrainingComponent implements OnInit {
   getActiveFiltersText(): string {
     const filters: string[] = [];
 
-    if (this.selectedMode === 'infer') {
+    if (this.selectedMode === 'infer')
       filters.push('Modo: Inferir');
-    }
 
-    if (this.includePlaylistTraining) {
+    if (this.includePlaylistTraining)
       filters.push('Incluye Playlist');
-    }
+
 
     if (this.selectedRatings.size > 0) {
       const ratings = Array.from(this.selectedRatings).sort().map(r => `Rating ${r}`).join(', ');

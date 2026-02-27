@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Router, RouterOutlet } from '@angular/router';
 import { PlayerComponent } from '../player/player.component';
 import { HttpService } from '../_services/http.service';
-import { PlaylistService } from '../_services/playlist.service';
+import { GlobalPlaylistService } from '../_services/global-playlist.service';
 
 @Component({
   selector: 'app-main',
@@ -13,7 +13,7 @@ import { PlaylistService } from '../_services/playlist.service';
 export class MainComponent implements OnInit {
   constructor(
     private httpService: HttpService,
-    private playlistService: PlaylistService,
+    private globalPlaylistService: GlobalPlaylistService,
     private router: Router
   ) { }
 
@@ -21,12 +21,12 @@ export class MainComponent implements OnInit {
     try {
       const playlists = await this.httpService.getAllPlaylists();
       if (playlists) {
-        const playlistSelected = this.playlistService.getPlaylistSelected();
+        const playlistSelected = this.globalPlaylistService.selectedPlaylist('get');
         const defaultPlaylist = playlists.find(pl => pl.isDefault);
         if (!playlistSelected && defaultPlaylist) {
           const songList = await this.httpService.getPlaylistContentByIdPlaylist(defaultPlaylist.id as number);
           if (songList) {
-            await this.playlistService.initializePlaylistGlobal({
+            await this.globalPlaylistService.initialize({
               playlists: playlists,
               songList: songList,
               selected: defaultPlaylist

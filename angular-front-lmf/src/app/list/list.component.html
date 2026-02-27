@@ -139,7 +139,7 @@
         @for (row of table.getRowModel().rows; track row.id) {
         <tr (mouseenter)="hoveredRow.set(row.original.id!)"
           (mouseleave)="hoveredRow.set(null)"
-          (click)="playSong(row.original)"
+          (click)="selectSong(row.original)"
           [class]="'cursor-pointer transition-all duration-150 group ' + 
               (isPlaying(row.original) ? 'bg-gradient-to-r from-purple-900/25 to-pink-900/25 border-l-4 border-primary' : 'hover:bg-gray-800')">
 
@@ -214,7 +214,8 @@
                 <div class="absolute inset-0 rounded-full"
                   [style.background]="getCircularProgressStyle(row.original.tsProbScore0)"></div>
                 <div class="absolute inset-1 bg-gray-900 rounded-full"></div>
-                <i [class]="row.original.tsProbScore0 !== null ? 'far fa-thumbs-down text-red-500 text-xs relative z-10' : 'far fa-thumbs-down text-gray-600 text-xs relative z-10'"></i>
+                <i
+                  [class]="row.original.tsProbScore0 !== null ? 'far fa-thumbs-down text-red-500 text-xs relative z-10' : 'far fa-thumbs-down text-gray-600 text-xs relative z-10'"></i>
               </div>
 
               <!-- Star 1 (Score 1 Prediction) -->
@@ -223,7 +224,8 @@
                 <div class="absolute inset-0 rounded-full"
                   [style.background]="getCircularProgressStyle(row.original.tsProbScore1)"></div>
                 <div class="absolute inset-1 bg-gray-900 rounded-full"></div>
-                <i [class]="row.original.tsProbScore1 !== null ? 'fas fa-star text-yellow-400 text-xs relative z-10' : 'far fa-star text-gray-600 text-xs relative z-10'"></i>
+                <i
+                  [class]="row.original.tsProbScore1 !== null ? 'fas fa-star text-yellow-400 text-xs relative z-10' : 'far fa-star text-gray-600 text-xs relative z-10'"></i>
               </div>
 
               <!-- Star 2 (Score 2 Prediction) -->
@@ -232,7 +234,8 @@
                 <div class="absolute inset-0 rounded-full"
                   [style.background]="getCircularProgressStyle(row.original.tsProbScore2)"></div>
                 <div class="absolute inset-1 bg-gray-900 rounded-full"></div>
-                <i [class]="row.original.tsProbScore2 !== null ? 'fas fa-star text-yellow-400 text-xs relative z-10' : 'far fa-star text-gray-600 text-xs relative z-10'"></i>
+                <i
+                  [class]="row.original.tsProbScore2 !== null ? 'fas fa-star text-yellow-400 text-xs relative z-10' : 'far fa-star text-gray-600 text-xs relative z-10'"></i>
               </div>
 
               <!-- Star 3 (Score 3 Prediction) -->
@@ -241,7 +244,8 @@
                 <div class="absolute inset-0 rounded-full"
                   [style.background]="getCircularProgressStyle(row.original.tsProbScore3)"></div>
                 <div class="absolute inset-1 bg-gray-900 rounded-full"></div>
-                <i [class]="row.original.tsProbScore3 !== null ? 'fas fa-star text-yellow-400 text-xs relative z-10' : 'far fa-star text-gray-600 text-xs relative z-10'"></i>
+                <i
+                  [class]="row.original.tsProbScore3 !== null ? 'fas fa-star text-yellow-400 text-xs relative z-10' : 'far fa-star text-gray-600 text-xs relative z-10'"></i>
               </div>
             </div>
           </td>

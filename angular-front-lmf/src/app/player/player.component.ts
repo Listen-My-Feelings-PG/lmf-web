@@ -1,8 +1,9 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Song } from '../_types/generals.models';
-import { PlaylistService } from '../_services/playlist.service';
+import { GlobalPlaylistService } from '../_services/global-playlist.service';
 import { HttpService } from '../_services/http.service';
+import { UserScore } from '../_types/generals.interfaces';
 
 @Component({
   selector: 'app-player',
@@ -26,7 +27,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
   private currentBlobUrl: string | null = null;
 
   constructor(
-    private playlistService: PlaylistService,
+    private globalPlaylistService: GlobalPlaylistService,
     private httpService: HttpService
   ) {
     this.setup = {
@@ -40,7 +41,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.playlistService.getEventSubscription((value) => {
+    this.globalPlaylistService.getEventSubscription((value) => {
       const currentSongs = value.songList || [];
 
       // Detectar si la canción que se está reproduciendo cambió
@@ -58,10 +59,8 @@ export class PlayerComponent implements OnInit, OnDestroy {
         return !existingSong || song.userScore !== existingSong.userScore;
       });
 
-      if (songsContentChanged) {
-        // Actualizar la lista manteniendo el índice de reproducción
+      if (songsContentChanged)
         this.setup.list = currentSongs;
-      }
     });
   }
 
@@ -175,7 +174,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
     if (this.setup.playingIndex !== null && this.setup.playingIndex < this.setup.list.length - 1) {
       const nextIndex = this.setup.playingIndex + 1;
       const nextSong = this.setup.list[nextIndex];
-      this.playlistService.setSongPlaying(nextSong).catch(err => console.error('Error al reproducir siguiente canción:', err));
+      this.globalPlaylistService.songPlaying('set', nextSong).catch(err => console.error('Error al reproducir siguiente canción:', err));
     }
   }
 
@@ -183,7 +182,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
     if (this.setup.playingIndex !== null && this.setup.playingIndex > 0) {
       const previousIndex = this.setup.playingIndex - 1;
       const previousSong = this.setup.list[previousIndex];
-      this.playlistService.setSongPlaying(previousSong).catch(err => console.error('Error al reproducir canción anterior:', err));
+      this.globalPlaylistService.songPlaying('set', previousSong).catch(err => console.error('Error al reproducir canción anterior:', err));
     }
   }
 
@@ -260,20 +259,9 @@ export class PlayerComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.httpService.rateSongByIdSong(currentSong.id, score as 0 | 1 | 2 | 3).then(async () => {
+    this.httpService.rateSongByIdSong(currentSong.id, score as UserScore).then(async () => {
       try {
-        // Crear una nueva copia del array con el score actualizado
-        const updatedList = this.setup.list.map(song =>
-          song.id === currentSong.id
-            ? { ...song, userScore: score as 0 | 1 | 2 | 3 }
-            : song
-        );
-
-        // Actualizar la lista local
-        this.setup.list = updatedList;
-
-        // Actualizar en el servicio para que la tabla también se actualice
-        await this.playlistService.updateSongList(updatedList, false);
+        this.globalPlaylistService.setSongRating(currentSong.id!, score as UserScore);
       } catch (error) {
         console.error('Error al actualizar el rating localmente:', error);
       }

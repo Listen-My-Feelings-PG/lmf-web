@@ -1,7 +1,7 @@
-import { Component, OnInit, OnDestroy, OnChanges, SimpleChanges, Input, computed, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, OnChanges, SimpleChanges, Input, computed, signal, Output, EventEmitter } from '@angular/core';
 import { Playlist, Song } from '../_types/generals.models';
 import { Subscription } from 'rxjs';
-import { PlaylistService } from '../_services/playlist.service';
+import { GlobalPlaylistService } from '../_services/global-playlist.service';
 import { HttpService } from '../_services/http.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -13,6 +13,7 @@ import {
   getSortedRowModel,
   ColumnDef,
 } from '@tanstack/angular-table';
+import { UserScore } from '../_types/generals.interfaces';
 
 @Component({
   selector: 'app-list',
@@ -21,19 +22,24 @@ import {
   styleUrl: './list.component.scss'
 })
 export class ListComponent implements OnInit, OnDestroy, OnChanges {
-  @Input('list') _list: Array<Song> = [];
-  @Input('componentMode') componentMode: 'outlet' | 'child' = 'outlet';
+  @Input('list') _list: Array<Song>;
+  @Input('componentMode') componentMode: 'outlet' | 'child';
+  @Input('songPlaying') songPlaying: Song | null;
+  @Output('onSelectSong') onSelectSong: EventEmitter<Song>;
+  @Output('onRateSong') onRateSong: EventEmitter<{ song: Song, score: UserScore }>;
+
 
   private subscription!: Subscription;
-  private previousPlaylistId: number | null = null;
-  private previousSongsCount: number = 0;
-  currentPlaylist: Playlist | null = null;
-  songPlaying: Song | null = null;
+  private previousPlaylistId: number | null;
+  private previousSongsCount: number;
+  currentPlaylist: Playlist | null;
 
   // TanStack Table signals
   data = signal<Song[]>([]);
   globalFilter = signal('');
-  columnOrder = signal<string[]>(['id', 'title', 'artist', 'album', 'userScore', 'modelPrediction', 'fileName']);
+  columnOrder = signal<string[]>([
+    'id', 'title', 'artist', 'album', 'userScore', 'modelPrediction', 'fileName'
+  ]);
   selectedRows = signal<Set<number>>(new Set());
   hoveredRow = signal<number | null>(null);
 
@@ -54,105 +60,48 @@ export class ListComponent implements OnInit, OnDestroy, OnChanges {
 
   // Define columns for TanStack Table
   columns: ColumnDef<Song>[] = [
-    {
-      accessorKey: 'id',
-      id: 'id',
-      header: '#',
-      cell: info => info.getValue(),
-      size: 60,
-      minSize: 60,
-      maxSize: 80,
-    },
-    {
-      accessorFn: row => row.metadata?.title,
-      id: 'title',
-      header: 'Título',
-      cell: info => info.getValue() || '-',
-      size: 200,
-      minSize: 150,
-    },
-    {
-      accessorFn: row => row.metadata?.artist,
-      id: 'artist',
-      header: 'Artista',
-      cell: info => info.getValue() || '-',
-      size: 150,
-      minSize: 120,
-    },
-    {
-      accessorFn: row => row.metadata?.album,
-      id: 'album',
-      header: 'Álbum',
-      cell: info => info.getValue() || '-',
-      size: 150,
-      minSize: 120,
-    },
-    {
-      accessorKey: 'userScore',
-      id: 'userScore',
-      header: 'Rating',
-      cell: info => info.getValue(),
-      enableSorting: false,
-      size: 130,
-      minSize: 130,
-      maxSize: 130,
-    },
-    {
-      accessorFn: row => row,
-      id: 'modelPrediction',
-      header: 'Predicción',
-      cell: info => info.getValue(),
-      enableSorting: false,
-      size: 180,
-      minSize: 180,
-      maxSize: 180,
-    },
-    {
-      accessorKey: 'fileName',
-      id: 'fileName',
-      header: 'Nombre de archivo',
-      cell: info => info.getValue(),
-      minSize: 200,
-    },
+    { accessorKey: 'id', id: 'id', header: '#', cell: info => info.getValue(), size: 60, minSize: 60, maxSize: 80, },
+    { accessorFn: row => row.metadata?.title, id: 'title', header: 'Título', cell: info => info.getValue() || '-', size: 200, minSize: 150, },
+    { accessorFn: row => row.metadata?.artist, id: 'artist', header: 'Artista', cell: info => info.getValue() || '-', size: 150, minSize: 120, },
+    { accessorFn: row => row.metadata?.album, id: 'album', header: 'Álbum', cell: info => info.getValue() || '-', size: 150, minSize: 120, },
+    { accessorKey: 'userScore', id: 'userScore', header: 'Rating', cell: info => info.getValue(), enableSorting: false, size: 130, minSize: 130, maxSize: 130, },
+    { accessorFn: row => row, id: 'modelPrediction', header: 'Predicción', cell: info => info.getValue(), enableSorting: false, size: 180, minSize: 180, maxSize: 180, },
+    { accessorKey: 'fileName', id: 'fileName', header: 'Nombre de archivo', cell: info => info.getValue(), minSize: 200, },
   ];
 
   // Create TanStack Table instance
   table = createAngularTable(() => ({
-    data: this.data(),
-    columns: this.columns,
-    columnOrder: this.columnOrder(),
+    data: this.data(), columns: this.columns, columnOrder: this.columnOrder(),
     state: {
       globalFilter: this.globalFilter(),
       columnOrder: this.columnOrder(),
     },
     onGlobalFilterChange: (updater) => {
-      if (typeof updater === 'function') {
+      if (typeof updater === 'function')
         this.globalFilter.set(updater(this.globalFilter()));
-      } else {
+      else
         this.globalFilter.set(updater);
-      }
     },
     onColumnOrderChange: (updater) => {
-      if (typeof updater === 'function') {
+      if (typeof updater === 'function')
         this.columnOrder.set(updater(this.columnOrder()));
-      } else {
+      else
         this.columnOrder.set(updater);
-      }
-    },
-    enableColumnResizing: true,
-    columnResizeMode: 'onChange' as const,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    initialState: {
-      pagination: {
-        pageSize: 25,
-      },
-    },
+    }, enableColumnResizing: true, columnResizeMode: 'onChange' as const, getCoreRowModel: getCoreRowModel(), getFilteredRowModel: getFilteredRowModel(),
+    getSortedRowModel: getSortedRowModel(), getPaginationRowModel: getPaginationRowModel(),
+    initialState: { pagination: { pageSize: 25, }, },
   }));
 
-  constructor(private playlistService: PlaylistService, private httpService: HttpService) { }
+  constructor(private globalPlaylist: GlobalPlaylistService, private httpService: HttpService) {
+    this._list = [];
+    this.previousPlaylistId = null;
+    this.previousSongsCount = 0;
+    this.currentPlaylist = null;
+    this.songPlaying = null;
+    this.componentMode = 'outlet';
+    this.onSelectSong = new EventEmitter<Song>();
+    this.onRateSong = new EventEmitter<{ song: Song, score: UserScore }>();
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     // Detectar cambios en el input _list
@@ -164,7 +113,7 @@ export class ListComponent implements OnInit, OnDestroy, OnChanges {
   ngOnInit(): void {
     this.data.set(this._list);
 
-    this.subscription = this.playlistService.getEventSubscription((value) => {
+    this.subscription = this.globalPlaylist.getEventSubscription((value) => {
       if (this.componentMode == 'outlet') {
         const currentPlaylistId = value.selected?.id || null;
         const currentSongs = value.songList || [];
@@ -192,37 +141,41 @@ export class ListComponent implements OnInit, OnDestroy, OnChanges {
     });
   }
 
-  async playSong(song: Song): Promise<void> {
+  async selectSong(song: Song): Promise<void> {
     try {
       if (song) {
-        await this.playlistService.setSongPlaying(song);
-        if (this.componentMode == 'child')
-          await this.playlistService.updateSongList(this._list, true);
+        if (this.componentMode == 'outlet')
+          await this.globalPlaylist.songPlaying('set', song);
+        else
+          this.onSelectSong.emit(song);
       }
     } catch (error) {
       console.error('Error al reproducir la canción:', error);
     }
   }
 
-  rateSong(song: Song, score: 0 | 1 | 2 | 3): void {
-    this.httpService.rateSongByIdSong(song.id!, score).then(async () => {
-      try {
-        // Crear una nueva copia del array con el score actualizado
-        const updatedSongList = this._list.map(s =>
-          s.id === song.id
-            ? { ...s, userScore: score }
-            : s
-        );
+  rateSong(song: Song, score: UserScore): void {
+    if (this.componentMode == 'child')
+      this.onRateSong.emit({ song, score });
+    else
+      this.httpService.rateSongByIdSong(song.id!, score).then(async () => {
+        try {
+          // Crear una nueva copia del array con el score actualizado
+          const updatedSongList = this._list.map(s =>
+            s.id === song.id
+              ? { ...s, userScore: score }
+              : s
+          );
 
-        // Actualizar la lista local
-        this._list = updatedSongList;
-        this.data.set(updatedSongList);
+          // Actualizar la lista local
+          this._list = updatedSongList;
+          this.data.set(updatedSongList);
 
-        await this.playlistService.updateSongList(updatedSongList, false);
-      } catch (error) {
-        console.error('Error al actualizar el rating localmente después de calificar la canción:', error);
-      }
-    }).catch(error => console.error('Error al calificar la canción:', error));
+          await this.globalPlaylist.songList('set', updatedSongList);
+        } catch (error) {
+          console.error('Error al actualizar el rating localmente después de calificar la canción:', error);
+        }
+      }).catch(error => console.error('Error al calificar la canción:', error));
   }
 
   isPlaying(song: Song): boolean {
@@ -232,11 +185,10 @@ export class ListComponent implements OnInit, OnDestroy, OnChanges {
   toggleRowSelection(songId: number): void {
     const selected = this.selectedRows();
     const newSelected = new Set(selected);
-    if (newSelected.has(songId)) {
+    if (newSelected.has(songId))
       newSelected.delete(songId);
-    } else {
+    else
       newSelected.add(songId);
-    }
     this.selectedRows.set(newSelected);
   }
 
@@ -257,10 +209,9 @@ export class ListComponent implements OnInit, OnDestroy, OnChanges {
     const currentPage = this.table.getState().pagination.pageIndex;
     const totalPages = this.table.getPageCount();
 
-    if (totalPages <= this.maxPageButtons) {
-      // Si hay menos páginas que el máximo, mostrar todas
+    if (totalPages <= this.maxPageButtons)
       return Array.from({ length: totalPages }, (_, i) => i);
-    }
+
 
     const pages: (number | '...')[] = [];
     const halfButtons = Math.floor(this.maxPageButtons / 2);
@@ -275,9 +226,9 @@ export class ListComponent implements OnInit, OnDestroy, OnChanges {
     // Siempre mostrar primera página
     if (startPage > 0) {
       pages.push(0);
-      if (startPage > 1) {
+      if (startPage > 1)
         pages.push('...');
-      }
+
     }
 
     // Páginas en el rango
