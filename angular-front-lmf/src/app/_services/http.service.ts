@@ -54,9 +54,9 @@ export class HttpService {
     });
   }
 
-  trainSongsByIds(songIds: number[]): Promise<{ success: boolean, message: string }> {
+  trainSongsByIds(songIds: number[], mode: 'clean' | 'infer', includeLocalTraining: boolean): Promise<{ success: boolean, message: string }> {
     return new Promise((resolve, reject) => {
-      this.http.post<{ success: boolean, message: string }>(this.apiUrl + `/songs/train-songs-by-ids`, { songIds: JSON.stringify(songIds) }).subscribe({
+      this.http.post<{ success: boolean, message: string }>(this.apiUrl + `/songs/train-songs-by-ids`, { songIds: JSON.stringify(songIds), mode, includeLocalTraining }).subscribe({
         next: (response) => resolve(response),
         error: (error) => reject({ error, at: 'trainSongsByIds' })
       });

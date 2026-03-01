@@ -141,7 +141,7 @@ export class TrainingComponent implements OnInit {
     this.trainingMessage = null;
 
     try {
-      const result = await this.httpService.trainSongsByIds(songIds);
+      const result = await this.httpService.trainSongsByIds(songIds, this.selectedMode, this.includePlaylistTraining);
       this.trainingMessage = result.message;
       this.trainingMessageType = 'success';
     } catch (error: any) {
