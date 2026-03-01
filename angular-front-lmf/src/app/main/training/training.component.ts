@@ -44,19 +44,39 @@ export class TrainingComponent implements OnInit {
     }
   }
 
-  async playSong(event: Song): Promise<void> {
+  playSong(event: Song): void {
     try {
-      await this.globalPlaylistService.songList('set', this.listForTraining.list, true, true);
-      await this.globalPlaylistService.songPlaying('set', event);
+      const setSongListResult = this.globalPlaylistService.setSongList(
+        this.listForTraining.list,
+        { emptyPlaylistList: true, clearSelectedPlaylist: true }
+      );
+      if (!setSongListResult.ok) {
+        console.error('Error al configurar la lista de canciones:', setSongListResult.error);
+        return;
+      }
+
+      const setSongPlayingResult = this.globalPlaylistService.setSongPlaying(event);
+      if (!setSongPlayingResult.ok) {
+        console.error('Error al reproducir canción:', setSongPlayingResult.error);
+      }
     } catch (error) {
       console.error('Error al reproducir canción:', error);
     }
   }
 
-  async rateSongByUser(event: { song: Song, score: UserScore }): Promise<void> {
+  rateSongByUser(event: { song: Song, score: UserScore }): void {
     try {
-      await this.httpService.rateSongByIdSong(event.song.id as number, event.score as UserScore);
-      await this.globalPlaylistService.songList('set', this.listForTraining.list, true, true);
+      this.httpService.rateSongByIdSong(event.song.id as number, event.score as UserScore).then(() => {
+        const result = this.globalPlaylistService.setSongList(
+          this.listForTraining.list,
+          { emptyPlaylistList: true, clearSelectedPlaylist: true }
+        );
+        if (!result.ok) {
+          console.error('Error al actualizar la lista de canciones:', result.error);
+        }
+      }).catch(error => {
+        console.error('Error al calificar canción:', error);
+      });
     } catch (error) {
       console.error('Error al calificar canción:', error);
     }

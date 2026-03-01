@@ -1,6 +1,8 @@
-import { Component, OnInit, OnDestroy, OnChanges, SimpleChanges, Input, computed, signal, Output, EventEmitter } from '@angular/core';
+import {
+  Component, OnInit, OnDestroy, OnChanges, SimpleChanges,
+  Input, signal, Output, EventEmitter, effect
+} from '@angular/core';
 import { Playlist, Song } from '../_types/generals.models';
-import { Subscription } from 'rxjs';
 import { GlobalPlaylistService } from '../_services/global-playlist.service';
 import { HttpService } from '../_services/http.service';
 import { CommonModule } from '@angular/common';
@@ -28,7 +30,6 @@ export class ListComponent implements OnInit, OnDestroy, OnChanges {
   @Output('onSelectSong') onSelectSong: EventEmitter<Song>;
   @Output('onRateSong') onRateSong: EventEmitter<{ song: Song, score: UserScore }>;
 
-  private subscription!: Subscription;
   private previousPlaylistId: number | null;
   private previousSongsCount: number;
   currentPlaylist: Playlist | null;
@@ -91,28 +92,23 @@ export class ListComponent implements OnInit, OnDestroy, OnChanges {
     this.componentMode = 'outlet';
     this.onSelectSong = new EventEmitter<Song>();
     this.onRateSong = new EventEmitter<{ song: Song, score: UserScore }>();
-  }
 
-  ngOnChanges(changes: SimpleChanges): void {
-    // Detectar cambios en el input list
-    if (changes['list'] && changes['list'].currentValue)
-      this.data.set(changes['list'].currentValue);
-  }
-
-  ngOnInit(): void {
-    this.data.set(this.list);
-
-    this.subscription = this.globalPlaylist.getEventSubscription((value) => {
+    // Effect en constructor (contexto de inyección válido)
+    effect(() => {
+      console.log('effect activado en ListComponent - modo:', this.componentMode);
       if (this.componentMode == 'outlet') {
-        const currentPlaylistId = value.selected?.id || null;
-        const currentSongs = value.songList || [];
+        const selectedPlaylist = this.globalPlaylist.selectedPlaylist();
+        const currentSongs = this.globalPlaylist.songList();
+        const songPlaying = this.globalPlaylist.currentSong();
+
+        const currentPlaylistId = selectedPlaylist?.id || null;
         const currentSongsCount = currentSongs.length;
         const playlistChanged = this.previousPlaylistId !== currentPlaylistId;
         const songsCountChanged = this.previousSongsCount !== currentSongsCount;
 
         // Detectar cambios en el contenido (ratings) comparando por referencia o valores
         const songsContentChanged = currentSongs.some((song, index) => {
-          this.currentPlaylist = value.selected as Playlist;
+          this.currentPlaylist = selectedPlaylist as Playlist;
           const existingSong = this.list[index];
           return !existingSong || song.userScore !== existingSong.userScore;
         });
@@ -124,20 +120,33 @@ export class ListComponent implements OnInit, OnDestroy, OnChanges {
           this.data.set(currentSongs);
         }
 
-        if (value.songPlaying && (value.songPlaying.id !== this.songPlaying?.id)) {
-          this.songPlaying = value.songPlaying;
+        if (songPlaying && (songPlaying.id !== this.songPlaying?.id)) {
+          this.songPlaying = songPlaying;
         }
       }
     });
   }
 
-  async selectSong(song: Song): Promise<void> {
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['list'] && changes['list'].currentValue)
+      this.data.set(changes['list'].currentValue);
+  }
+
+  ngOnInit(): void {
+    this.data.set(this.list);
+  }
+
+  selectSong(song: Song): void {
     try {
       if (song) {
-        if (this.componentMode == 'outlet')
-          await this.globalPlaylist.songPlaying('set', song);
-        else
+        if (this.componentMode == 'outlet') {
+          const result = this.globalPlaylist.setSongPlaying(song);
+          if (!result.ok) {
+            console.error('Error al reproducir la canción:', result.error);
+          }
+        } else {
           this.onSelectSong.emit(song);
+        }
       }
     } catch (error) {
       console.error('Error al reproducir la canción:', error);
@@ -148,20 +157,21 @@ export class ListComponent implements OnInit, OnDestroy, OnChanges {
     if (this.componentMode == 'child')
       this.onRateSong.emit({ song, score });
     else
-      this.httpService.rateSongByIdSong(song.id!, score).then(async () => {
+      this.httpService.rateSongByIdSong(song.id!, score).then(() => {
         try {
-          // Crear una nueva copia del array con el score actualizado
           const updatedSongList = this.list.map(s =>
             s.id === song.id
               ? { ...s, userScore: score }
               : s
           );
 
-          // Actualizar la lista local
           this.list = updatedSongList;
           this.data.set(updatedSongList);
 
-          await this.globalPlaylist.songList('set', updatedSongList);
+          const result = this.globalPlaylist.setSongList(updatedSongList);
+          if (!result.ok) {
+            console.error('Error al actualizar el rating localmente:', result.error);
+          }
         } catch (error) {
           console.error('Error al actualizar el rating localmente después de calificar la canción:', error);
         }
@@ -245,7 +255,6 @@ export class ListComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   ngOnDestroy(): void {
-    if (this.subscription)
-      this.subscription.unsubscribe();
+    // Los effects se limpian automáticamente
   }
 }

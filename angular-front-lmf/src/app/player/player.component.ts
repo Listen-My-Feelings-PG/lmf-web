@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Song } from '../_types/generals.models';
 import { GlobalPlaylistService } from '../_services/global-playlist.service';
@@ -11,7 +11,7 @@ import { UserScore } from '../_types/generals.interfaces';
   templateUrl: './player.component.html',
   styleUrl: './player.component.scss'
 })
-export class PlayerComponent implements OnInit, OnDestroy {
+export class PlayerComponent implements OnDestroy {
   setup: {
     list: Array<Song>,
     playingIndex: number | null,
@@ -38,18 +38,18 @@ export class PlayerComponent implements OnInit, OnDestroy {
     // Inicializar el elemento de audio
     this.audio = new Audio();
     this.setupAudioListeners();
-  }
 
-  ngOnInit(): void {
-    this.globalPlaylistService.getEventSubscription((value) => {
-      const currentSongs = value.songList || [];
+    // Effect en constructor (contexto de inyección válido)
+    effect(() => {
+      const currentSongs = this.globalPlaylistService.songList();
+      const songPlaying = this.globalPlaylistService.currentSong();
 
       // Detectar si la canción que se está reproduciendo cambió
-      if (value.songPlaying) {
-        const songPlaying = this.setup.list[this.setup.playingIndex!];
-        if (!songPlaying || (songPlaying.id !== value.songPlaying.id)) {
+      if (songPlaying) {
+        const currentPlayingSong = this.setup.list[this.setup.playingIndex!];
+        if (!currentPlayingSong || (currentPlayingSong.id !== songPlaying.id)) {
           this.setup.list = currentSongs;
-          this.play(value.songPlaying!);
+          this.play(songPlaying!);
         }
       }
 
@@ -63,6 +63,8 @@ export class PlayerComponent implements OnInit, OnDestroy {
         this.setup.list = currentSongs;
     });
   }
+
+
 
   private setupAudioListeners(): void {
     // Actualizar el tiempo actual
@@ -174,7 +176,10 @@ export class PlayerComponent implements OnInit, OnDestroy {
     if (this.setup.playingIndex !== null && this.setup.playingIndex < this.setup.list.length - 1) {
       const nextIndex = this.setup.playingIndex + 1;
       const nextSong = this.setup.list[nextIndex];
-      this.globalPlaylistService.songPlaying('set', nextSong).catch(err => console.error('Error al reproducir siguiente canción:', err));
+      const result = this.globalPlaylistService.setSongPlaying(nextSong);
+      if (!result.ok) {
+        console.error('Error al reproducir siguiente canción:', result.error);
+      }
     }
   }
 
@@ -182,7 +187,10 @@ export class PlayerComponent implements OnInit, OnDestroy {
     if (this.setup.playingIndex !== null && this.setup.playingIndex > 0) {
       const previousIndex = this.setup.playingIndex - 1;
       const previousSong = this.setup.list[previousIndex];
-      this.globalPlaylistService.songPlaying('set', previousSong).catch(err => console.error('Error al reproducir canción anterior:', err));
+      const result = this.globalPlaylistService.setSongPlaying(previousSong);
+      if (!result.ok) {
+        console.error('Error al reproducir canción anterior:', result.error);
+      }
     }
   }
 
@@ -259,9 +267,12 @@ export class PlayerComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.httpService.rateSongByIdSong(currentSong.id, score as UserScore).then(async () => {
+    this.httpService.rateSongByIdSong(currentSong.id, score as UserScore).then(() => {
       try {
-        this.globalPlaylistService.setSongRating(currentSong.id!, score as UserScore);
+        const result = this.globalPlaylistService.rateSongPlaying(score as UserScore);
+        if (!result.ok) {
+          console.error('Error al actualizar el rating localmente:', result.error);
+        }
       } catch (error) {
         console.error('Error al actualizar el rating localmente:', error);
       }

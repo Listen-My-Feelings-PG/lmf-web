@@ -21,12 +21,13 @@ export class MainComponent implements OnInit {
     try {
       const playlists = await this.httpService.getAllPlaylists();
       if (playlists) {
-        const playlistSelected = this.globalPlaylistService.selectedPlaylist('get');
+        const playlistSelectedResult = this.globalPlaylistService.getSelectedPlaylist();
+        const playlistSelected = playlistSelectedResult.ok ? playlistSelectedResult.value : null;
         const defaultPlaylist = playlists.find(pl => pl.isDefault);
         if (!playlistSelected && defaultPlaylist) {
           const songList = await this.httpService.getPlaylistContentByIdPlaylist(defaultPlaylist.id as number);
           if (songList) {
-            await this.globalPlaylistService.initialize({
+            this.globalPlaylistService.initialize({
               playlists: playlists,
               songList: songList,
               selected: defaultPlaylist
