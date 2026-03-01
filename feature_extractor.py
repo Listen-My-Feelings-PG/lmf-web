@@ -24,7 +24,6 @@ import json
 import sys
 import os
 import traceback
-import unicodedata
 import numpy as np
 import warnings
 
@@ -37,11 +36,6 @@ SAMPLE_RATE = 16000
 def emit(data: dict):
     """Emite un evento JSON por stdout para streaming hacia Node.js"""
     print(json.dumps(data, ensure_ascii=False), flush=True)
-
-
-def normalize_path(file_path: str) -> str:
-    """Normaliza el path del archivo para compatibilidad Unicode (nombres en japonés, etc.)"""
-    return unicodedata.normalize('NFC', file_path)
 
 
 def load_vggish_model():
@@ -84,7 +78,6 @@ def extract_features_vggish(model, audio_path: str, device: str = 'cpu') -> np.n
     import torch
     import librosa
 
-    audio_path = normalize_path(audio_path)
     audio_path = os.path.abspath(audio_path)
 
     # Cargar audio con librosa (soporta MP3, WAV, FLAC, OGG, etc.)
@@ -217,7 +210,7 @@ def process_batch(songs_file: str, audio_dir: str, output_dir: str):
 
 def process_single(audio_path: str, output_path: str):
     """Procesa un solo archivo de audio y guarda las features."""
-    audio_path = normalize_path(audio_path)
+    audio_path = os.path.abspath(audio_path)
 
     if not os.path.exists(audio_path):
         emit({"type": "error", "error": f"Archivo no encontrado: {audio_path}"})

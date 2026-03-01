@@ -6,6 +6,8 @@ import { paths } from '../main';
 import SongModel from '../models/song.model';
 import { Song } from '../types/generals.models';
 
+const TAG = '[FeatureExtraction]';
+
 // ─── Lock global de extracción ───────────────────────────────────────────────
 let extractionInProgress = false;
 
@@ -46,9 +48,6 @@ interface SongForExtraction {
   featuresFile: string | null;
 }
 
-// ─── Helpers de consola ──────────────────────────────────────────────────────
-const TAG = '[FeatureExtraction]';
-
 function logInfo(msg: string): void {
   console.info(`${TAG} ${msg}`);
 }
@@ -66,13 +65,65 @@ function logSkip(msg: string): void {
 }
 
 /**
+ * Inicializa la extracción de features al arrancar el servidor.
+ * Consulta todas las canciones activas en BD y verifica cuáles NO tienen
+ * features extraídas (campo tsFeaturesFileName nulo O archivo .npy inexistente).
+ * Solo procesa las canciones faltantes.
+ */
+export async function initializeFeatureExtraction(): Promise<void> {
+  logInfo('═'.repeat(60));
+  logInfo('Verificando features extraídas...');
+
+  try {
+    const allSongs = await SongModel.getAll();
+    const featuresDir = path.resolve(paths.features);
+
+    const audioDir = path.resolve(paths.audio);
+
+    // Filtrar canciones que realmente tienen archivo de audio en disco
+    const songsWithAudio = allSongs.filter(song => {
+      const audioPath = path.join(audioDir, song.fileName);
+      return fs.existsSync(audioPath);
+    });
+
+    const songsWithoutAudio = allSongs.length - songsWithAudio.length;
+    if (songsWithoutAudio > 0) {
+      logInfo(`⚠ ${songsWithoutAudio} canción(es) sin archivo de audio en disco (se omiten)`);
+    }
+
+    const songsMissing = songsWithAudio.filter(song => {
+      if (!song.tsFeaturesFileName) return true;
+      const featurePath = path.join(featuresDir, song.tsFeaturesFileName);
+      return !fs.existsSync(featurePath);
+    });
+
+    logInfo(`Canciones activas: ${allSongs.length}`);
+    logInfo(`Canciones con audio en disco: ${songsWithAudio.length}`);
+    logInfo(`Canciones con features: ${songsWithAudio.length - songsMissing.length}`);
+    logInfo(`Canciones sin features: ${songsMissing.length}`);
+
+    if (songsMissing.length === 0) {
+      logInfo('Todas las canciones ya tienen features extraídas. No se requiere extracción.');
+      logInfo('═'.repeat(60));
+      return;
+    }
+
+    logInfo(`Iniciando extracción para ${songsMissing.length} canción(es) faltante(s)...`);
+    startFeatureExtraction(songsMissing);
+  } catch (error) {
+    logError(`Error al verificar features: ${error}`);
+    logInfo('═'.repeat(60));
+  }
+}
+
+/**
  * Inicia la extracción de features en background (fire-and-forget).
  * Adquiere el lock global, spawns Python, loguea todo en consola,
  * actualiza la BD al completar cada canción, y libera el lock al finalizar.
  *
  * @param songs Lista de canciones obtenidas de la BD
  */
-export function startFeatureExtraction(songs: Song[]): void {
+function startFeatureExtraction(songs: Song[]): void {
   if (extractionInProgress) {
     logError('Se intentó iniciar extracción pero ya hay un proceso activo.');
     return;

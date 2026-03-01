@@ -4,7 +4,7 @@ import SongModel from "../models/song.model";
 import path from "path";
 import fs from "fs";
 import { paths } from "../main";
-import { startFeatureExtraction, isExtractionActive } from "../services/feature-extraction.service";
+import { isExtractionActive } from "../services/feature-extraction.service";
 
 export async function serveSongById(req: Request, res: Response): Promise<void> {
   try {
@@ -64,54 +64,19 @@ export async function getAllSongsScoredByUser(_req: Request, res: Response): Pro
   }
 }
 
-export async function trainSongsByIds(req: Request, res: Response): Promise<void> {
-  let { songIds } = req.body;
-  try {
-    songIds = JSON.parse(songIds);
-  } catch {
-    sendError(res, 'Error al parsear la lista de IDs de canciones. Asegúrese de enviar un JSON válido.', BadRequest, null);
-    return;
-  }
-
-  console.log('songIds', songIds);
-
-  if (!songIds || !Array.isArray(songIds) || songIds.length === 0) {
-    sendError(res, 'Lista de IDs de canciones vacía o inválida', BadRequest, null);
-    return;
-  }
-
-  // Verificar si ya hay un proceso de extracción activo
+export async function trainSongsByIds(_req: Request, res: Response): Promise<void> {
+  // Verificar si hay un proceso de extracción de features activo
   if (isExtractionActive()) {
     res.status(423).json({
       success: false,
-      message: 'Ya hay un proceso de extracción de features activo. Intente de nuevo más tarde.'
+      message: 'La extracción de features aún está en progreso. Intente de nuevo cuando termine.'
     });
     return;
   }
 
-  try {
-    // Obtener datos de canciones desde la BD
-    const songs = await SongModel.getSongsByIds(songIds);
-
-    if (songs.length === 0) {
-      res.status(404).json({
-        success: false,
-        message: 'No se encontraron canciones con los IDs proporcionados'
-      });
-      return;
-    }
-
-    // Iniciar extracción de features en background (fire-and-forget)
-    startFeatureExtraction(songs);
-
-    // Responder inmediatamente al cliente
-    res.status(200).json({
-      success: true,
-      message: `Extracción de features iniciada para ${songs.length} canciones. Revise la consola del servidor para ver el progreso.`
-    });
-
-  } catch (error) {
-    console.error('Error en trainSongsByIds:', error);
-    sendError(res, 'Error al iniciar la extracción de features', InternalServerError, error instanceof Error ? error : null);
-  }
+  // TODO: Implementar entrenamiento del modelo TensorFlow
+  res.status(200).json({
+    success: true,
+    message: 'Endpoint listo para entrenamiento. Implementación pendiente.'
+  });
 }
