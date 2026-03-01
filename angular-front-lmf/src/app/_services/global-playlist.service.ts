@@ -40,9 +40,6 @@ export class GlobalPlaylistService {
     const currentState = this.state();
     if (!currentState.initialized)
       return { ok: false, error: 'La playlist global no ha sido inicializada. No se puede reproducir una canción.' };
-    const playListSelected = currentState.selected;
-    if (!playListSelected)
-      return { ok: false, error: 'No hay una playlist seleccionada. No se puede reproducir una canción.' };
     const songExists = currentState.songList.some(s => s.id === song.id);
     if (!songExists)
       return { ok: false, error: 'La canción seleccionada no existe en la playlist seleccionada.' };

@@ -4,6 +4,7 @@ import SongModel from "../models/song.model";
 import path from "path";
 import fs from "fs";
 import { paths } from "../main";
+import { startFeatureExtraction, isExtractionActive } from "../services/feature-extraction.service";
 
 export async function serveSongById(req: Request, res: Response): Promise<void> {
   try {
@@ -60,5 +61,57 @@ export async function getAllSongsScoredByUser(_req: Request, res: Response): Pro
     res.status(200).json({ success: true, data: songs, message: 'Canciones puntuadas por el usuario obtenidas correctamente' });
   } catch (error) {
     sendError(res, 'Error al obtener las canciones puntuadas por el usuario', InternalServerError, error instanceof Error ? error : null);
+  }
+}
+
+export async function trainSongsByIds(req: Request, res: Response): Promise<void> {
+  let { songIds } = req.body;
+  try {
+    songIds = JSON.parse(songIds);
+  } catch {
+    sendError(res, 'Error al parsear la lista de IDs de canciones. Asegúrese de enviar un JSON válido.', BadRequest, null);
+    return;
+  }
+
+  console.log('songIds', songIds);
+
+  if (!songIds || !Array.isArray(songIds) || songIds.length === 0) {
+    sendError(res, 'Lista de IDs de canciones vacía o inválida', BadRequest, null);
+    return;
+  }
+
+  // Verificar si ya hay un proceso de extracción activo
+  if (isExtractionActive()) {
+    res.status(423).json({
+      success: false,
+      message: 'Ya hay un proceso de extracción de features activo. Intente de nuevo más tarde.'
+    });
+    return;
+  }
+
+  try {
+    // Obtener datos de canciones desde la BD
+    const songs = await SongModel.getSongsByIds(songIds);
+
+    if (songs.length === 0) {
+      res.status(404).json({
+        success: false,
+        message: 'No se encontraron canciones con los IDs proporcionados'
+      });
+      return;
+    }
+
+    // Iniciar extracción de features en background (fire-and-forget)
+    startFeatureExtraction(songs);
+
+    // Responder inmediatamente al cliente
+    res.status(200).json({
+      success: true,
+      message: `Extracción de features iniciada para ${songs.length} canciones. Revise la consola del servidor para ver el progreso.`
+    });
+
+  } catch (error) {
+    console.error('Error en trainSongsByIds:', error);
+    sendError(res, 'Error al iniciar la extracción de features', InternalServerError, error instanceof Error ? error : null);
   }
 }

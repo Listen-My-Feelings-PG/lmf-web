@@ -1,9 +1,13 @@
-# Requirements para feature_extractor.py
+# Requirements para feature_extractor.py (VGGish Transfer Learning)
 # Instalar con: pip install -r requirements.txt
+#
+# IMPORTANTE: PyTorch con CUDA debe instalarse por separado:
+#   pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu121
+#
+# Hardware objetivo: NVIDIA RTX 4050 (CUDA 12.x)
 
 librosa>=0.10.1
 numpy>=1.24.0
-scikit-learn>=1.3.0
 scipy>=1.11.0
 soundfile>=0.12.1
-audioread>=3.0.0
+resampy>=0.4.2

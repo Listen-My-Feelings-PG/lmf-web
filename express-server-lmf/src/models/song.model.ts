@@ -64,6 +64,7 @@ class SongModel {
           ${songData.tsProbScore1 !== undefined ? psql`, ca_ts_prob_calif_1 = ${songData.tsProbScore1}` : psql``}
           ${songData.tsProbScore2 !== undefined ? psql`, ca_ts_prob_calif_2 = ${songData.tsProbScore2}` : psql``}
           ${songData.tsProbScore3 !== undefined ? psql`, ca_ts_prob_calif_3 = ${songData.tsProbScore3}` : psql``}
+          ${songData.tsFeaturesFileName !== undefined ? psql`, ca_ts_features_filename = ${songData.tsFeaturesFileName}` : psql``}
         WHERE ca_id = ${id}
       `;
 
@@ -139,7 +140,8 @@ class SongModel {
           ca_ts_prob_calif_0 as "tsProbScore0",
           ca_ts_prob_calif_1 as "tsProbScore1",
           ca_ts_prob_calif_2 as "tsProbScore2",
-          ca_ts_prob_calif_3 as "tsProbScore3"
+          ca_ts_prob_calif_3 as "tsProbScore3",
+          ca_ts_features_filename as "tsFeaturesFileName"
         FROM public.canciones
         WHERE ca_activo = B'0'`;
       return songs.map(song => ({
@@ -155,7 +157,8 @@ class SongModel {
         tsProbScore0: song.tsProbScore0 ?? null,
         tsProbScore1: song.tsProbScore1 ?? null,
         tsProbScore2: song.tsProbScore2 ?? null,
-        tsProbScore3: song.tsProbScore3 ?? null
+        tsProbScore3: song.tsProbScore3 ?? null,
+        tsFeaturesFileName: song.tsFeaturesFileName ?? null
       }));
     } catch (error) {
       console.error('Error al obtener canciones inactivas:', error);
@@ -178,7 +181,8 @@ class SongModel {
           ca_ts_prob_calif_0 as "tsProbScore0",
           ca_ts_prob_calif_1 as "tsProbScore1",
           ca_ts_prob_calif_2 as "tsProbScore2",
-          ca_ts_prob_calif_3 as "tsProbScore3"
+          ca_ts_prob_calif_3 as "tsProbScore3",
+          ca_ts_features_filename as "tsFeaturesFileName"
         FROM public.canciones
         WHERE ca_activo = B'1'`;
       return songs.map(song => ({
@@ -194,7 +198,8 @@ class SongModel {
         tsProbScore0: song.tsProbScore0 ?? null,
         tsProbScore1: song.tsProbScore1 ?? null,
         tsProbScore2: song.tsProbScore2 ?? null,
-        tsProbScore3: song.tsProbScore3 ?? null
+        tsProbScore3: song.tsProbScore3 ?? null,
+        tsFeaturesFileName: song.tsFeaturesFileName ?? null
       }));
     } catch (error) {
       console.error('Error al obtener todas las canciones:', error);
@@ -217,7 +222,8 @@ class SongModel {
           ca_ts_prob_calif_0 as "tsProbScore0",
           ca_ts_prob_calif_1 as "tsProbScore1",
           ca_ts_prob_calif_2 as "tsProbScore2",
-          ca_ts_prob_calif_3 as "tsProbScore3"
+          ca_ts_prob_calif_3 as "tsProbScore3",
+          ca_ts_features_filename as "tsFeaturesFileName"
         FROM public.canciones
         WHERE ca_id = ${id} AND ca_activo = B'1'`;
       if (!song) return null;
@@ -234,7 +240,8 @@ class SongModel {
         tsProbScore0: song.tsProbScore0 ?? null,
         tsProbScore1: song.tsProbScore1 ?? null,
         tsProbScore2: song.tsProbScore2 ?? null,
-        tsProbScore3: song.tsProbScore3 ?? null
+        tsProbScore3: song.tsProbScore3 ?? null,
+        tsFeaturesFileName: song.tsFeaturesFileName ?? null
       };
     } catch (error) {
       console.error('Error al buscar canción por ID:', error);
@@ -257,7 +264,8 @@ class SongModel {
           ca_ts_prob_calif_0 as "tsProbScore0",
           ca_ts_prob_calif_1 as "tsProbScore1",
           ca_ts_prob_calif_2 as "tsProbScore2",
-          ca_ts_prob_calif_3 as "tsProbScore3"
+          ca_ts_prob_calif_3 as "tsProbScore3",
+          ca_ts_features_filename as "tsFeaturesFileName"
         FROM public.canciones
         WHERE ca_filename = ${fileName} AND ca_activo = B'1'`;
       if (!song) return null;
@@ -274,7 +282,8 @@ class SongModel {
         tsProbScore0: song.tsProbScore0 ?? null,
         tsProbScore1: song.tsProbScore1 ?? null,
         tsProbScore2: song.tsProbScore2 ?? null,
-        tsProbScore3: song.tsProbScore3 ?? null
+        tsProbScore3: song.tsProbScore3 ?? null,
+        tsFeaturesFileName: song.tsFeaturesFileName ?? null
       };
     } catch (error) {
       console.error('Error al buscar canción por nombre:', error);
@@ -297,7 +306,8 @@ class SongModel {
           ca_ts_prob_calif_0,
           ca_ts_prob_calif_1,
           ca_ts_prob_calif_2,
-          ca_ts_prob_calif_3
+          ca_ts_prob_calif_3,
+          ca_ts_features_filename
       FROM rel_playlists_canciones
       left join canciones on ca_id=pr_ca_id
       where pr_pl_id=${idPlaylist} AND ca_activo = B'1'`;
@@ -315,6 +325,7 @@ class SongModel {
         tsProbScore1: song.ca_ts_prob_calif_1 ?? null,
         tsProbScore2: song.ca_ts_prob_calif_2 ?? null,
         tsProbScore3: song.ca_ts_prob_calif_3 ?? null,
+        tsFeaturesFileName: song.ca_ts_features_filename ?? null,
         idPlaylist: idPlaylist
       }));
     } catch (error) {
@@ -353,6 +364,7 @@ class SongModel {
           ca_ts_prob_calif_1,
           ca_ts_prob_calif_2,
           ca_ts_prob_calif_3,
+          ca_ts_features_filename,
           pr_pl_id as "idPlaylist"
       FROM rel_playlists_canciones
       left join canciones on ca_id=pr_ca_id
@@ -371,10 +383,73 @@ class SongModel {
         tsProbScore1: song.ca_ts_prob_calif_1 ?? null,
         tsProbScore2: song.ca_ts_prob_calif_2 ?? null,
         tsProbScore3: song.ca_ts_prob_calif_3 ?? null,
+        tsFeaturesFileName: song.ca_ts_features_filename ?? null,
         idPlaylist: song.idPlaylist
       }));
     } catch (error) {
       console.error('Error al obtener canciones calificadas por el usuario:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtener múltiples canciones por sus IDs (para extracción de features)
+   */
+  static async getSongsByIds(ids: number[]): Promise<Array<Song>> {
+    try {
+      if (ids.length === 0) return [];
+      const songs = await psql<any[]>`SELECT 
+          ca_id as id,
+          ca_calif_usuario as "userScore",
+          ca_filename as "fileName",
+          ca_filesize as "fileSize",
+          ca_id_tipodato,
+          ca_metadata as metadata,
+          ca_ts_calif_global as "tsGlobalScore",
+          ca_train_level_local as "tsTrainLevelLocal",
+          ca_train_level_global as "tsTrainLevelGlobal",
+          ca_ts_prob_calif_0 as "tsProbScore0",
+          ca_ts_prob_calif_1 as "tsProbScore1",
+          ca_ts_prob_calif_2 as "tsProbScore2",
+          ca_ts_prob_calif_3 as "tsProbScore3",
+          ca_ts_features_filename as "tsFeaturesFileName"
+        FROM public.canciones
+        WHERE ca_id = ANY(${ids}) AND ca_activo = B'1'`;
+      return songs.map(song => ({
+        id: song.id,
+        userScore: song.userScore ?? null,
+        fileName: song.fileName,
+        fileSize: song.fileSize,
+        dataType: song.ca_id_tipodato === 1 ? 'file' : 'link',
+        metadata: song.metadata && song.metadata.trim().startsWith('{') ? JSON.parse(song.metadata) : undefined,
+        tsGlobalScore: song.tsGlobalScore ?? null,
+        tsTrainLevelLocal: song.tsTrainLevelLocal ?? null,
+        tsTrainLevelGlobal: song.tsTrainLevelGlobal ?? null,
+        tsProbScore0: song.tsProbScore0 ?? null,
+        tsProbScore1: song.tsProbScore1 ?? null,
+        tsProbScore2: song.tsProbScore2 ?? null,
+        tsProbScore3: song.tsProbScore3 ?? null,
+        tsFeaturesFileName: song.tsFeaturesFileName ?? null
+      }));
+    } catch (error) {
+      console.error('Error al obtener canciones por IDs:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Actualizar el nombre de archivo de features de una canción
+   */
+  static async updateFeaturesFilename(songId: number, tsFeaturesFileName: string): Promise<{ success: boolean }> {
+    try {
+      await psql`
+        UPDATE public.canciones
+        SET ca_ts_features_filename = ${tsFeaturesFileName}
+        WHERE ca_id = ${songId} AND ca_activo = B'1'
+      `;
+      return { success: true };
+    } catch (error) {
+      console.error('Error al actualizar features filename:', error);
       throw error;
     }
   }

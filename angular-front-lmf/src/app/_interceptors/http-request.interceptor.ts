@@ -34,6 +34,7 @@ export const httpRequestInterceptor: HttpInterceptorFn = (req, next) => {
       if (body[key] !== null)
         formData.set(key, (body as any)[key]);
     }/*NOTA: Si el valor es null o undefined, no se escribe en el FormData. (Se debe validar en el backend si el campo no es obligatorio (nullable) o si tiene valor por default)*/
+
     return next(req.clone({ body: formData }));
   }
 };

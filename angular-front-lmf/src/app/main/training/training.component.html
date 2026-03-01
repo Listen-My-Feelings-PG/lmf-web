@@ -27,7 +27,8 @@
       </div>
       <div class="flex items-center gap-3">
         @if (configPanelCollapsed) {
-        <button
+        <button [disabled]="listForTraining.list.length === 0"
+          (click)="startTraining()"
           class="px-6 py-2 bg-gradient-to-r from-primary via-secondary to-accent hover:opacity-90 text-white font-bold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
           <i class="fas fa-play-circle"></i>
           Iniciar Entrenamiento
@@ -56,12 +57,12 @@
               Modalidad
             </label>
             <div class="flex items-center justify-center bg-gray-950 rounded-lg p-2 border border-gray-700">
-              <button (click)="selectedMode = 'clean'"
+              <button (click)="setModality('clean')"
                 [class]="selectedMode === 'clean' ? 'flex-1 px-4 py-3 rounded-md font-semibold transition-all duration-200 bg-primary text-white shadow-lg' : 'flex-1 px-4 py-3 rounded-md font-semibold transition-all duration-200 text-gray-400 hover:text-gray-200 hover:bg-gray-800'">
                 <i class="fas fa-graduation-cap mr-2"></i>
                 Entrenamiento Limpio
               </button>
-              <button (click)="selectedMode = 'infer'"
+              <button (click)="setModality('infer')"
                 [class]="selectedMode === 'infer' ? 'flex-1 px-4 py-3 rounded-md font-semibold transition-all duration-200 bg-primary text-white shadow-lg' : 'flex-1 px-4 py-3 rounded-md font-semibold transition-all duration-200 text-gray-400 hover:text-gray-200 hover:bg-gray-800'">
                 <i class="fas fa-magic mr-2"></i>
                 Inferir
@@ -194,14 +195,30 @@
         <div class="flex items-center justify-between">
           <div class="text-sm text-gray-400">
             <i class="fas fa-info-circle mr-2"></i>
-            <span class="font-mono">0</span> canciones seleccionadas para entrenamiento
+            <span class="font-mono">{{ listForTraining.list.length }}</span> canciones seleccionadas para entrenamiento
           </div>
-          <button
+          <button [disabled]="listForTraining.list.length === 0"
+            (click)="startTraining()"
             class="px-6 py-3 bg-gradient-to-r from-primary via-secondary to-accent hover:opacity-90 text-white font-bold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed">
             <i class="fas fa-play-circle text-xl"></i>
             Iniciar Entrenamiento
           </button>
         </div>
+        @if (trainingMessage) {
+        <div class="mt-3 p-3 rounded-lg text-sm flex items-center gap-2"
+          [class]="trainingMessageType === 'success'
+              ? 'bg-green-900/30 border border-green-700/50 text-green-400'
+              : trainingMessageType === 'locked'
+                ? 'bg-yellow-900/30 border border-yellow-700/50 text-yellow-400'
+                : 'bg-red-900/30 border border-red-700/50 text-red-400'">
+          <i [class]="trainingMessageType === 'success'
+              ? 'fas fa-check-circle'
+              : trainingMessageType === 'locked'
+                ? 'fas fa-lock'
+                : 'fas fa-exclamation-triangle'"></i>
+          {{ trainingMessage }}
+        </div>
+        }
       </div>
 
     </div>

@@ -95,7 +95,6 @@ export class ListComponent implements OnInit, OnDestroy, OnChanges {
 
     // Effect en constructor (contexto de inyección válido)
     effect(() => {
-      console.log('effect activado en ListComponent - modo:', this.componentMode);
       if (this.componentMode == 'outlet') {
         const selectedPlaylist = this.globalPlaylist.selectedPlaylist();
         const currentSongs = this.globalPlaylist.songList();

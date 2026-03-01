@@ -17,6 +17,7 @@ export interface Song {
   tsProbScore1?: number;
   tsProbScore2?: number;
   tsProbScore3?: number;
+  tsFeaturesFileName?: string;
   idPlaylist?: number;
 }
 
