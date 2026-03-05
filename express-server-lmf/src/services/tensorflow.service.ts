@@ -72,10 +72,8 @@ function readNpy(filePath: string): { data: Float32Array; shape: number[] } {
 
   const headerStr = buf.toString('ascii', majorVersion === 1 ? 10 : 12, dataStart);
 
-  // Verificar que no es Fortran order
-  if (headerStr.includes("'fortran_order': True")) {
-    throw new Error('Archivos .npy en Fortran order no están soportados');
-  }
+  // Detectar Fortran order (column-major)
+  const isFortran = headerStr.includes("'fortran_order': True");
 
   // Parsear shape: 'shape': (N, 128,)
   const shapeMatch = headerStr.match(/'shape':\s*\(([^)]+)\)/);
@@ -98,6 +96,21 @@ function readNpy(filePath: string): { data: Float32Array; shape: number[] } {
     data = Float32Array.from(new Float64Array(aligned));
   } else {
     throw new Error(`Dtype no soportado: ${dtype}`);
+  }
+
+  // Transponer de Fortran order (column-major) a C order (row-major) si es necesario.
+  // Fortran almacena los datos columna por columna: el elemento [i,j] está en índice j*rows + i.
+  // C order los almacena fila por fila: el elemento [i,j] está en índice i*cols + j.
+  // Para shape (rows, cols) hacemos la transposición en memoria.
+  if (isFortran && shape.length === 2) {
+    const [rows, cols] = shape;
+    const transposed = new Float32Array(rows * cols);
+    for (let i = 0; i < rows; i++) {
+      for (let j = 0; j < cols; j++) {
+        transposed[i * cols + j] = data[j * rows + i];
+      }
+    }
+    data = transposed;
   }
 
   return { data, shape };
@@ -456,7 +469,7 @@ async function runTraining(
 
       if (!localModel) {
         logInfo(`Creando modelo local para playlist "${playlist.name}" (ID: ${playlistId})...`);
-        localModel = await createAndRegisterModel(false, `model_local_pl${playlistId}`);
+        localModel = await createAndRegisterModel(false, `model_local_pl_${playlistId}`);
         await PlaylistModel.updateModelId(playlistId, localModel.id!);
         logSuccess(`Modelo local creado (ID: ${localModel.id}) → playlist "${playlist.name}"`);
       } else {
@@ -553,7 +566,7 @@ async function trainSingleModel(
   features.forEach((feat, i) => xData.set(feat, i * DEFAULT_CONFIG.inputDim));
 
   const xs = tf.tensor2d(xData, [features.length, DEFAULT_CONFIG.inputDim]);
-  const ys = tf.tensor1d(labels, 'int32');
+  const ys = tf.tensor1d(labels, 'float32');
 
   // Entrenar
   const epochs = DEFAULT_CONFIG.epochs;
@@ -606,30 +619,23 @@ async function trainSingleModel(
     version: newVersion
   });
 
-  // Obtener predicciones para calibración y actualización de canciones
-  const predictions = model.predict(xs) as tf.Tensor;
-  const predArray = await predictions.array() as number[][];
-
   // Preparar registros de calibración (batch)
+  // En modo 'fit' no se ejecutan predicciones — los campos de predicción se reservan
+  // para cuando el modelo entre en modo predicción.
   const now = new Date();
   const calibrationEntries: Omit<Calibration, 'id'>[] = [];
 
   for (let i = 0; i < trainSongIds.length; i++) {
-    const probs = predArray[i];
-    const globalScore = probs[0] * 0 + probs[1] * 1 + probs[2] * 2 + probs[3] * 3;
 
+    // En modo 'fit' las columnas de predicción (globalScore, probScore0-3) se dejan nulas.
+    // Solo se llenan cuando el modelo entra en modo predicción.
     calibrationEntries.push({
       songId: trainSongIds[i],
       modelId: tsModel.id!,
       interactionType: 'fit',
       interactionDate: now,
-      globalScore,
       userScore: labels[i],
       configEpochs: epochs,
-      probScore0: probs[0],
-      probScore1: probs[1],
-      probScore2: probs[2],
-      probScore3: probs[3],
       loss: finalLoss,
       accuracy: finalAcc,
       learningRate: tsModel.learningRate,
@@ -637,16 +643,13 @@ async function trainSingleModel(
     });
 
     // Actualizar resultados en la canción
+    // En modo 'fit' solo se incrementa el trainLevel. Los campos de predicción
+    // (globalScore, probScore0-3) se reservan para cuando el modelo entre en modo predicción.
     const songUpdate: Parameters<typeof SongModel.updateTrainingResults>[1] = {};
 
     if (modelType === 'global') {
       const currentSong = songs.find(s => s.id === trainSongIds[i]);
       songUpdate.trainLevelGlobal = (currentSong?.tsTrainLevelGlobal || 0) + 1;
-      songUpdate.globalScore = globalScore;
-      songUpdate.probScore0 = probs[0];
-      songUpdate.probScore1 = probs[1];
-      songUpdate.probScore2 = probs[2];
-      songUpdate.probScore3 = probs[3];
     } else {
       const currentSong = songs.find(s => s.id === trainSongIds[i]);
       songUpdate.trainLevelLocal = (currentSong?.tsTrainLevelLocal || 0) + 1;
@@ -662,7 +665,6 @@ async function trainSingleModel(
   // Limpiar tensores
   xs.dispose();
   ys.dispose();
-  predictions.dispose();
   model.dispose();
 }
 

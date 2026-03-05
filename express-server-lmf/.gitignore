@@ -31,10 +31,10 @@ Thumbs.db
 *~
 
 # Archivos de aplicación
-files/audio/*
+files/*
 !files/audio/.gitkeep
-files/features/*
 !files/features/.gitkeep
+!files/ts-models/.gitkeep
 
 # Logs
 logs/
@@ -44,3 +44,5 @@ logs/
 temp/
 tmp/
 *.tmp
+
+
