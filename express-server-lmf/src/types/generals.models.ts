@@ -30,7 +30,7 @@ export interface Playlist {
   modelId?: number;
 }
 
-export interface TsModel {
+export interface TensorFlowModel {
   id?: number;
   active?: boolean;
   trainedSongs: number;

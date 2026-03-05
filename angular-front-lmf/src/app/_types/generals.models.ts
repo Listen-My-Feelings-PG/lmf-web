@@ -28,13 +28,13 @@ export class Playlist {
   constructor(
     public name: string,
     public songs: Array<Song>,
-    public model: TsModel | null,
+    public model: TensorFlowModel | null,
     public isDefault: boolean,
     public id?: number
   ) { }
 }
 
-export class TsModel {
+export class TensorFlowModel {
   constructor(
     public id: number,
     public type: 'tensorflow',

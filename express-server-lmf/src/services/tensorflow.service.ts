@@ -6,16 +6,16 @@ import SongModel from '../models/song.model';
 import TsModelModel from '../models/tensorflow-db.model';
 import CalibrationModel from '../models/calibration.model';
 import PlaylistModel from '../models/playlist.model';
-import { Song, TsModel, Calibration } from '../types/generals.models';
+import { Song, TensorFlowModel, Calibration } from '../types/generals.models';
 
 // ─── Configuración por defecto ───────────────────────────────────────────────
 const DEFAULT_CONFIG = {
-  epochs: 50,
-  batchSize: 32,
-  learningRate: 0.001,
-  numClasses: 4,
-  inputDim: 128, // VGGish embedding dimension
-  validationSplit: 0.2,
+  epochs: parseInt(process.env.TS_CONFIG_DEAFULT_EPOCHS || '50'),
+  batchSize: parseInt(process.env.TS_CONFIG_DEAFULT_BATCH_SIZE || '32'),
+  learningRate: parseFloat(process.env.TS_CONFIG_DEAFULT_LEARNING_RATE || '0.001'),
+  numClasses: parseInt(process.env.TS_CONFIG_DEAFULT_NUM_CLASSES || '4'),
+  inputDim: parseInt(process.env.TS_CONFIG_DEAFULT_INPUT_DIM || '128'), // VGGish embedding dimension
+  validationSplit: parseFloat(process.env.TS_CONFIG_DEAFULT_VALIDATION_SPLIT || '0.2'),
 };
 
 const ARCHITECTURE_JSON = JSON.stringify({
@@ -126,8 +126,71 @@ function meanPoolEmbeddings(data: Float32Array, shape: number[]): Float32Array {
 // ─── Creación de modelo ──────────────────────────────────────────────────────
 /**
  * Crea la arquitectura del modelo de clasificación.
- * Input: (128) mean-pooled VGGish embeddings
- * Output: (4) probabilidades por clase (scores 0-3)
+ *
+ * ── Visión general ──────────────────────────────────────────────────────────
+ * Red neuronal feedforward (MLP) diseñada para clasificar canciones en 4
+ * categorías de sentimiento (scores 0-3) a partir de embeddings de audio
+ * generados por VGGish.
+ *
+ * ── Flujo de datos ──────────────────────────────────────────────────────────
+ *
+ *   Input (128)          Vector mean-pooled de embeddings VGGish.
+ *       │                Cada canción produce N frames de 128 dims; el mean
+ *       │                pooling los colapsa a un único vector (128,).
+ *       ▼
+ *   Dense (128 → 64)     Capa fully-connected que reduce la dimensionalidad
+ *       │                a 64 neuronas. Aprende combinaciones no lineales de
+ *       │                las 128 features acústicas.
+ *       │                • Activación: ReLU — f(x) = max(0, x). Introduce
+ *       │                  no-linealidad y evita el problema del gradiente
+ *       │                  desvaneciente mejor que sigmoid/tanh.
+ *       │                • Inicialización: He Normal — pesos ~ N(0, √(2/n_in)).
+ *       │                  Diseñada específicamente para ReLU; mantiene la
+ *       │                  varianza estable entre capas y evita que los
+ *       │                  gradientes exploten o se desvanezcan al inicio.
+ *       ▼
+ *   Dropout (30%)        Durante el entrenamiento, desactiva aleatoriamente
+ *       │                el 30% de las 64 neuronas en cada batch. Esto obliga
+ *       │                al modelo a no depender de neuronas individuales,
+ *       │                actuando como regularización implícita y reduciendo
+ *       │                el sobreajuste (overfitting). En inferencia no se
+ *       │                aplica (todas las neuronas activas, escaladas).
+ *       ▼
+ *   Dense (64 → 32)      Segunda capa oculta que comprime la representación
+ *       │                a 32 neuronas. Captura patrones más abstractos y de
+ *       │                mayor nivel a partir de la representación intermedia.
+ *       │                • Activación: ReLU (mismas ventajas que arriba).
+ *       │                • Inicialización: He Normal.
+ *       ▼
+ *   Dropout (30%)        Segunda capa de regularización. Misma lógica:
+ *       │                previene co-adaptación de neuronas en esta capa.
+ *       ▼
+ *   Dense (32 → 4)       Capa de salida con 4 neuronas, una por cada clase
+ *       │                de sentimiento (scores 0, 1, 2, 3).
+ *       │                • Activación: Softmax — convierte los logits en una
+ *       │                  distribución de probabilidad que suma 1.0.
+ *       │                  P(clase_i) = e^(z_i) / Σ e^(z_j)
+ *       │                  La clase predicha es argmax de estas probabilidades.
+ *       ▼
+ *   Output (4)           [P(score=0), P(score=1), P(score=2), P(score=3)]
+ *
+ * ── Resumen de parámetros ───────────────────────────────────────────────────
+ *   Capa 1 (Dense):  128×64 + 64 bias  =  8.256 parámetros
+ *   Capa 2 (Dense):   64×32 + 32 bias  =  2.080 parámetros
+ *   Capa 3 (Dense):    32×4 +  4 bias  =    132 parámetros
+ *   ─────────────────────────────────────────────────
+ *   Total:                                 10.468 parámetros entrenables
+ *   (Las capas Dropout no tienen parámetros entrenables)
+ *
+ * ── ¿Por qué esta arquitectura? ────────────────────────────────────────────
+ *   • Modelo compacto (~10K params) ideal para datasets pequeños (~230 canciones).
+ *     Redes más grandes sobreajustarían con tan pocos ejemplos.
+ *   • Reducción progresiva 128→64→32→4: cada capa abstrae más la información,
+ *     creando un "embudo" que comprime features acústicas hacia la decisión final.
+ *   • Dropout al 30% en ambas capas ocultas: tasa moderada que regulariza sin
+ *     sacrificar demasiada capacidad de aprendizaje.
+ *   • Softmax final + sparseCategoricalCrossentropy (en compile): combinación
+ *     estándar para clasificación multiclase donde las etiquetas son enteros.
  */
 function createModelArchitecture(
   inputDim: number = DEFAULT_CONFIG.inputDim,
@@ -135,21 +198,28 @@ function createModelArchitecture(
 ): tf.Sequential {
   const model = tf.sequential();
 
+  // Capa 1: Proyección del espacio de embeddings (128-dim) a representación interna (64-dim)
   model.add(tf.layers.dense({
     inputShape: [inputDim],
     units: 64,
     activation: 'relu',
     kernelInitializer: 'heNormal'
   }));
+
+  // Regularización: apaga 30% de neuronas al azar durante entrenamiento
   model.add(tf.layers.dropout({ rate: 0.3 }));
 
+  // Capa 2: Compresión adicional a 32-dim para capturar patrones de alto nivel
   model.add(tf.layers.dense({
     units: 32,
     activation: 'relu',
     kernelInitializer: 'heNormal'
   }));
+
+  // Regularización: segunda barrera contra overfitting
   model.add(tf.layers.dropout({ rate: 0.3 }));
 
+  // Capa de salida: 4 neuronas con softmax → distribución de probabilidad sobre los scores
   model.add(tf.layers.dense({
     units: numClasses,
     activation: 'softmax'
@@ -378,7 +448,7 @@ async function runTraining(
       const playlist = await PlaylistModel.getById(playlistId);
       if (!playlist) continue;
 
-      let localModel: TsModel | null = null;
+      let localModel: TensorFlowModel | null = null;
 
       if (playlist.modelId) {
         localModel = await TsModelModel.getById(playlist.modelId);
@@ -404,7 +474,7 @@ async function runTraining(
 }
 
 // ─── Crear y registrar modelo nuevo ──────────────────────────────────────────
-async function createAndRegisterModel(isGlobal: boolean, dirName: string): Promise<TsModel> {
+async function createAndRegisterModel(isGlobal: boolean, dirName: string): Promise<TensorFlowModel> {
   const modelsDir = path.resolve(paths.models);
   const modelPath = path.join(modelsDir, dirName);
 
@@ -440,7 +510,7 @@ async function createAndRegisterModel(isGlobal: boolean, dirName: string): Promi
 
 // ─── Entrenar un solo modelo ─────────────────────────────────────────────────
 async function trainSingleModel(
-  tsModel: TsModel,
+  tsModel: TensorFlowModel,
   songs: Song[],
   mode: string,
   modelType: 'global' | 'local'

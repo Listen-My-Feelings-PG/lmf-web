@@ -9,6 +9,7 @@ export const {
   InternalServerError,
   NotImplemented,
   ServiceUnavailable,
+  Locked
 } = httpErrors
 
 export function sendResponse<T = any>(

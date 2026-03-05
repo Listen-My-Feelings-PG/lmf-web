@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { BadRequest, InternalServerError, NotFound, sendError } from "../services/http-response-handler.service";
+import { BadRequest, InternalServerError, Locked, NotFound, sendError } from "../services/http-response-handler.service";
 import SongModel from "../models/song.model";
 import path from "path";
 import fs from "fs";
@@ -68,19 +68,13 @@ export async function getAllSongsScoredByUser(_req: Request, res: Response): Pro
 export async function trainSongsByIds(req: Request, res: Response): Promise<void> {
   // Verificar si hay un proceso de extracción de features activo
   if (isExtractionActive()) {
-    res.status(423).json({
-      success: false,
-      message: 'La extracción de features aún está en progreso. Intente de nuevo cuando termine.'
-    });
+    sendError(res, 'La extracción de features aún está en progreso. Intente de nuevo cuando termine.', Locked, null);
     return;
   }
 
   // Verificar si hay un proceso de entrenamiento activo
   if (isTrainingActive()) {
-    res.status(423).json({
-      success: false,
-      message: 'Ya hay un proceso de entrenamiento activo. Intente de nuevo más tarde.'
-    });
+    sendError(res, 'Ya hay un proceso de entrenamiento activo. Intente más tarde.', Locked, null);
     return;
   }
 

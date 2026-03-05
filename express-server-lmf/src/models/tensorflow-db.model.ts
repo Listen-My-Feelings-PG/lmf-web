@@ -1,10 +1,10 @@
 import { psql } from "../main";
-import { TsModel } from "../types/generals.models";
+import { TensorFlowModel } from "../types/generals.models";
 
 /**
- * Mapea un row de la BD al interface TsModel
+ * Mapea un row de la BD al interface TensorFlowModel
  */
-function mapRow(row: any): TsModel {
+function mapRow(row: any): TensorFlowModel {
   return {
     id: row.ts_id,
     active: row.active ?? true,
@@ -49,7 +49,7 @@ export default class TsModelModel {
   /**
    * Obtener el modelo global activo (el más reciente por versión)
    */
-  static async getGlobalModel(): Promise<TsModel | null> {
+  static async getGlobalModel(): Promise<TensorFlowModel | null> {
     try {
       const [row] = await psql<any[]>`
         SELECT ${SELECT_FIELDS}
@@ -68,7 +68,7 @@ export default class TsModelModel {
   /**
    * Obtener un modelo por su ID
    */
-  static async getById(id: number): Promise<TsModel | null> {
+  static async getById(id: number): Promise<TensorFlowModel | null> {
     try {
       const [row] = await psql<any[]>`
         SELECT ${SELECT_FIELDS}
@@ -85,7 +85,7 @@ export default class TsModelModel {
   /**
    * Crear un nuevo modelo en la BD
    */
-  static async create(data: Omit<TsModel, 'id' | 'active' | 'createdDate' | 'registeredDate'>): Promise<TsModel> {
+  static async create(data: Omit<TensorFlowModel, 'id' | 'active' | 'createdDate' | 'registeredDate'>): Promise<TensorFlowModel> {
     try {
       const [row] = await psql<any[]>`
         INSERT INTO public.ts_modelos (
