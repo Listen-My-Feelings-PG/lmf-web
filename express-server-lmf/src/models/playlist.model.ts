@@ -119,4 +119,20 @@ export default class PlaylistModel {
       throw error;
     }
   }
+
+  /**
+   * Asociar un modelo TensorFlow a una playlist
+   */
+  static async updateModelId(playlistId: number, modelId: number): Promise<void> {
+    try {
+      await psql`
+        UPDATE public.playlists
+        SET pl_id_ts_modelo = ${modelId}
+        WHERE pl_id = ${playlistId}
+      `;
+    } catch (error) {
+      console.error('Error al asociar modelo a playlist:', error);
+      throw error;
+    }
+  }
 }

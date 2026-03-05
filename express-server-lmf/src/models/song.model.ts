@@ -453,6 +453,55 @@ class SongModel {
       throw error;
     }
   }
+
+  /**
+   * Actualizar resultados de entrenamiento de una canción
+   */
+  static async updateTrainingResults(songId: number, data: {
+    trainLevelGlobal?: number;
+    trainLevelLocal?: number;
+    globalScore?: number;
+    probScore0?: number;
+    probScore1?: number;
+    probScore2?: number;
+    probScore3?: number;
+  }): Promise<void> {
+    try {
+      await psql`
+        UPDATE public.canciones
+        SET
+          ca_train_level_global = COALESCE(${data.trainLevelGlobal ?? null}, ca_train_level_global),
+          ca_train_level_local = COALESCE(${data.trainLevelLocal ?? null}, ca_train_level_local),
+          ca_ts_calif_global = COALESCE(${data.globalScore ?? null}, ca_ts_calif_global),
+          ca_ts_prob_calif_0 = COALESCE(${data.probScore0 ?? null}, ca_ts_prob_calif_0),
+          ca_ts_prob_calif_1 = COALESCE(${data.probScore1 ?? null}, ca_ts_prob_calif_1),
+          ca_ts_prob_calif_2 = COALESCE(${data.probScore2 ?? null}, ca_ts_prob_calif_2),
+          ca_ts_prob_calif_3 = COALESCE(${data.probScore3 ?? null}, ca_ts_prob_calif_3)
+        WHERE ca_id = ${songId} AND ca_activo = B'1'
+      `;
+    } catch (error) {
+      console.error('Error al actualizar resultados de entrenamiento:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtener las relaciones playlist-canción para un conjunto de IDs de canciones
+   */
+  static async getPlaylistRelations(songIds: number[]): Promise<Array<{ songId: number; playlistId: number }>> {
+    try {
+      if (songIds.length === 0) return [];
+      const rows = await psql<any[]>`
+        SELECT pr_ca_id as "songId", pr_pl_id as "playlistId"
+        FROM public.rel_playlists_canciones
+        WHERE pr_ca_id = ANY(${songIds})
+      `;
+      return rows;
+    } catch (error) {
+      console.error('Error al obtener relaciones playlist-canción:', error);
+      throw error;
+    }
+  }
 }
 
 export default SongModel;

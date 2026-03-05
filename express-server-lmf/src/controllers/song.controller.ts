@@ -5,6 +5,7 @@ import path from "path";
 import fs from "fs";
 import { paths } from "../main";
 import { isExtractionActive } from "../services/feature-extraction.service";
+import { isTrainingActive, startTraining } from "../services/tensorflow.service";
 
 export async function serveSongById(req: Request, res: Response): Promise<void> {
   try {
@@ -64,7 +65,7 @@ export async function getAllSongsScoredByUser(_req: Request, res: Response): Pro
   }
 }
 
-export async function trainSongsByIds(_req: Request, res: Response): Promise<void> {
+export async function trainSongsByIds(req: Request, res: Response): Promise<void> {
   // Verificar si hay un proceso de extracción de features activo
   if (isExtractionActive()) {
     res.status(423).json({
@@ -74,9 +75,45 @@ export async function trainSongsByIds(_req: Request, res: Response): Promise<voi
     return;
   }
 
-  // TODO: Implementar entrenamiento del modelo TensorFlow
-  res.status(200).json({
-    success: true,
-    message: 'Endpoint listo para entrenamiento. Implementación pendiente.'
-  });
+  // Verificar si hay un proceso de entrenamiento activo
+  if (isTrainingActive()) {
+    res.status(423).json({
+      success: false,
+      message: 'Ya hay un proceso de entrenamiento activo. Intente de nuevo más tarde.'
+    });
+    return;
+  }
+
+  try {
+    let songIds: number[];
+    try {
+      songIds = JSON.parse(req.body.songIds);
+    } catch {
+      sendError(res, 'Error al parsear songIds. Envíe un JSON válido.', BadRequest, null);
+      return;
+    }
+
+    const mode = req.body.mode || 'clean';
+    const includeLocalTraining = req.body.includeLocalTraining === 'true' || req.body.includeLocalTraining === true;
+
+    if (!songIds || !Array.isArray(songIds) || songIds.length === 0) {
+      sendError(res, 'Lista de IDs de canciones vacía o inválida', BadRequest, null);
+      return;
+    }
+
+    if (!['clean', 'incremental'].includes(mode)) {
+      sendError(res, 'Modo de entrenamiento inválido. Use "clean" o "incremental".', BadRequest, null);
+      return;
+    }
+
+    // Fire-and-forget: iniciar entrenamiento en background
+    startTraining(songIds, mode, includeLocalTraining);
+
+    res.status(200).json({
+      success: true,
+      message: `Entrenamiento iniciado para ${songIds.length} canciones (modo: ${mode}, local: ${includeLocalTraining}). Revise la consola del servidor.`
+    });
+  } catch (error) {
+    sendError(res, 'Error al iniciar el entrenamiento', InternalServerError, error instanceof Error ? error : null);
+  }
 }

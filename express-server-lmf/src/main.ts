@@ -25,7 +25,8 @@ const psql: Sql = postgres({
 
 const directories: string[] = [
   process.env.AUDIO_PATH || './files/audio',
-  process.env.FEATURES_PATH || './files/features'
+  process.env.FEATURES_PATH || './files/features',
+  process.env.MODELS_PATH || './files/ts-models'
 ];
 
 directories.forEach(dir => {
@@ -59,7 +60,8 @@ app.use((req: Request, _res: Response, next: NextFunction) => {
 
 const appPaths: AppPaths = {
   audio: directories[0],
-  features: directories[1]
+  features: directories[1],
+  models: directories[2]
 };
 
 export const config: AppConfig = {
