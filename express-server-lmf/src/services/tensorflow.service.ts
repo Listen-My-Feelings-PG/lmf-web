@@ -10,7 +10,7 @@ import { Song, TensorFlowModel, Calibration } from '../types/generals.models';
 
 // ─── Configuración por defecto ───────────────────────────────────────────────
 const DEFAULT_CONFIG = {
-  epochs: parseInt(process.env.TS_CONFIG_DEAFULT_EPOCHS || '50'),
+  epochs: parseInt(process.env.TS_CONFIG_DEAFULT_EPOCHS || '200'),
   batchSize: parseInt(process.env.TS_CONFIG_DEAFULT_BATCH_SIZE || '32'),
   learningRate: parseFloat(process.env.TS_CONFIG_DEAFULT_LEARNING_RATE || '0.001'),
   numClasses: parseInt(process.env.TS_CONFIG_DEAFULT_NUM_CLASSES || '4'),
@@ -29,8 +29,9 @@ const ARCHITECTURE_JSON = JSON.stringify({
   ]
 });
 
-// ─── Lock global de entrenamiento ────────────────────────────────────────────
+// ─── Locks globales ──────────────────────────────────────────────────────────
 let trainingInProgress = false;
+let predictionInProgress = false;
 
 // ─── Helpers de consola ──────────────────────────────────────────────────────
 const TAG = '[TensorFlow]';
@@ -43,6 +44,13 @@ function logError(msg: string): void { console.error(`${TAG} ✗ ${msg}`); }
  */
 export function isTrainingActive(): boolean {
   return trainingInProgress;
+}
+
+/**
+ * Indica si hay un proceso de predicción activo
+ */
+export function isPredictionActive(): boolean {
+  return predictionInProgress;
 }
 
 // ─── Lector de archivos .npy ─────────────────────────────────────────────────
@@ -539,11 +547,23 @@ async function trainSingleModel(
     return;
   }
 
-  // Log de distribución de clases
+  // Log de distribución de clases y cálculo de class weights
   const classCount = [0, 0, 0, 0];
   labels.forEach(l => classCount[l]++);
   logInfo(`Canciones a entrenar: ${features.length}`);
   logInfo(`Distribución de clases: 0=${classCount[0]}, 1=${classCount[1]}, 2=${classCount[2]}, 3=${classCount[3]}`);
+
+  // Class weights balanceados: weight_i = N_total / (N_clases * N_i)
+  // Compensa el desbalance de clases para evitar que el modelo colapse
+  // hacia la clase mayoritaria (mode collapse).
+  const numClasses = DEFAULT_CONFIG.numClasses;
+  const classWeight: { [key: number]: number } = {};
+  for (let c = 0; c < numClasses; c++) {
+    classWeight[c] = classCount[c] > 0
+      ? features.length / (numClasses * classCount[c])
+      : 1;
+  }
+  logInfo(`Class weights: ${Object.entries(classWeight).map(([k, v]) => `${k}=${v.toFixed(3)}`).join(', ')}`);
 
   // Cargar modelo desde disco
   const modelsDir = path.resolve(paths.models);
@@ -575,17 +595,40 @@ async function trainSingleModel(
 
   logInfo(`Fit: ${features.length} muestras, ${epochs} épocas, batch=${batchSize}, validación=${useValidation}`);
 
+  // Early stopping: detener si val_loss no mejora en 'patience' épocas
+  let bestValLoss = Infinity;
+  let patienceCounter = 0;
+  const patience = 20;
+  let stoppedEarly = false;
+
   const history = await (model as tf.LayersModel).fit(xs, ys, {
     epochs,
     batchSize,
     validationSplit: useValidation ? DEFAULT_CONFIG.validationSplit : 0,
     shuffle: true,
+    classWeight,
     callbacks: {
       onEpochEnd: (epoch, logs) => {
         if ((epoch + 1) % 10 === 0 || epoch === 0) {
           const loss = logs?.loss?.toFixed(4) ?? '?';
           const acc = (logs?.acc ?? logs?.accuracy)?.toFixed(4) ?? '?';
-          logInfo(`  Época ${epoch + 1}/${epochs} — loss: ${loss} | acc: ${acc}`);
+          const valLoss = logs?.val_loss?.toFixed(4) ?? '-';
+          logInfo(`  Época ${epoch + 1}/${epochs} — loss: ${loss} | acc: ${acc} | val_loss: ${valLoss}`);
+        }
+
+        // Early stopping basado en val_loss
+        if (useValidation && logs?.val_loss !== undefined) {
+          if (logs.val_loss < bestValLoss) {
+            bestValLoss = logs.val_loss;
+            patienceCounter = 0;
+          } else {
+            patienceCounter++;
+            if (patienceCounter >= patience) {
+              logInfo(`  Early stopping en época ${epoch + 1} (val_loss no mejoró en ${patience} épocas)`);
+              stoppedEarly = true;
+              model.stopTraining = true;
+            }
+          }
         }
       }
     }
@@ -596,8 +639,9 @@ async function trainSingleModel(
   const accArr = (history.history['acc'] || history.history['accuracy']) as number[];
   const finalLoss = lossArr[lossArr.length - 1];
   const finalAcc = accArr[accArr.length - 1];
+  const actualEpochs = lossArr.length;
 
-  logSuccess(`Entrenamiento completado — loss: ${finalLoss.toFixed(4)} | acc: ${finalAcc.toFixed(4)}`);
+  logSuccess(`Entrenamiento completado — loss: ${finalLoss.toFixed(4)} | acc: ${finalAcc.toFixed(4)} | épocas: ${actualEpochs}/${epochs}${stoppedEarly ? ' (early stop)' : ''}`);
 
   // Guardar modelo actualizado a disco
   if (!fs.existsSync(modelPath)) {
@@ -609,7 +653,7 @@ async function trainSingleModel(
   // Actualizar registro del modelo en BD
   const newVersion = (tsModel.version || 1) + 1;
   const newTrainedSongs = (tsModel.trainedSongs || 0) + features.length;
-  const newEpochs = (tsModel.completedEpochs || 0) + epochs;
+  const newEpochs = (tsModel.completedEpochs || 0) + actualEpochs;
 
   await TsModelModel.updateAfterTraining(tsModel.id!, {
     trainedSongs: newTrainedSongs,
@@ -684,4 +728,160 @@ async function getPlaylistSongMap(songIds: number[]): Promise<Map<number, number
   }
 
   return map;
+}
+
+// ─── Predicción ──────────────────────────────────────────────────────────────
+/**
+ * Inicia la predicción en background (fire-and-forget).
+ * Adquiere el lock de predicción. Todo el progreso se loguea en consola.
+ */
+export function startPrediction(songIds: number[]): void {
+  if (predictionInProgress) {
+    logError('Se intentó iniciar predicción pero ya hay un proceso activo.');
+    return;
+  }
+
+  predictionInProgress = true;
+
+  runPrediction(songIds)
+    .catch(err => logError(`Error fatal en predicción: ${err}`))
+    .finally(() => {
+      predictionInProgress = false;
+      logInfo('Lock de predicción liberado.');
+    });
+}
+
+/**
+ * Flujo principal de predicción.
+ * Carga el modelo global, ejecuta predict sobre cada canción y
+ * publica los resultados en las tablas `canciones` y `calibracion`.
+ */
+async function runPrediction(songIds: number[]): Promise<void> {
+  logInfo('═'.repeat(60));
+  logInfo('Iniciando predicción de canciones');
+  logInfo(`Canciones solicitadas: ${songIds.length}`);
+  logInfo('═'.repeat(60));
+
+  // 1. Obtener canciones de la BD
+  const songs = await SongModel.getSongsByIds(songIds);
+  logInfo(`Canciones encontradas en BD: ${songs.length}`);
+
+  if (songs.length === 0) {
+    logInfo('No se encontraron canciones. Abortando predicción.');
+    return;
+  }
+
+  // 2. Obtener modelo global
+  const globalModel = await TsModelModel.getGlobalModel();
+  if (!globalModel) {
+    throw new Error('No existe modelo global entrenado. Entrene un modelo primero.');
+  }
+  logInfo(`Modelo global: ID=${globalModel.id}, v${globalModel.version}, ${globalModel.trainedSongs} canciones entrenadas`);
+
+  // 3. Cargar modelo desde disco
+  const modelsDir = path.resolve(paths.models);
+  const modelPath = path.join(modelsDir, globalModel.filename);
+  const modelJsonPath = path.join(modelPath, 'model.json');
+
+  if (!fs.existsSync(modelJsonPath)) {
+    throw new Error(`Archivo de modelo no encontrado en disco: ${modelJsonPath}`);
+  }
+
+  const model = await tf.loadLayersModel(nodeLoadHandler(modelPath));
+  compileModel(model, globalModel.learningRate);
+  logSuccess('Modelo global cargado desde disco');
+
+  // 4. Predecir cada canción
+  const featuresDir = path.resolve(paths.features);
+  const now = new Date();
+  const calibrationEntries: Omit<Calibration, 'id'>[] = [];
+  let predicted = 0;
+  let skipped = 0;
+
+  for (const song of songs) {
+    if (!song.tsFeaturesFileName) {
+      logInfo(`  Canción ${song.id}: sin archivo de features. Omitiendo.`);
+      skipped++;
+      continue;
+    }
+
+    const featurePath = path.join(featuresDir, song.tsFeaturesFileName);
+    if (!fs.existsSync(featurePath)) {
+      logInfo(`  Canción ${song.id}: archivo de features no encontrado (${song.tsFeaturesFileName}). Omitiendo.`);
+      skipped++;
+      continue;
+    }
+
+    try {
+      // Leer y procesar features
+      const npy = readNpy(featurePath);
+      const pooled = meanPoolEmbeddings(npy.data, npy.shape);
+
+      // Crear tensor de entrada (1, 128)
+      const input = tf.tensor2d([Array.from(pooled)], [1, DEFAULT_CONFIG.inputDim]);
+      const prediction = model.predict(input) as tf.Tensor;
+      const probs = await prediction.data();
+
+      // Escalar probabilidades: softmax (0-1) → (0-100)
+      const probScore0 = probs[0] * 100;
+      const probScore1 = probs[1] * 100;
+      const probScore2 = probs[2] * 100;
+      const probScore3 = probs[3] * 100;
+
+      // Calcular globalScore: media ponderada P(0)*0 + P(1)*1 + P(2)*2 + P(3)*3 → rango 0-3
+      const globalScore = probs[0] * 0 + probs[1] * 1 + probs[2] * 2 + probs[3] * 3;
+
+      logInfo(`  Canción ${song.id}: P=[${probScore0.toFixed(1)}, ${probScore1.toFixed(1)}, ${probScore2.toFixed(1)}, ${probScore3.toFixed(1)}] | global=${globalScore.toFixed(4)}`);
+
+      // Actualizar tabla canciones
+      await SongModel.updateTrainingResults(song.id!, {
+        globalScore,
+        probScore0,
+        probScore1,
+        probScore2,
+        probScore3
+      });
+
+      // Preparar entrada de calibración
+      calibrationEntries.push({
+        songId: song.id!,
+        modelId: globalModel.id!,
+        interactionType: 'predict',
+        interactionDate: now,
+        globalScore,
+        userScore: song.userScore ?? 0,
+        configEpochs: globalModel.completedEpochs,
+        probScore0,
+        probScore1,
+        probScore2,
+        probScore3,
+        loss: globalModel.loss,
+        accuracy: globalModel.accuracy,
+        learningRate: globalModel.learningRate,
+        batchSize: globalModel.batchSize
+      });
+
+      predicted++;
+
+      // Limpiar tensores de esta iteración
+      input.dispose();
+      prediction.dispose();
+    } catch (err) {
+      logError(`  Error prediciendo canción ${song.id}: ${err}`);
+      skipped++;
+    }
+  }
+
+  // 5. Insertar registros de calibración en batch
+  if (calibrationEntries.length > 0) {
+    await CalibrationModel.createBatch(calibrationEntries);
+    logSuccess(`${calibrationEntries.length} registros de calibración guardados`);
+  }
+
+  // 6. Limpiar modelo
+  model.dispose();
+
+  logInfo('─'.repeat(40));
+  logSuccess(`Predicción completada: ${predicted} predichas, ${skipped} omitidas`);
+  logInfo('═'.repeat(60));
 }

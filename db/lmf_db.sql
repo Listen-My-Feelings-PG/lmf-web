@@ -6,59 +6,38 @@
 -- Dumped by pg_dump version 17.2
 
 SET statement_timeout = 0;
-
 SET lock_timeout = 0;
-
 SET idle_in_transaction_session_timeout = 0;
-
 SET transaction_timeout = 0;
-
 SET client_encoding = 'UTF8';
-
 SET standard_conforming_strings = on;
-
-SELECT pg_catalog.set_config ('search_path', '', false);
-
+SELECT pg_catalog.set_config('search_path', '', false);
 SET check_function_bodies = false;
-
 SET xmloption = content;
-
 SET client_min_messages = warning;
-
 SET row_security = off;
 
 --
 -- Name: lmf_db; Type: DATABASE; Schema: -; Owner: postgres
 --
 
-CREATE DATABASE lmf_db
-WITH
-    TEMPLATE = template0 ENCODING = 'UTF8' LOCALE_PROVIDER = libc LOCALE = 'es_ES.UTF-8';
+CREATE DATABASE lmf_db WITH TEMPLATE = template0 ENCODING = 'UTF8' LOCALE_PROVIDER = libc LOCALE = 'es_ES.UTF-8';
+
 
 ALTER DATABASE lmf_db OWNER TO postgres;
 
 \connect lmf_db
 
 SET statement_timeout = 0;
-
 SET lock_timeout = 0;
-
 SET idle_in_transaction_session_timeout = 0;
-
 SET transaction_timeout = 0;
-
 SET client_encoding = 'UTF8';
-
 SET standard_conforming_strings = on;
-
-SELECT pg_catalog.set_config ('search_path', '', false);
-
+SELECT pg_catalog.set_config('search_path', '', false);
 SET check_function_bodies = false;
-
 SET xmloption = content;
-
 SET client_min_messages = warning;
-
 SET row_security = off;
 
 SET default_tablespace = '';
@@ -75,14 +54,19 @@ CREATE TABLE public.calibracion (
     cl_id_modelo integer NOT NULL,
     cl_tipo_interaccion text NOT NULL,
     cl_fecha_interaccion timestamp with time zone NOT NULL,
-    cl_ts_calif_global numeric(6, 5),
+    cl_ts_calif_global numeric(6,5),
     cl_user_score integer NOT NULL,
     cl_ts_config_epocas integer NOT NULL,
-    cl_ts_prob_calif_0 numeric(6, 3),
-    cl_ts_prob_calif_1 numeric(6, 3),
-    cl_ts_prob_calif_2 numeric(6, 3),
-    cl_ts_prob_calif_3 numeric(6, 3)
+    cl_ts_prob_calif_0 numeric(6,3),
+    cl_ts_prob_calif_1 numeric(6,3),
+    cl_ts_prob_calif_2 numeric(6,3),
+    cl_ts_prob_calif_3 numeric(6,3),
+    cl_loss numeric(10,6),
+    cl_accuracy numeric(6,4),
+    cl_learning_rate numeric(10,8),
+    cl_batch_size integer
 );
+
 
 ALTER TABLE public.calibracion OWNER TO postgres;
 
@@ -94,17 +78,48 @@ COMMENT ON COLUMN public.calibracion.cl_tipo_interaccion IS '''fit'': Entrenamie
 ''predict'': Prediccion
 ''infer'': inferencia o ajuste';
 
+
+--
+-- Name: COLUMN calibracion.cl_loss; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.calibracion.cl_loss IS 'Loss del modelo al momento de la interacciÃ³n';
+
+
+--
+-- Name: COLUMN calibracion.cl_accuracy; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.calibracion.cl_accuracy IS 'Accuracy del modelo al momento de la interacciÃ³n';
+
+
+--
+-- Name: COLUMN calibracion.cl_learning_rate; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.calibracion.cl_learning_rate IS 'Learning rate usado en la interacciÃ³n';
+
+
+--
+-- Name: COLUMN calibracion.cl_batch_size; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.calibracion.cl_batch_size IS 'Batch size usado en la interacciÃ³n';
+
+
 --
 -- Name: calibracion_cl_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
-ALTER TABLE public.calibracion
-ALTER COLUMN cl_id
-ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME public.calibracion_cl_id_seq START
-    WITH
-        1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1
+ALTER TABLE public.calibracion ALTER COLUMN cl_id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.calibracion_cl_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
 );
+
 
 --
 -- Name: canciones; Type: TABLE; Schema: public; Owner: postgres
@@ -119,14 +134,15 @@ CREATE TABLE public.canciones (
     ca_id_tipodato integer NOT NULL,
     ca_activo bit(1) DEFAULT '1'::"bit" NOT NULL,
     ca_metadata text,
-    ca_ts_calif_global numeric(6, 5),
+    ca_ts_calif_global numeric(6,5),
     ca_train_level_global integer DEFAULT 0 NOT NULL,
-    ca_ts_prob_calif_0 numeric(6, 3),
-    ca_ts_prob_calif_1 numeric(6, 3),
-    ca_ts_prob_calif_2 numeric(6, 3),
-    ca_ts_prob_calif_3 numeric(6, 3),
+    ca_ts_prob_calif_0 numeric(6,3),
+    ca_ts_prob_calif_1 numeric(6,3),
+    ca_ts_prob_calif_2 numeric(6,3),
+    ca_ts_prob_calif_3 numeric(6,3),
     ca_ts_features_filename text
 );
+
 
 ALTER TABLE public.canciones OWNER TO postgres;
 
@@ -134,13 +150,15 @@ ALTER TABLE public.canciones OWNER TO postgres;
 -- Name: canciones_evaluadas_ce_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
-ALTER TABLE public.canciones
-ALTER COLUMN ca_id
-ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME public.canciones_evaluadas_ce_id_seq START
-    WITH
-        1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1
+ALTER TABLE public.canciones ALTER COLUMN ca_id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.canciones_evaluadas_ce_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
 );
+
 
 --
 -- Name: playlists; Type: TABLE; Schema: public; Owner: postgres
@@ -155,19 +173,22 @@ CREATE TABLE public.playlists (
     pl_is_default bit(1) DEFAULT '0'::"bit" NOT NULL
 );
 
+
 ALTER TABLE public.playlists OWNER TO postgres;
 
 --
 -- Name: playlists_pl_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
-ALTER TABLE public.playlists
-ALTER COLUMN pl_id
-ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME public.playlists_pl_id_seq START
-    WITH
-        1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1
+ALTER TABLE public.playlists ALTER COLUMN pl_id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.playlists_pl_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
 );
+
 
 --
 -- Name: rel_playlists_canciones; Type: TABLE; Schema: public; Owner: postgres
@@ -180,19 +201,22 @@ CREATE TABLE public.rel_playlists_canciones (
     pr_pl_fecha_adicion timestamp with time zone DEFAULT now() NOT NULL
 );
 
+
 ALTER TABLE public.rel_playlists_canciones OWNER TO postgres;
 
 --
 -- Name: rel_playlists_canciones_pc_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
-ALTER TABLE public.rel_playlists_canciones
-ALTER COLUMN pc_id
-ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME public.rel_playlists_canciones_pc_id_seq START
-    WITH
-        1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1
+ALTER TABLE public.rel_playlists_canciones ALTER COLUMN pc_id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.rel_playlists_canciones_pc_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
 );
+
 
 --
 -- Name: tipos_datos; Type: TABLE; Schema: public; Owner: postgres
@@ -205,19 +229,22 @@ CREATE TABLE public.tipos_datos (
     td_descripcion text
 );
 
+
 ALTER TABLE public.tipos_datos OWNER TO postgres;
 
 --
 -- Name: tipos_datos_td_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
-ALTER TABLE public.tipos_datos
-ALTER COLUMN td_id
-ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME public.tipos_datos_td_id_seq START
-    WITH
-        1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1
+ALTER TABLE public.tipos_datos ALTER COLUMN td_id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.tipos_datos_td_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
 );
+
 
 --
 -- Name: ts_modelos; Type: TABLE; Schema: public; Owner: postgres
@@ -231,5453 +258,1519 @@ CREATE TABLE public.ts_modelos (
     ts_fechacreacion timestamp with time zone NOT NULL,
     ts_fecharegistro timestamp with time zone DEFAULT now() NOT NULL,
     ts_filename text NOT NULL,
-    ts_perdida numeric(10, 6) DEFAULT '0'::numeric NOT NULL,
-    ts_precision numeric(6, 4) DEFAULT '0'::numeric NOT NULL,
+    ts_perdida numeric(10,6) DEFAULT '0'::numeric NOT NULL,
+    ts_precision numeric(6,4) DEFAULT '0'::numeric NOT NULL,
     ts_version integer DEFAULT 1 NOT NULL,
-    ts_is_global bit(1) NOT NULL
+    ts_is_global bit(1) NOT NULL,
+    ts_learning_rate numeric(10,8) DEFAULT 0.001 NOT NULL,
+    ts_batch_size integer DEFAULT 32 NOT NULL,
+    ts_num_clases integer DEFAULT 4 NOT NULL,
+    ts_input_dim integer DEFAULT 128 NOT NULL,
+    ts_arquitectura text
 );
 
+
 ALTER TABLE public.ts_modelos OWNER TO postgres;
+
+--
+-- Name: COLUMN ts_modelos.ts_learning_rate; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.ts_modelos.ts_learning_rate IS 'Tasa de aprendizaje del optimizador Adam';
+
+
+--
+-- Name: COLUMN ts_modelos.ts_batch_size; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.ts_modelos.ts_batch_size IS 'TamaÃ±o de batch para entrenamiento';
+
+
+--
+-- Name: COLUMN ts_modelos.ts_num_clases; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.ts_modelos.ts_num_clases IS 'NÃºmero de clases de salida (4: scores 0-3)';
+
+
+--
+-- Name: COLUMN ts_modelos.ts_input_dim; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.ts_modelos.ts_input_dim IS 'DimensiÃ³n de entrada (128 para VGGish embeddings)';
+
+
+--
+-- Name: COLUMN ts_modelos.ts_arquitectura; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.ts_modelos.ts_arquitectura IS 'Arquitectura del modelo en formato JSON';
+
 
 --
 -- Name: ts_modelos_ts_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
-ALTER TABLE public.ts_modelos
-ALTER COLUMN ts_id
-ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME public.ts_modelos_ts_id_seq START
-    WITH
-        1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1
+ALTER TABLE public.ts_modelos ALTER COLUMN ts_id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.ts_modelos_ts_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
 );
+
 
 --
 -- Data for Name: calibracion; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
+INSERT INTO public.calibracion OVERRIDING SYSTEM VALUE VALUES
+	(393, 833, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(394, 837, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(395, 895, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(396, 896, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(397, 940, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(398, 941, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(399, 942, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(400, 1020, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(401, 836, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(402, 817, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(403, 834, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(404, 839, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(405, 841, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(406, 842, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(407, 843, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(408, 844, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(409, 845, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(410, 846, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(411, 831, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(412, 848, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(413, 849, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(414, 850, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(415, 851, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(416, 853, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(417, 873, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(418, 858, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(419, 859, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(420, 860, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(421, 868, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(422, 864, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(423, 862, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(424, 835, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(425, 819, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(426, 818, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(427, 820, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(428, 824, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(429, 822, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(430, 821, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(431, 825, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(432, 827, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(433, 840, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(434, 830, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(435, 897, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(436, 899, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(437, 901, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(438, 900, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(439, 903, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 3, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(440, 904, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(441, 905, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(442, 907, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(443, 908, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 3, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(444, 909, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(445, 910, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(446, 913, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(447, 915, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(448, 916, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(449, 917, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(450, 919, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(451, 921, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(452, 922, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(453, 923, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(454, 927, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(455, 925, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(456, 926, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(457, 929, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(458, 930, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(459, 931, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(460, 932, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(461, 934, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(462, 936, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(463, 889, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(464, 872, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(465, 875, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(466, 869, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(467, 876, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(468, 890, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(469, 814, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(470, 816, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(471, 826, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(472, 893, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(473, 891, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(474, 894, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 3, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(475, 943, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(476, 944, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(477, 945, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(478, 946, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(479, 947, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(480, 950, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(481, 951, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(482, 952, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(483, 953, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(484, 976, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(485, 977, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(486, 955, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(487, 957, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(488, 958, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(489, 939, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(490, 960, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 3, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(491, 962, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(492, 985, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(493, 963, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(494, 964, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 3, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(495, 965, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(496, 978, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(497, 968, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(498, 967, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(499, 980, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(500, 969, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(501, 971, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(502, 972, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(503, 973, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(504, 986, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(505, 987, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(506, 1000, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(507, 990, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 3, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(508, 999, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(509, 994, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(510, 995, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(511, 989, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(512, 996, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(513, 997, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(514, 991, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(515, 975, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 3, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(516, 949, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(517, 983, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(518, 1014, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(519, 1021, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(520, 1019, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(521, 1022, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(522, 1017, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(523, 1018, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(524, 1023, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(525, 1024, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(526, 1001, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(527, 1002, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(528, 1003, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 3, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(529, 1005, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 3, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(530, 1006, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(531, 1025, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(532, 1007, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(533, 1029, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(534, 1030, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(535, 1028, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(536, 1031, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(537, 1027, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(538, 1032, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(539, 1009, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(540, 829, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(541, 838, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(542, 852, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(543, 982, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(544, 902, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(545, 914, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(546, 928, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(547, 1013, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(548, 1016, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(549, 959, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 3, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(550, 1015, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(551, 892, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(552, 828, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(553, 906, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(554, 912, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(555, 918, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(556, 924, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(557, 933, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(558, 874, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(559, 937, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(560, 984, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(561, 954, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(562, 961, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 3, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(563, 966, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(564, 970, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(565, 992, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(566, 847, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(567, 938, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(568, 988, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 3, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(569, 1011, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(570, 1008, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(571, 832, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(572, 857, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(573, 815, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(574, 898, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(575, 911, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 3, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(576, 920, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(577, 935, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(578, 870, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(579, 981, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(580, 974, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(581, 948, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(582, 956, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(583, 979, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 3, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(584, 993, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(585, 871, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(586, 1026, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(587, 823, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(588, 863, 6, 'fit', '2026-03-04 22:27:47.845-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 8.678975, 0.4615, 0.00100000, 32),
+	(589, 833, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(590, 837, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(591, 895, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(592, 896, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(593, 940, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(594, 941, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(595, 942, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(596, 1020, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(597, 836, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(598, 817, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(599, 834, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(600, 839, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(601, 841, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(602, 842, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(603, 843, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(604, 844, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(605, 845, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(606, 846, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(607, 831, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(608, 848, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(609, 849, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(610, 850, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(611, 851, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(612, 853, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(613, 873, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(614, 858, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(615, 859, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(616, 860, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(617, 868, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(618, 864, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(619, 862, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(620, 835, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(621, 819, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(622, 818, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(623, 820, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(624, 824, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(625, 822, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(626, 821, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(627, 825, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(628, 827, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(629, 840, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(630, 830, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(631, 897, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(632, 899, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(633, 901, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(634, 900, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(635, 903, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 3, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(636, 904, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(637, 905, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(638, 907, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(639, 908, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 3, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(640, 909, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(641, 910, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(642, 913, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(643, 915, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(644, 916, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(645, 917, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(646, 919, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(647, 921, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(648, 922, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(649, 923, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(650, 927, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(651, 925, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(652, 926, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(653, 929, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(654, 930, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(655, 931, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(656, 932, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(657, 934, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(658, 936, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(659, 889, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(660, 872, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(661, 875, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(662, 869, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(663, 876, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(664, 890, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(665, 814, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(666, 816, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(667, 826, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(668, 893, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(669, 891, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(670, 894, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 3, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(671, 943, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(672, 944, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(673, 945, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(674, 946, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(675, 947, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(676, 950, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(677, 951, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(678, 952, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(679, 953, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(680, 976, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(681, 977, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(682, 955, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(683, 957, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(684, 958, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(685, 939, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(686, 960, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 3, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(687, 962, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(688, 985, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(689, 963, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(690, 964, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 3, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(691, 965, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(692, 978, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(693, 968, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(694, 967, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(695, 980, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(696, 969, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(697, 971, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(698, 972, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(699, 973, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(700, 986, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(701, 987, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(702, 1000, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(703, 990, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 3, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(704, 999, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(705, 994, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(706, 995, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(707, 989, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(708, 996, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(709, 997, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(710, 991, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(711, 975, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 3, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(712, 949, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(713, 983, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(714, 1014, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(715, 1021, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(716, 1019, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(717, 1022, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(718, 1017, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(719, 1018, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(720, 1023, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(721, 1024, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(722, 1001, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(723, 1002, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(724, 1003, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 3, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(725, 1005, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 3, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(726, 1006, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(727, 1025, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(728, 1007, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(729, 1029, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(730, 1030, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(731, 1028, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(732, 1031, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(733, 1027, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(734, 1032, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(735, 1009, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(736, 829, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(737, 838, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(738, 852, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(739, 982, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(740, 902, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(741, 914, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(742, 928, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(743, 1013, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(744, 1016, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(745, 959, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 3, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(746, 1015, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(747, 892, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(748, 828, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(749, 906, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(750, 912, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(751, 918, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(752, 924, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(753, 933, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(754, 874, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(755, 937, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(756, 984, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(757, 954, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(758, 961, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 3, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(759, 966, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(760, 970, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(761, 992, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(762, 847, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(763, 938, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(764, 988, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 3, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(765, 1011, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(766, 1008, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(767, 832, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(768, 857, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(769, 815, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(770, 898, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(771, 911, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 3, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(772, 920, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(773, 935, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(774, 870, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(775, 981, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(776, 974, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(777, 948, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(778, 956, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(779, 979, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 3, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(780, 993, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 1, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(781, 871, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(782, 1026, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 2, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(783, 823, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(784, 863, 7, 'fit', '2026-03-04 22:27:49.76-06', NULL, 0, 50, NULL, NULL, NULL, NULL, 12.913116, 0.1923, 0.00100000, 32),
+	(785, 833, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(786, 837, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(787, 834, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(788, 980, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(789, 1013, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(790, 832, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(791, 895, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(792, 896, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(793, 839, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(794, 919, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(795, 922, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(796, 950, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(797, 996, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(798, 940, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(799, 941, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(800, 942, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(801, 1020, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(802, 836, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(803, 817, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(804, 854, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(805, 855, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(806, 856, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(807, 861, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(808, 865, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(809, 866, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(810, 842, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(811, 843, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(812, 844, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(813, 845, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(814, 846, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(815, 831, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(816, 848, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(817, 849, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(818, 850, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(819, 851, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(820, 853, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(821, 873, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(822, 858, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(823, 859, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(824, 860, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(825, 868, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(826, 864, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(827, 862, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(828, 835, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(829, 819, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(830, 818, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(831, 820, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(832, 824, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(833, 822, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(834, 821, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(835, 825, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(836, 827, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(837, 840, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(838, 830, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(839, 897, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(840, 899, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(841, 901, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(842, 900, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(843, 903, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 3, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(844, 904, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(845, 905, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(846, 907, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(847, 908, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 3, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(848, 909, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(849, 910, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(850, 913, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(851, 915, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(852, 916, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(853, 917, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(854, 841, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(855, 877, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(856, 878, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(857, 880, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(858, 881, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(859, 883, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(860, 884, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(861, 885, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(862, 886, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(863, 887, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(864, 888, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(865, 923, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(866, 927, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(867, 925, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(868, 926, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(869, 929, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(870, 930, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(871, 931, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(872, 932, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(873, 934, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(874, 936, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(875, 889, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(876, 872, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(877, 875, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(878, 869, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(879, 876, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(880, 890, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(881, 814, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(882, 816, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(883, 826, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(884, 893, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(885, 891, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(886, 894, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 3, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(887, 943, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(888, 944, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(889, 945, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(890, 946, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(891, 947, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(892, 951, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32);
+INSERT INTO public.calibracion OVERRIDING SYSTEM VALUE VALUES
+	(893, 952, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(894, 953, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(895, 976, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(896, 977, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(897, 955, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(898, 957, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(899, 958, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(900, 939, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(901, 960, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 3, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(902, 962, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(903, 985, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(904, 963, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(905, 964, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 3, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(906, 965, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(907, 978, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(908, 968, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(909, 967, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(910, 921, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(911, 998, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(912, 1004, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(913, 1010, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(914, 1012, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(915, 971, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(916, 972, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(917, 973, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(918, 986, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(919, 987, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(920, 1000, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(921, 990, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 3, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(922, 999, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(923, 994, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(924, 995, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(925, 989, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(926, 997, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(927, 991, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(928, 975, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 3, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(929, 949, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(930, 983, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(931, 1014, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(932, 1021, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(933, 1019, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(934, 1022, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(935, 1017, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(936, 1018, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(937, 1023, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(938, 1024, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(939, 1001, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(940, 1002, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(941, 1003, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 3, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(942, 1005, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 3, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(943, 1006, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(944, 1025, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(945, 1007, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(946, 1029, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(947, 1030, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(948, 1028, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(949, 1031, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(950, 1027, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(951, 1032, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(952, 1009, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(953, 829, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(954, 838, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(955, 852, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(956, 982, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(957, 902, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(958, 914, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(959, 928, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(960, 969, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(961, 1033, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(962, 1034, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(963, 1036, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(964, 1037, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(965, 1038, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(966, 1039, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(967, 1040, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(968, 1042, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(969, 1043, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(970, 867, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(971, 879, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(972, 1035, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(973, 1041, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(974, 882, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(975, 959, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 3, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(976, 1015, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(977, 892, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(978, 828, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(979, 906, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(980, 912, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(981, 918, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(982, 924, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(983, 933, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(984, 874, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(985, 937, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(986, 984, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(987, 954, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(988, 961, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 3, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(989, 966, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(990, 970, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(991, 992, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(992, 847, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(993, 938, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(994, 988, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 3, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(995, 1011, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(996, 1008, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(997, 857, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(998, 815, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(999, 898, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(1000, 911, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 3, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(1001, 920, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(1002, 935, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(1003, 870, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(1004, 981, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(1005, 974, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(1006, 948, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(1007, 956, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(1008, 1016, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(1009, 979, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 3, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(1010, 993, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 1, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(1011, 871, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(1012, 1026, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 2, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(1013, 823, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32),
+	(1014, 863, 6, 'predict', '2026-03-09 21:53:41.672-06', 1.00000, 0, 50, 0.000, 100.000, 0.000, 0.000, 8.678975, 0.4615, 0.00100000, 32);
+
+
 --
 -- Data for Name: canciones; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO
-    public.canciones OVERRIDING SYSTEM VALUE
-VALUES (
-        854,
-        NULL,
-        3566009,
-        '【初音ミク】 名無しの詩 【オリジナル曲】 [2ZayXb8YfyY].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        855,
-        NULL,
-        3899633,
-        '【初音ミク】 幻奏サティスファクション 【オリジナル曲】 [RHqTWidK9DE].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        856,
-        NULL,
-        4083751,
-        '【初音ミク】 心音 【オリジナル曲】 [EztEXXCheSk].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        861,
-        NULL,
-        3559505,
-        '【初音ミク】　曇りのち腐乱臭　【オリジナルPV】 [kKtLt901HDw].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        865,
-        NULL,
-        3016114,
-        '【初音ミク】夢で逢いましょう【オリジナル】 [YI492W4Qb3g].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        866,
-        NULL,
-        3491991,
-        '【初音ミク】天空の六分儀【オリジナルMV】 [x0_e0yQZibY].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        817,
-        0,
-        3024424,
-        'ATOLS - LAST SIGNAL feat. Hatsune Miku _ ラストシグナル feat. 初音ミク [d2M3z797sQ8].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        819,
-        0,
-        6655813,
-        'Calla Soiled - 亜 [tqI5vcYYQY0].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        818,
-        0,
-        4057727,
-        'Blindness (feat. 初音ミク) [nlLGzmErKWE].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        820,
-        0,
-        4548609,
-        'EXLIUM - EXLIUM feat. Miku [06KskCU_d-M].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        823,
-        0,
-        4163060,
-        'Koi wa Maboroshi de Ai wa Karamawari _ Nashimoto Ui (恋は幻で愛は空回り_梨本うい) [CfUZYBL6pr0].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        824,
-        0,
-        5785319,
-        'Reality _ Dog tails feat. Miku [MMDPV] [UPhsMAdDGfM].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        822,
-        0,
-        4173522,
-        'Kikuo feat. Hatsune Miku - Shimizu Curry Song [English Subbed] [Q2P76nOpeDs].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        821,
-        0,
-        5228556,
-        'float (feat. 初音ミク) [gKWxuB14zOQ].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        815,
-        0,
-        3325418,
-        '(Reprint) 小悪魔笑顔とワガママボディー【初音ﾐｸﾀﾞﾖｰ オリジナルPV】 [ErksldUjSUI].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        825,
-        0,
-        6771075,
-        'sasakure.UK - Spider Thread Monopoly feat. Hatsune Miku  蜘蛛糸モノポリー.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        867,
-        NULL,
-        4512043,
-        '【初音ミク】祝祭と流転 English and romaji subs [ieEk2hXFkOw].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        827,
-        0,
-        4347135,
-        '[Rin Kagamine and Miku Hatsune] Cold Back (English Subs) [HGtUmG1v9no].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        829,
-        0,
-        3862228,
-        '┗_∵_┓吉田、家出するってよ／HoneyWorks feat.初音ミク [fd0uHUAy6TU].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        830,
-        0,
-        1945642,
-        '┗_∵_┓第三次プリン戦争　／　HoneyWorks feat.初音ミク、GUMI [A_zZ4SY0kp0].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        831,
-        0,
-        4103244,
-        '「キズ」 - KEI feat.初音ミク [D9UFIFujRyo].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        832,
-        0,
-        2959411,
-        '【2013-05-01 _ Carlos Hakamada(debut)】 タイムトラベラー！(Time traveller_)- MIKU(original)_カルロス袴田(music) [udobYRGEeNg].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        833,
-        0,
-        4179634,
-        '【Hatsune Miku】 【L】ucy【Eve】【Original MV】 [49c4aO99Etg].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        836,
-        0,
-        4427473,
-        '【Miku·GUMI·Lily·Iroha】「Violet Blue Fantasy ～Fantasy of Iolite～」【Sub Español】 [d86r3_HR5kw].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        837,
-        1,
-        6215701,
-        '【MIKU】Bianca [8a3lVn8rzmA].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        834,
-        0,
-        3150189,
-        '【Hatsune Miku】 たのしい逃避行 [5Tef_SSOe40].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        838,
-        0,
-        2871204,
-        '【MV】現代ササクレ概論／なすP feat. 初音ミク (Modern Hangnail Outline／Nasu feat. Miku Hatsune) [OEXZ5Ml4vKk].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        839,
-        0,
-        2495759,
-        '【MV】絶望の砂漠／なすP feat. 初音ミク (Desert of Despair／Nasu feat. Miku Hatsune) [rDL6huvbJM0].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        840,
-        0,
-        6059129,
-        '【SKEW】カノジョの選択肢と独りぼっちの北の空【PSGOZ】 [Ei22xcvPXy8].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        841,
-        0,
-        5422033,
-        '【VOCALOID_IA】_ 午前４時の金星 _ AM4 Venus _ by Ashin Kuroda [Zhc9onqv-QM].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        842,
-        0,
-        4147173,
-        '【_years_ 5_12】May【初音ミクDarkオリジナルPV】 [wxXQJBMeW94].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        843,
-        0,
-        5339349,
-        '【ミクAPPENDsolid】僕の一部【オリジナルPV】 [Po-oRnoT-ts].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        844,
-        0,
-        5812731,
-        '【初音ミク - Hatsune Miku】your anniversary【PV subs】 [rUd8zvq63Ro] (1).mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        845,
-        0,
-        5812731,
-        '【初音ミク - Hatsune Miku】your anniversary【PV subs】 [rUd8zvq63Ro] (2).mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        846,
-        0,
-        5812731,
-        '【初音ミク - Hatsune Miku】your anniversary【PV subs】 [rUd8zvq63Ro].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        848,
-        0,
-        4205575,
-        '【初音ミク - Hatsune Miku】心の片隅に - Kokoro no Katasumi ni【subs】 [p6cQU2bQitU].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        849,
-        0,
-        4790748,
-        '【初音ミクAppend】miss you【中文字幕】 [MrVuRQHJhYs].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        850,
-        0,
-        4513925,
-        '【初音ミクAppend】Quiet【オリジナル曲】 [fihI7EuO0eA].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        851,
-        0,
-        5377606,
-        '【初音ミクDark】ゆらゆら English and romaji subs [04fGKdznrkw].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        852,
-        0,
-        5016696,
-        '【初音ミクdark】シロツメクサの花冠 【オリジナル】 [rwXpIeZm-Sc].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        853,
-        0,
-        4837996,
-        '【初音ミクDark】ループ・ループ・ループ【オリジナル】 [wpV2EbPYnrY].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        873,
-        0,
-        5009650,
-        'サテライト [h3bNut-SVpg].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        857,
-        0,
-        5568544,
-        '【初音ミク】Calla Soiled - 虚構の光【オリジナル曲】 [FiukeDh9WKo].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        858,
-        0,
-        3899541,
-        '【初音ミク】Oriental Cybernetic QT Girl【SUB ENG_ITA】 [mCPH4OGATq8].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        859,
-        1,
-        4809098,
-        '【初音ミク】Twinkle Days【オリジナル曲PV】 [m9DTGxCT5-0].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        860,
-        0,
-        3683148,
-        '【初音ミク】　 オトシメセルフ 　【オリジナル曲】 [hTQKJQWMQ-4].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        868,
-        0,
-        5434338,
-        '【初音ミクオリジナル】リダクト [A9JripMnIMc].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        863,
-        0,
-        5612525,
-        '【初音ミク】ゲーセン上のアリア【オリジナル曲】 [PEHddBaJyUA].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        864,
-        0,
-        3072887,
-        '【初音ミク】ムラサキ【オリジナル曲PV付】 [omYEruBpSM8].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        862,
-        0,
-        5609899,
-        '【初音ミク】わたしと君とを繋ぐもの【オリジナル】 [IKOookjqXhU].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        835,
-        2,
-        4006520,
-        '【Hatsune Miku】Lost My Love【Original Song】 [Hg0xobCxaI8].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        877,
-        NULL,
-        3956089,
-        '唸る刃と群青正義 [aSp3DvQS7BI].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        878,
-        NULL,
-        3749064,
-        '徒花満ちて _ ふる feat. 初音ミク [LRCKlcAECQ4].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        879,
-        NULL,
-        7472180,
-        '微熱の微笑み、微少女は微かに微睡ーム [FYTsVgSO-ms].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        880,
-        NULL,
-        4468974,
-        '恋人一首 _ 初音ミク [f7vloBZBp6c].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        881,
-        NULL,
-        5130954,
-        '明日も良い日になるでしょう (feat. IA＆初音ミク) [fHhV6tz2_Rs].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        882,
-        NULL,
-        3489005,
-        '最憂間で君は [fmbOTo1t1dk].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        883,
-        NULL,
-        4643130,
-        '洗濯　（初音ミクAppend） [yargFkG0q0o] (1).mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        884,
-        NULL,
-        4643130,
-        '洗濯　（初音ミクAppend） [yargFkG0q0o].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        885,
-        NULL,
-        2156993,
-        '第1話　予測の先にカノジョは走馬灯を見るか PSGO-Z【SKEW PV】 [Ih6NBS9OcPo].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        886,
-        NULL,
-        4240510,
-        '雀色コンデンサ [Rh3XRrvzl50].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        887,
-        NULL,
-        3885563,
-        '霞む森 _ 初音ミク＆GUMI [5UIfTqACqJ8] (1).mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        888,
-        NULL,
-        3885563,
-        '霞む森 _ 初音ミク＆GUMI [5UIfTqACqJ8].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        816,
-        0,
-        3851200,
-        'After that feat. Hatsune Miku [xRoF-MAJ5O8].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        826,
-        0,
-        3322812,
-        '[Hatsune Miku] That Rich Guy is a Tetromino - tadanoco English subs [Ik8DHj5zcrs].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        828,
-        0,
-        3612810,
-        '┗_∵_┓ヤキモチの答え-another story-／HoneyWorks feat.初音ミク [Qlkezcz3tt4].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        893,
-        1,
-        5372012,
-        '01 アンドロイド Voc@loid ～I am not a robot～.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        891,
-        2,
-        4129298,
-        '01 - Tell Your World.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        894,
-        3,
-        8224103,
-        '03 Palette.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        895,
-        1,
-        8460849,
-        '03 ワールズエンド・ダンスホール.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        896,
-        1,
-        6794009,
-        '04 CALL ME CALL ME.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        897,
-        2,
-        9410964,
-        '04 彼方まで虹を架けて.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        898,
-        2,
-        3675539,
-        '05 Night Glitter (Featuring Hatsune Miku).mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        899,
-        2,
-        6143816,
-        '08 雨のちSweet-Drops.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        901,
-        2,
-        8783761,
-        '09 ☆Fighting Pose☆.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        900,
-        2,
-        7637962,
-        '09 GIFT.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        903,
-        3,
-        9631379,
-        '09 ツユメロ.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        904,
-        1,
-        5874858,
-        '11 396.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        905,
-        1,
-        6123034,
-        '11 Anti X''mas Superstar.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        906,
-        2,
-        8975210,
-        '11 ハロー、プラネット.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        907,
-        2,
-        6677916,
-        '13 アンダンテ.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        908,
-        3,
-        5303487,
-        '16 スイートマジック.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        909,
-        2,
-        6483666,
-        '16 ローリンガール.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        910,
-        2,
-        4558903,
-        '17 Ievan Polkka.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        911,
-        3,
-        8411420,
-        '17 Yellow.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        912,
-        2,
-        8169778,
-        '18 リンリンシグナル.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        913,
-        2,
-        5785263,
-        '20 どういうことなの! (Game Version).mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        915,
-        1,
-        7015417,
-        'An ／ DECO＊27 feat初音ミク.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        916,
-        0,
-        3662996,
-        'Anti Selector_初音ミク [ShTbgwaKkiQ].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        917,
-        1,
-        6067327,
-        'AOHARU.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        918,
-        1,
-        7372052,
-        'Breath of Urban   keisei feat Hatsune Miku.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        920,
-        2,
-        6536436,
-        'CATS RULE THE WORLD   daniwell feat Hatsune Miku  Momone Momo.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        919,
-        0,
-        4315585,
-        'Bright future Ein schritt.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        921,
-        1,
-        5121435,
-        'Child   初音ミク.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        922,
-        1,
-        5852446,
-        'cloudway (feat Hatsune Miku)   keisei.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        923,
-        1,
-        4043380,
-        'Cressida   ftHatsune Miku 【english subtitles】.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        927,
-        2,
-        6410421,
-        'Deco27 ft 初音ミク.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        924,
-        2,
-        5743358,
-        'DECO27   ハートアラモード feat 初音ミ�.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        925,
-        1,
-        5708877,
-        'DECO27   夜行性ハイズ feat 初音ミ�.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        926,
-        2,
-        3934431,
-        'DECO27  愛言葉Ⅲ feat 初音ミク.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        929,
-        1,
-        5673768,
-        'Dream Chase.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        930,
-        1,
-        6799123,
-        'DreamerTeary Planet feat. 初音ミク.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        931,
-        1,
-        4121259,
-        'east end and bocci  feat初音ミク.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        932,
-        2,
-        4239123,
-        'Equation.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        933,
-        1,
-        4128127,
-        'Find Me feat. Hatsune Miku [P7UJeX6WE4Q].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        934,
-        2,
-        7662709,
-        'Hand in Hand.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        935,
-        1,
-        3791071,
-        'Hatsune Miku   Akeomeakeomeakeomeakeome (Happy New Year).mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        936,
-        1,
-        5667499,
-        'Hatsune Miku   Calc (English  Romaji Subs).mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        889,
-        1,
-        3250232,
-        '- Ranaエレクトロサチュレイタ ElectrosaturatorVSQx.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        872,
-        0,
-        4753744,
-        'キャラメルティアドロップ_初音ミク [d4qecYvfWgw].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        874,
-        0,
-        4771135,
-        'ピノキオピー - ゲームスペクター2 feat. 初音ミク _ Game Specter 2 [OfXUHMYccu4].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        875,
-        0,
-        4298997,
-        'ミルキーオンザクレープ [hdoG6pvGxA0].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        869,
-        0,
-        4647758,
-        '【初音ミク・VY1V3】PROGRAM BREAKER【オリジナルPV】 [NIDa7HqGqc4].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        876,
-        0,
-        3853027,
-        '初音ミクオリジナル曲 「PYX」中日字幕 [36UirlGT-iY].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        870,
-        0,
-        4765562,
-        '【初音ミク（ぐにょ）】福寿草【作曲してみた】 [15HNvDg0Gq4].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        890,
-        2,
-        3762650,
-        '- 初音ミクねこみみスイッチオリジナル.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        814,
-        0,
-        3658842,
-        '(Reprint) 初音ミク『アンダー・プリテンダー』オリジナル [A2zTCOY-uPI].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        998,
-        NULL,
-        6366535,
-        '【初音ミク】 紫陽花が咲く頃に、君と恋をする 【nk】.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        974,
-        1,
-        4184609,
-        '[Eng Sub] To the Lonely You and the Lone Me [Suzumu ft. Hatsune Miku] [EHxFEHPBDP8].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        983,
-        1,
-        4738909,
-        '【Hatsune Miku】Body Music【Original Song】.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        981,
-        1,
-        5384749,
-        '‪【Hatsune Miku】‬Cerita SMU【Original】‬.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        939,
-        1,
-        6269360,
-        'Hatsune Miku Original Song Bright City.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        940,
-        1,
-        6601010,
-        'Hatsune Miku Original Song.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        937,
-        2,
-        4216042,
-        'Hatsune Miku   Sayonara·Good bye [English Sub].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        941,
-        1,
-        4503295,
-        'Hatsune Miku Two Faced Lovers.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        942,
-        1,
-        8056042,
-        'Heavenz   アルファ.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        943,
-        1,
-        6782196,
-        'irucaice   White Step feat Hatsune Mik.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        984,
-        1,
-        5286947,
-        '【Kagamine Rin V4X】 Hop! Step! Instant Death! A Happiness Dance Death Trap 【VOCALOID Cover�.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        944,
-        1,
-        5845549,
-        'kiRakiLa  gaogao feat初音ミ�.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        945,
-        2,
-        4775365,
-        'Lamaze P ft 初音ミク.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        946,
-        1,
-        4629288,
-        'Landscape  初音ミク   歩く人×春�.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        947,
-        1,
-        6458068,
-        'livetune   never ende.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        948,
-        1,
-        6385343,
-        'LOST NOTE  No85 feat初音ミ�.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        950,
-        1,
-        4374124,
-        'MASA WORKS DESIGN ft初音ミクu0026GUMI   BRASS NOISE FLAMENC.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        949,
-        2,
-        4201412,
-        'lumo - ネットチルナノグ feat. 初音ミク [fSOK6pGHI5Q].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        951,
-        2,
-        5197294,
-        'Melancholic  Junky ft Rin Kagamine.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        952,
-        1,
-        4345285,
-        'METEOR  DIVELA feat初音ミク.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        953,
-        2,
-        3980123,
-        'miku hatsune - po pi po356.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        976,
-        2,
-        6832978,
-        '[Music] Livetune (feat Hatsune Miku)   Redia.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        954,
-        2,
-        4251662,
-        'Musunde Hiraite Rasetsu to Mukuro ORIGINAL.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        977,
-        1,
-        5640540,
-        '[MV]さよならカンパニュラ  mehikari feat 初音ミ�.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        955,
-        1,
-        5485059,
-        'Neo.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        956,
-        1,
-        5234911,
-        'Neru - ロストワンの号哭(Lost One''s Weeping) feat. Kagamine Rin.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        957,
-        1,
-        5964041,
-        'night  (t)rain  初音ミ�.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        958,
-        1,
-        2856514,
-        'Onesided Love Samba  Hatsune Miku Traduccion.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        961,
-        3,
-        6713232,
-        'Rainbow Palace feat Hatsune Miku   Jonathan Parecki 【Vocaloid Original�.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        960,
-        3,
-        4362839,
-        'PinocchioP (feat Hatsune Miku and Yukkuri)   Proliferation of Imamur.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        962,
-        1,
-        7012282,
-        'Robo feat. Hatsune Miku SPACERUN オリジナル曲.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        985,
-        1,
-        5549634,
-        '【Robo feat 初音ミク】 SKY HIGHWAY【オリジナル曲�.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        963,
-        1,
-        5964668,
-        'ryuryu   Flowers featHatsune Miku 初音ミ�.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        964,
-        3,
-        5262496,
-        'sasakureUK x DECO27   39 feat Hatsune Miku.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        965,
-        2,
-        4354178,
-        'spica- hatsune miku.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        978,
-        1,
-        4346243,
-        '[Subs+Lyrics] Contrast [Hatsune Miku] [O6FrUaQVqlQ].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        966,
-        1,
-        6155257,
-        'SushiP ft 初音ミク ''Align'' アライン (English Subtitles).mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        968,
-        2,
-        5999149,
-        'TsunTsun  ftHatsune Miku_192kbps.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        967,
-        2,
-        9821039,
-        'triple baka - miku hatsune.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        979,
-        3,
-        5737281,
-        '[VnSharing] Umi Yuri Kaiteitan   Hatsune Miku   Vocaloid vietsub.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        980,
-        1,
-        7771505,
-        '[VOCALOID] Sailing  初音ミク [公式.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        969,
-        1,
-        5117066,
-        'Weekender Girl   Hatsune Miku Project Diva F (HD).mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        970,
-        2,
-        6314499,
-        'White Dove with English  Romaji Sub  Hatsune Miku  ハト  sm2583719  HQ.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        971,
-        1,
-        3495156,
-        'yt1s.com - ElectronicMizusano ft Hatsune Miku  Smile Walker.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        972,
-        1,
-        4904932,
-        'yt1s.com - Far Away.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        973,
-        1,
-        3014503,
-        'yt1s.com - Mizusano feat 初音ミク Universe.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        986,
-        1,
-        6716994,
-        '【オリジナルMV】ユメノアメ feat初音ミク  ドッシ�.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        987,
-        2,
-        5669379,
-        '【ミク・MAYU・がくぽ】「Ib」 forever 【オリジナルPV】.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        992,
-        1,
-        4831162,
-        '【初音ミク×アルクロ】センセーションはおわらない！ フルver【コラボオリジナル楽曲�.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1000,
-        1,
-        7950183,
-        '【初音ミク】Another Mine【オリジナル21】[HD720p].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        993,
-        1,
-        2801668,
-        '【初音ミク】 Anata no Utahime (8ch arr) 【休闲の1月曲】.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        990,
-        3,
-        6693704,
-        '【初音ミクAppend DARK】Carbuncle【オリジナル曲】.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        999,
-        1,
-        6521296,
-        '【初音ミク】a tail of the wind【Cazオリジナル】.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        994,
-        1,
-        6394121,
-        '【初音ミク】 Baby Steps 【オリジナル�.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        995,
-        0,
-        7854795,
-        '【初音ミク】 children 【オリジナル曲】.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        989,
-        1,
-        4176877,
-        '【初音ミク - Hatsune Miku】Electro Saturator -Starry electro mix-【MMD-PV】 [UX4II4sy1IQ].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        996,
-        1,
-        3347864,
-        '【初音ミク】 Lap Tap Love 【オリジナル】_[Hatsune Miku] Lap Tap Love [Original] [yhBQfbvHmdw].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        997,
-        2,
-        3340929,
-        '【初音ミク】 だんだん早くなる Getting Faster and Faster【オリジナル�.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        991,
-        1,
-        3551772,
-        '【初音ミクSweet】街路灯を横切って English and romaji subs [CKqpXsny5W0].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        975,
-        3,
-        6084413,
-        '[Hatsune Miku] Sayonara Arpeggio [VOSTFR].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1004,
-        NULL,
-        5194160,
-        '【初音ミク】　表面張力　【オリジナル�.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1010,
-        NULL,
-        5141020,
-        '【初音ミク】空に花束を【オリジナル】 [4OLuVzAyYZ0].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1012,
-        NULL,
-        7576434,
-        '【水野大輔 feat 初音ミく】 Brilliance.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1033,
-        NULL,
-        5628001,
-        '初音ミク灯火syudou_192kbps.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1034,
-        NULL,
-        6625461,
-        '夏至の踊り子 ／初音ミ�.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1035,
-        NULL,
-        7311959,
-        '大嫌いなはずだったHoneyWorks feat.GUMI初音ミク.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1036,
-        NULL,
-        1661360,
-        '小説3こちら幸福安心委員会です女王様とハピネスサマーゲーム.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1037,
-        NULL,
-        6647404,
-        '手�.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1038,
-        NULL,
-        6117641,
-        '神のまにまに - れるりりfeat.ミク&リン&GUMI  At God''s Mercy - rerulili feat.Vocaloids.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1039,
-        NULL,
-        7278104,
-        '神経衰弱  初音ミク 【 Nervous Breakdown  Hatsune Miku �.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1040,
-        NULL,
-        5408573,
-        '私は足りないでいっぱい_192kbps.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1041,
-        NULL,
-        4048736,
-        '空海月 - -STL001- MIKUHOP LP - 08 チョコレートサンデー [nt8RupYeHlc].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1042,
-        NULL,
-        7087515,
-        '膵臓  Luna feat 初音ミク ガールズコレクション.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1043,
-        NULL,
-        2568958,
-        '鏡音レン唐傘さんが通るオリジナルPV.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        847,
-        0,
-        5063310,
-        '【初音ミク - Hatsune Miku】ウタヲウタエ - Uta o Utae - Sing a Song【PV subs】 [j_AtIAPeIsU].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        982,
-        1,
-        5817964,
-        '┗ ∵ ┓夢ファンファーレ／HoneyWorks feat初音ミクu0026GUM.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        892,
-        2,
-        5561339,
-        '01 EARTH DAY.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        902,
-        1,
-        15100066,
-        '09 キューティージェリー (feat. 初音ミク).mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        914,
-        1,
-        6109320,
-        'Amaotopetrichor (feat. Hatsune Miku).mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        928,
-        1,
-        2889533,
-        'DokiDokiBeat 初音ミク for Lamaze.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        938,
-        2,
-        5052472,
-        'Hatsune Miku   Torinoko City  (トリノコシティ)(Left Behind City) Sub Esp (+mp3 + romaji.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        959,
-        3,
-        6144599,
-        'Ordinary   ポリスピカデリー feat 初音ミク  Ordinary   Police Piccadilly feat Hatsune Mik.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1013,
-        2,
-        4874421,
-        'あいまいクエスチョン／yamada feat初音ミク   The Quizmaste.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1015,
-        1,
-        5372210,
-        'くるくるついんてーる_192kbps.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1020,
-        1,
-        4399108,
-        'アンドロメダアンドロメダ   ナユタン星人 feat 初音ミク.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1014,
-        2,
-        3723988,
-        'えいえんがみつからない - daniwell feat. Hatsune Miku & Momone Momo.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1021,
-        1,
-        6313246,
-        'シネマセレク�.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        871,
-        0,
-        4586189,
-        'とあ - 飛行機雲 - ft.初音ミク ( Toa - Contrail - ft.Hatsune Miku ) [RHCoZroZySA].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1016,
-        1,
-        6318888,
-        'ひとりぼっちとココロの本と - PIPPO feat. 初音ミク.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        988,
-        3,
-        5142658,
-        '【公式】アイシテ  とあ feat 初音ミク　  LOVE ME  toa feat Hatsune Miku.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1019,
-        2,
-        5233030,
-        'みきとP『 だいあもんど 』M.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1022,
-        1,
-        4102032,
-        'プリエ  初音ミク  Hatsune Miku.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1017,
-        2,
-        5887554,
-        'みきとP Hoi MV.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1018,
-        0,
-        4653386,
-        'みきとP『 kiss 』MV [9tjA9S281wg].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1023,
-        1,
-        5891316,
-        'モノクロブルースカイ  のぼる feat 初音ミク  MonochromeBlueSky.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1024,
-        1,
-        6525151,
-        '八王子Pデスクトップシンデレラ feat. 初音ミクMusic Video.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1001,
-        1,
-        5260371,
-        '【初音ミク】aria【オリジナル曲PV付】.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1002,
-        1,
-        5931974,
-        '【初音ミク】bpm full ver 【PV】.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1011,
-        1,
-        6175226,
-        '【初音ミク・GUMI】あの日、描いたDIARY【オリジナル曲PV】OFFICIAL　MV.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1003,
-        3,
-        4929612,
-        '【初音ミク】Hatsune Miku「DECORATOR」MP3 High Quality![8].mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1005,
-        3,
-        5042348,
-        '【初音ミク】アクリルスター【オリジナル】.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1006,
-        1,
-        8406594,
-        '【初音ミク】アネモネ【オリジナル】.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1025,
-        1,
-        6081645,
-        '初音ミク poppin'' jumpin まらしぃ kors k.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1026,
-        2,
-        4160129,
-        '初音ミク Project Diva f 2nd  nanou  Hatsune Miku  Glory 3usi9  Best of nanou (high volume).mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1007,
-        1,
-        6113159,
-        '【初音ミク】アポロ【オリジナルMMD PV】.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1029,
-        1,
-        6602171,
-        '初音ミクオリジナル曲 「Breath of mechanical」.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1030,
-        1,
-        6067486,
-        '初音ミクオリジナル曲「Singularity�.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1028,
-        1,
-        3597881,
-        '初音ミク　オリジナル曲　『アンダワ』.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1008,
-        1,
-        6742072,
-        '【初音ミク】スターナイトスノウ【オリジナルMV�.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1031,
-        1,
-        5332086,
-        '初音ミクメイウェンティーオリジナルPV.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1027,
-        1,
-        4944011,
-        '初音ミク ラストペインター オリジナルMIKULast painteroriginal.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1032,
-        2,
-        5216312,
-        '初音ミクリンレンルカ夢の続きオリジナル中文字幕.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    ),
-    (
-        1009,
-        1,
-        6236759,
-        '【初音ミク】名前のない誰か【オリジナル�.mp3',
-        0,
-        1,
-        B'1',
-        NULL,
-        NULL,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    );
+INSERT INTO public.canciones OVERRIDING SYSTEM VALUE VALUES
+	(833, 0, 4179634, '【Hatsune Miku】 【L】ucy【Eve】【Original MV】 [49c4aO99Etg].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_833.npy'),
+	(837, 1, 6215701, '【MIKU】Bianca [8a3lVn8rzmA].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_837.npy'),
+	(834, 0, 3150189, '【Hatsune Miku】 たのしい逃避行 [5Tef_SSOe40].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_834.npy'),
+	(980, 1, 7771505, '[VOCALOID] Sailing  初音ミク [公式.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_980.npy'),
+	(1013, 2, 4874421, 'あいまいクエスチョン／yamada feat初音ミク   The Quizmaste.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_1013.npy'),
+	(832, 0, 2959411, '【2013-05-01 _ Carlos Hakamada(debut)】 タイムトラベラー！(Time traveller_)- MIKU(original)_カルロス袴田(music) [udobYRGEeNg].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_832.npy'),
+	(855, NULL, 3899633, '【初音ミク】 幻奏サティスファクション 【オリジナル曲】 [RHqTWidK9DE].mp3', 0, 1, B'1', NULL, 1.00000, 0, 0.000, 100.000, 0.000, 0.000, 'features_855.npy'),
+	(848, 0, 4205575, '【初音ミク - Hatsune Miku】心の片隅に - Kokoro no Katasumi ni【subs】 [p6cQU2bQitU].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_848.npy'),
+	(824, 0, 5785319, 'Reality _ Dog tails feat. Miku [MMDPV] [UPhsMAdDGfM].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_824.npy'),
+	(905, 1, 6123034, '11 Anti X''mas Superstar.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_905.npy'),
+	(913, 2, 5785263, '20 どういうことなの! (Game Version).mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_913.npy'),
+	(881, NULL, 5130954, '明日も良い日になるでしょう (feat. IA＆初音ミク) [fHhV6tz2_Rs].mp3', 0, 1, B'1', NULL, 1.00000, 0, 0.000, 100.000, 0.000, 0.000, 'features_881.npy'),
+	(930, 1, 6799123, 'DreamerTeary Planet feat. 初音ミク.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_930.npy'),
+	(869, 0, 4647758, '【初音ミク・VY1V3】PROGRAM BREAKER【オリジナルPV】 [NIDa7HqGqc4].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_869.npy'),
+	(946, 1, 4629288, 'Landscape  初音ミク   歩く人×春�.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_946.npy'),
+	(958, 1, 2856514, 'Onesided Love Samba  Hatsune Miku Traduccion.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_958.npy'),
+	(921, 1, 5121435, 'Child   初音ミク.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_921.npy'),
+	(973, 1, 3014503, 'yt1s.com - Mizusano feat 初音ミク Universe.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_973.npy'),
+	(989, 1, 4176877, '【初音ミク - Hatsune Miku】Electro Saturator -Starry electro mix-【MMD-PV】 [UX4II4sy1IQ].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_989.npy'),
+	(1024, 1, 6525151, '八王子Pデスクトップシンデレラ feat. 初音ミクMusic Video.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_1024.npy'),
+	(1027, 1, 4944011, '初音ミク ラストペインター オリジナルMIKULast painteroriginal.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_1027.npy'),
+	(1041, NULL, 4048736, '空海月 - -STL001- MIKUHOP LP - 08 チョコレートサンデー [nt8RupYeHlc].mp3', 0, 1, B'1', NULL, 1.00000, 0, 0.000, 100.000, 0.000, 0.000, 'features_1041.npy'),
+	(874, 0, 4771135, 'ピノキオピー - ゲームスペクター2 feat. 初音ミク _ Game Specter 2 [OfXUHMYccu4].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_874.npy'),
+	(857, 0, 5568544, '【初音ミク】Calla Soiled - 虚構の光【オリジナル曲】 [FiukeDh9WKo].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_857.npy'),
+	(895, 1, 8460849, '03 ワールズエンド・ダンスホール.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_895.npy'),
+	(896, 1, 6794009, '04 CALL ME CALL ME.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_896.npy'),
+	(839, 0, 2495759, '【MV】絶望の砂漠／なすP feat. 初音ミク (Desert of Despair／Nasu feat. Miku Hatsune) [rDL6huvbJM0].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_839.npy'),
+	(919, 0, 4315585, 'Bright future Ein schritt.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_919.npy'),
+	(922, 1, 5852446, 'cloudway (feat Hatsune Miku)   keisei.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_922.npy'),
+	(950, 1, 4374124, 'MASA WORKS DESIGN ft初音ミクu0026GUMI   BRASS NOISE FLAMENC.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_950.npy'),
+	(996, 1, 3347864, '【初音ミク】 Lap Tap Love 【オリジナル】_[Hatsune Miku] Lap Tap Love [Original] [yhBQfbvHmdw].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_996.npy'),
+	(940, 1, 6601010, 'Hatsune Miku Original Song.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_940.npy'),
+	(941, 1, 4503295, 'Hatsune Miku Two Faced Lovers.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_941.npy'),
+	(942, 1, 8056042, 'Heavenz   アルファ.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_942.npy'),
+	(1020, 1, 4399108, 'アンドロメダアンドロメダ   ナユタン星人 feat 初音ミク.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_1020.npy'),
+	(836, 0, 4427473, '【Miku·GUMI·Lily·Iroha】「Violet Blue Fantasy ～Fantasy of Iolite～」【Sub Español】 [d86r3_HR5kw].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_836.npy'),
+	(817, 0, 3024424, 'ATOLS - LAST SIGNAL feat. Hatsune Miku _ ラストシグナル feat. 初音ミク [d2M3z797sQ8].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_817.npy'),
+	(843, 0, 5339349, '【ミクAPPENDsolid】僕の一部【オリジナルPV】 [Po-oRnoT-ts].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_843.npy'),
+	(844, 0, 5812731, '【初音ミク - Hatsune Miku】your anniversary【PV subs】 [rUd8zvq63Ro] (1).mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_844.npy'),
+	(845, 0, 5812731, '【初音ミク - Hatsune Miku】your anniversary【PV subs】 [rUd8zvq63Ro] (2).mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_845.npy'),
+	(846, 0, 5812731, '【初音ミク - Hatsune Miku】your anniversary【PV subs】 [rUd8zvq63Ro].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_846.npy'),
+	(831, 0, 4103244, '「キズ」 - KEI feat.初音ミク [D9UFIFujRyo].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_831.npy'),
+	(849, 0, 4790748, '【初音ミクAppend】miss you【中文字幕】 [MrVuRQHJhYs].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_849.npy'),
+	(850, 0, 4513925, '【初音ミクAppend】Quiet【オリジナル曲】 [fihI7EuO0eA].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_850.npy'),
+	(851, 0, 5377606, '【初音ミクDark】ゆらゆら English and romaji subs [04fGKdznrkw].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_851.npy'),
+	(853, 0, 4837996, '【初音ミクDark】ループ・ループ・ループ【オリジナル】 [wpV2EbPYnrY].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_853.npy'),
+	(873, 0, 5009650, 'サテライト [h3bNut-SVpg].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_873.npy'),
+	(858, 0, 3899541, '【初音ミク】Oriental Cybernetic QT Girl【SUB ENG_ITA】 [mCPH4OGATq8].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_858.npy'),
+	(859, 1, 4809098, '【初音ミク】Twinkle Days【オリジナル曲PV】 [m9DTGxCT5-0].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_859.npy'),
+	(860, 0, 3683148, '【初音ミク】　 オトシメセルフ 　【オリジナル曲】 [hTQKJQWMQ-4].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_860.npy'),
+	(868, 0, 5434338, '【初音ミクオリジナル】リダクト [A9JripMnIMc].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_868.npy'),
+	(864, 0, 3072887, '【初音ミク】ムラサキ【オリジナル曲PV付】 [omYEruBpSM8].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_864.npy'),
+	(862, 0, 5609899, '【初音ミク】わたしと君とを繋ぐもの【オリジナル】 [IKOookjqXhU].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_862.npy'),
+	(835, 2, 4006520, '【Hatsune Miku】Lost My Love【Original Song】 [Hg0xobCxaI8].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_835.npy'),
+	(819, 0, 6655813, 'Calla Soiled - 亜 [tqI5vcYYQY0].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_819.npy'),
+	(818, 0, 4057727, 'Blindness (feat. 初音ミク) [nlLGzmErKWE].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_818.npy'),
+	(820, 0, 4548609, 'EXLIUM - EXLIUM feat. Miku [06KskCU_d-M].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_820.npy'),
+	(822, 0, 4173522, 'Kikuo feat. Hatsune Miku - Shimizu Curry Song [English Subbed] [Q2P76nOpeDs].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_822.npy'),
+	(821, 0, 5228556, 'float (feat. 初音ミク) [gKWxuB14zOQ].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_821.npy'),
+	(825, 0, 6771075, 'sasakure.UK - Spider Thread Monopoly feat. Hatsune Miku  蜘蛛糸モノポリー.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_825.npy'),
+	(827, 0, 4347135, '[Rin Kagamine and Miku Hatsune] Cold Back (English Subs) [HGtUmG1v9no].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_827.npy'),
+	(840, 0, 6059129, '【SKEW】カノジョの選択肢と独りぼっちの北の空【PSGOZ】 [Ei22xcvPXy8].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_840.npy'),
+	(830, 0, 1945642, '┗_∵_┓第三次プリン戦争　／　HoneyWorks feat.初音ミク、GUMI [A_zZ4SY0kp0].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_830.npy'),
+	(897, 2, 9410964, '04 彼方まで虹を架けて.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_897.npy'),
+	(899, 2, 6143816, '08 雨のちSweet-Drops.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_899.npy'),
+	(901, 2, 8783761, '09 ☆Fighting Pose☆.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_901.npy'),
+	(900, 2, 7637962, '09 GIFT.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_900.npy'),
+	(903, 3, 9631379, '09 ツユメロ.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_903.npy'),
+	(904, 1, 5874858, '11 396.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_904.npy'),
+	(907, 2, 6677916, '13 アンダンテ.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_907.npy'),
+	(908, 3, 5303487, '16 スイートマジック.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_908.npy'),
+	(909, 2, 6483666, '16 ローリンガール.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_909.npy'),
+	(910, 2, 4558903, '17 Ievan Polkka.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_910.npy'),
+	(915, 1, 7015417, 'An ／ DECO＊27 feat初音ミク.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_915.npy'),
+	(916, 0, 3662996, 'Anti Selector_初音ミク [ShTbgwaKkiQ].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_916.npy'),
+	(917, 1, 6067327, 'AOHARU.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_917.npy'),
+	(841, 0, 5422033, '【VOCALOID_IA】_ 午前４時の金星 _ AM4 Venus _ by Ashin Kuroda [Zhc9onqv-QM].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_841.npy'),
+	(854, NULL, 3566009, '【初音ミク】 名無しの詩 【オリジナル曲】 [2ZayXb8YfyY].mp3', 0, 1, B'1', NULL, 1.00000, 0, 0.000, 100.000, 0.000, 0.000, 'features_854.npy'),
+	(856, NULL, 4083751, '【初音ミク】 心音 【オリジナル曲】 [EztEXXCheSk].mp3', 0, 1, B'1', NULL, 1.00000, 0, 0.000, 100.000, 0.000, 0.000, 'features_856.npy'),
+	(861, NULL, 3559505, '【初音ミク】　曇りのち腐乱臭　【オリジナルPV】 [kKtLt901HDw].mp3', 0, 1, B'1', NULL, 1.00000, 0, 0.000, 100.000, 0.000, 0.000, 'features_861.npy'),
+	(865, NULL, 3016114, '【初音ミク】夢で逢いましょう【オリジナル】 [YI492W4Qb3g].mp3', 0, 1, B'1', NULL, 1.00000, 0, 0.000, 100.000, 0.000, 0.000, 'features_865.npy'),
+	(866, NULL, 3491991, '【初音ミク】天空の六分儀【オリジナルMV】 [x0_e0yQZibY].mp3', 0, 1, B'1', NULL, 1.00000, 0, 0.000, 100.000, 0.000, 0.000, 'features_866.npy'),
+	(842, 0, 4147173, '【_years_ 5_12】May【初音ミクDarkオリジナルPV】 [wxXQJBMeW94].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_842.npy'),
+	(927, 2, 6410421, 'Deco27 ft 初音ミク.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_927.npy'),
+	(925, 1, 5708877, 'DECO27   夜行性ハイズ feat 初音ミ�.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_925.npy'),
+	(926, 2, 3934431, 'DECO27  愛言葉Ⅲ feat 初音ミク.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_926.npy'),
+	(929, 1, 5673768, 'Dream Chase.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_929.npy'),
+	(931, 1, 4121259, 'east end and bocci  feat初音ミク.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_931.npy'),
+	(932, 2, 4239123, 'Equation.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_932.npy'),
+	(934, 2, 7662709, 'Hand in Hand.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_934.npy'),
+	(936, 1, 5667499, 'Hatsune Miku   Calc (English  Romaji Subs).mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_936.npy'),
+	(889, 1, 3250232, '- Ranaエレクトロサチュレイタ ElectrosaturatorVSQx.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_889.npy'),
+	(872, 0, 4753744, 'キャラメルティアドロップ_初音ミク [d4qecYvfWgw].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_872.npy'),
+	(875, 0, 4298997, 'ミルキーオンザクレープ [hdoG6pvGxA0].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_875.npy'),
+	(876, 0, 3853027, '初音ミクオリジナル曲 「PYX」中日字幕 [36UirlGT-iY].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_876.npy'),
+	(890, 2, 3762650, '- 初音ミクねこみみスイッチオリジナル.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_890.npy'),
+	(814, 0, 3658842, '(Reprint) 初音ミク『アンダー・プリテンダー』オリジナル [A2zTCOY-uPI].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_814.npy'),
+	(816, 0, 3851200, 'After that feat. Hatsune Miku [xRoF-MAJ5O8].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_816.npy'),
+	(826, 0, 3322812, '[Hatsune Miku] That Rich Guy is a Tetromino - tadanoco English subs [Ik8DHj5zcrs].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_826.npy'),
+	(893, 1, 5372012, '01 アンドロイド Voc@loid ～I am not a robot～.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_893.npy'),
+	(891, 2, 4129298, '01 - Tell Your World.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_891.npy'),
+	(894, 3, 8224103, '03 Palette.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_894.npy'),
+	(943, 1, 6782196, 'irucaice   White Step feat Hatsune Mik.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_943.npy'),
+	(944, 1, 5845549, 'kiRakiLa  gaogao feat初音ミ�.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_944.npy'),
+	(945, 2, 4775365, 'Lamaze P ft 初音ミク.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_945.npy'),
+	(947, 1, 6458068, 'livetune   never ende.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_947.npy'),
+	(951, 2, 5197294, 'Melancholic  Junky ft Rin Kagamine.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_951.npy'),
+	(952, 1, 4345285, 'METEOR  DIVELA feat初音ミク.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_952.npy'),
+	(953, 2, 3980123, 'miku hatsune - po pi po356.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_953.npy'),
+	(976, 2, 6832978, '[Music] Livetune (feat Hatsune Miku)   Redia.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_976.npy'),
+	(977, 1, 5640540, '[MV]さよならカンパニュラ  mehikari feat 初音ミ�.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_977.npy'),
+	(955, 1, 5485059, 'Neo.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_955.npy'),
+	(957, 1, 5964041, 'night  (t)rain  初音ミ�.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_957.npy'),
+	(939, 1, 6269360, 'Hatsune Miku Original Song Bright City.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_939.npy'),
+	(960, 3, 4362839, 'PinocchioP (feat Hatsune Miku and Yukkuri)   Proliferation of Imamur.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_960.npy'),
+	(962, 1, 7012282, 'Robo feat. Hatsune Miku SPACERUN オリジナル曲.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_962.npy'),
+	(985, 1, 5549634, '【Robo feat 初音ミク】 SKY HIGHWAY【オリジナル曲�.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_985.npy'),
+	(963, 1, 5964668, 'ryuryu   Flowers featHatsune Miku 初音ミ�.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_963.npy'),
+	(964, 3, 5262496, 'sasakureUK x DECO27   39 feat Hatsune Miku.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_964.npy'),
+	(965, 2, 4354178, 'spica- hatsune miku.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_965.npy'),
+	(978, 1, 4346243, '[Subs+Lyrics] Contrast [Hatsune Miku] [O6FrUaQVqlQ].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_978.npy'),
+	(968, 2, 5999149, 'TsunTsun  ftHatsune Miku_192kbps.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_968.npy'),
+	(967, 2, 9821039, 'triple baka - miku hatsune.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_967.npy'),
+	(877, NULL, 3956089, '唸る刃と群青正義 [aSp3DvQS7BI].mp3', 0, 1, B'1', NULL, 1.00000, 0, 0.000, 100.000, 0.000, 0.000, 'features_877.npy'),
+	(878, NULL, 3749064, '徒花満ちて _ ふる feat. 初音ミク [LRCKlcAECQ4].mp3', 0, 1, B'1', NULL, 1.00000, 0, 0.000, 100.000, 0.000, 0.000, 'features_878.npy'),
+	(880, NULL, 4468974, '恋人一首 _ 初音ミク [f7vloBZBp6c].mp3', 0, 1, B'1', NULL, 1.00000, 0, 0.000, 100.000, 0.000, 0.000, 'features_880.npy'),
+	(883, NULL, 4643130, '洗濯　（初音ミクAppend） [yargFkG0q0o] (1).mp3', 0, 1, B'1', NULL, 1.00000, 0, 0.000, 100.000, 0.000, 0.000, 'features_883.npy'),
+	(884, NULL, 4643130, '洗濯　（初音ミクAppend） [yargFkG0q0o].mp3', 0, 1, B'1', NULL, 1.00000, 0, 0.000, 100.000, 0.000, 0.000, 'features_884.npy'),
+	(885, NULL, 2156993, '第1話　予測の先にカノジョは走馬灯を見るか PSGO-Z【SKEW PV】 [Ih6NBS9OcPo].mp3', 0, 1, B'1', NULL, 1.00000, 0, 0.000, 100.000, 0.000, 0.000, 'features_885.npy'),
+	(886, NULL, 4240510, '雀色コンデンサ [Rh3XRrvzl50].mp3', 0, 1, B'1', NULL, 1.00000, 0, 0.000, 100.000, 0.000, 0.000, 'features_886.npy'),
+	(887, NULL, 3885563, '霞む森 _ 初音ミク＆GUMI [5UIfTqACqJ8] (1).mp3', 0, 1, B'1', NULL, 1.00000, 0, 0.000, 100.000, 0.000, 0.000, 'features_887.npy'),
+	(888, NULL, 3885563, '霞む森 _ 初音ミク＆GUMI [5UIfTqACqJ8].mp3', 0, 1, B'1', NULL, 1.00000, 0, 0.000, 100.000, 0.000, 0.000, 'features_888.npy'),
+	(923, 1, 4043380, 'Cressida   ftHatsune Miku 【english subtitles】.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_923.npy'),
+	(972, 1, 4904932, 'yt1s.com - Far Away.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_972.npy'),
+	(986, 1, 6716994, '【オリジナルMV】ユメノアメ feat初音ミク  ドッシ�.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_986.npy'),
+	(987, 2, 5669379, '【ミク・MAYU・がくぽ】「Ib」 forever 【オリジナルPV】.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_987.npy'),
+	(1000, 1, 7950183, '【初音ミク】Another Mine【オリジナル21】[HD720p].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_1000.npy'),
+	(990, 3, 6693704, '【初音ミクAppend DARK】Carbuncle【オリジナル曲】.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_990.npy'),
+	(999, 1, 6521296, '【初音ミク】a tail of the wind【Cazオリジナル】.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_999.npy'),
+	(994, 1, 6394121, '【初音ミク】 Baby Steps 【オリジナル�.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_994.npy'),
+	(995, 0, 7854795, '【初音ミク】 children 【オリジナル曲】.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_995.npy'),
+	(997, 2, 3340929, '【初音ミク】 だんだん早くなる Getting Faster and Faster【オリジナル�.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_997.npy'),
+	(991, 1, 3551772, '【初音ミクSweet】街路灯を横切って English and romaji subs [CKqpXsny5W0].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_991.npy'),
+	(975, 3, 6084413, '[Hatsune Miku] Sayonara Arpeggio [VOSTFR].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_975.npy'),
+	(949, 2, 4201412, 'lumo - ネットチルナノグ feat. 初音ミク [fSOK6pGHI5Q].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_949.npy'),
+	(983, 1, 4738909, '【Hatsune Miku】Body Music【Original Song】.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_983.npy'),
+	(1014, 2, 3723988, 'えいえんがみつからない - daniwell feat. Hatsune Miku & Momone Momo.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_1014.npy'),
+	(1021, 1, 6313246, 'シネマセレク�.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_1021.npy'),
+	(1019, 2, 5233030, 'みきとP『 だいあもんど 』M.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_1019.npy'),
+	(1022, 1, 4102032, 'プリエ  初音ミク  Hatsune Miku.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_1022.npy'),
+	(1017, 2, 5887554, 'みきとP Hoi MV.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_1017.npy'),
+	(1018, 0, 4653386, 'みきとP『 kiss 』MV [9tjA9S281wg].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_1018.npy'),
+	(1023, 1, 5891316, 'モノクロブルースカイ  のぼる feat 初音ミク  MonochromeBlueSky.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_1023.npy'),
+	(1001, 1, 5260371, '【初音ミク】aria【オリジナル曲PV付】.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_1001.npy'),
+	(1002, 1, 5931974, '【初音ミク】bpm full ver 【PV】.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_1002.npy'),
+	(1003, 3, 4929612, '【初音ミク】Hatsune Miku「DECORATOR」MP3 High Quality![8].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_1003.npy'),
+	(1005, 3, 5042348, '【初音ミク】アクリルスター【オリジナル】.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_1005.npy'),
+	(1006, 1, 8406594, '【初音ミク】アネモネ【オリジナル】.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_1006.npy'),
+	(1025, 1, 6081645, '初音ミク poppin'' jumpin まらしぃ kors k.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_1025.npy'),
+	(1007, 1, 6113159, '【初音ミク】アポロ【オリジナルMMD PV】.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_1007.npy'),
+	(1029, 1, 6602171, '初音ミクオリジナル曲 「Breath of mechanical」.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_1029.npy'),
+	(1030, 1, 6067486, '初音ミクオリジナル曲「Singularity�.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_1030.npy'),
+	(1028, 1, 3597881, '初音ミク　オリジナル曲　『アンダワ』.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_1028.npy'),
+	(1031, 1, 5332086, '初音ミクメイウェンティーオリジナルPV.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_1031.npy'),
+	(1032, 2, 5216312, '初音ミクリンレンルカ夢の続きオリジナル中文字幕.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_1032.npy'),
+	(1009, 1, 6236759, '【初音ミク】名前のない誰か【オリジナル�.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_1009.npy'),
+	(829, 0, 3862228, '┗_∵_┓吉田、家出するってよ／HoneyWorks feat.初音ミク [fd0uHUAy6TU].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_829.npy'),
+	(838, 0, 2871204, '【MV】現代ササクレ概論／なすP feat. 初音ミク (Modern Hangnail Outline／Nasu feat. Miku Hatsune) [OEXZ5Ml4vKk].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_838.npy'),
+	(852, 0, 5016696, '【初音ミクdark】シロツメクサの花冠 【オリジナル】 [rwXpIeZm-Sc].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_852.npy'),
+	(982, 1, 5817964, '┗ ∵ ┓夢ファンファーレ／HoneyWorks feat初音ミクu0026GUM.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_982.npy'),
+	(902, 1, 15100066, '09 キューティージェリー (feat. 初音ミク).mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_902.npy'),
+	(914, 1, 6109320, 'Amaotopetrichor (feat. Hatsune Miku).mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_914.npy'),
+	(928, 1, 2889533, 'DokiDokiBeat 初音ミク for Lamaze.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_928.npy'),
+	(969, 1, 5117066, 'Weekender Girl   Hatsune Miku Project Diva F (HD).mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_969.npy'),
+	(998, NULL, 6366535, '【初音ミク】 紫陽花が咲く頃に、君と恋をする 【nk】.mp3', 0, 1, B'1', NULL, 1.00000, 0, 0.000, 100.000, 0.000, 0.000, 'features_998.npy'),
+	(1004, NULL, 5194160, '【初音ミク】　表面張力　【オリジナル�.mp3', 0, 1, B'1', NULL, 1.00000, 0, 0.000, 100.000, 0.000, 0.000, 'features_1004.npy'),
+	(1010, NULL, 5141020, '【初音ミク】空に花束を【オリジナル】 [4OLuVzAyYZ0].mp3', 0, 1, B'1', NULL, 1.00000, 0, 0.000, 100.000, 0.000, 0.000, 'features_1010.npy'),
+	(1012, NULL, 7576434, '【水野大輔 feat 初音ミく】 Brilliance.mp3', 0, 1, B'1', NULL, 1.00000, 0, 0.000, 100.000, 0.000, 0.000, 'features_1012.npy'),
+	(971, 1, 3495156, 'yt1s.com - ElectronicMizusano ft Hatsune Miku  Smile Walker.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_971.npy'),
+	(1015, 1, 5372210, 'くるくるついんてーる_192kbps.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_1015.npy'),
+	(892, 2, 5561339, '01 EARTH DAY.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_892.npy'),
+	(828, 0, 3612810, '┗_∵_┓ヤキモチの答え-another story-／HoneyWorks feat.初音ミク [Qlkezcz3tt4].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_828.npy'),
+	(906, 2, 8975210, '11 ハロー、プラネット.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_906.npy'),
+	(912, 2, 8169778, '18 リンリンシグナル.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_912.npy'),
+	(918, 1, 7372052, 'Breath of Urban   keisei feat Hatsune Miku.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_918.npy'),
+	(924, 2, 5743358, 'DECO27   ハートアラモード feat 初音ミ�.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_924.npy'),
+	(933, 1, 4128127, 'Find Me feat. Hatsune Miku [P7UJeX6WE4Q].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_933.npy'),
+	(937, 2, 4216042, 'Hatsune Miku   Sayonara·Good bye [English Sub].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_937.npy'),
+	(984, 1, 5286947, '【Kagamine Rin V4X】 Hop! Step! Instant Death! A Happiness Dance Death Trap 【VOCALOID Cover�.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_984.npy'),
+	(954, 2, 4251662, 'Musunde Hiraite Rasetsu to Mukuro ORIGINAL.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_954.npy'),
+	(961, 3, 6713232, 'Rainbow Palace feat Hatsune Miku   Jonathan Parecki 【Vocaloid Original�.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_961.npy'),
+	(966, 1, 6155257, 'SushiP ft 初音ミク ''Align'' アライン (English Subtitles).mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_966.npy'),
+	(970, 2, 6314499, 'White Dove with English  Romaji Sub  Hatsune Miku  ハト  sm2583719  HQ.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_970.npy'),
+	(992, 1, 4831162, '【初音ミク×アルクロ】センセーションはおわらない！ フルver【コラボオリジナル楽曲�.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_992.npy'),
+	(847, 0, 5063310, '【初音ミク - Hatsune Miku】ウタヲウタエ - Uta o Utae - Sing a Song【PV subs】 [j_AtIAPeIsU].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_847.npy'),
+	(938, 2, 5052472, 'Hatsune Miku   Torinoko City  (トリノコシティ)(Left Behind City) Sub Esp (+mp3 + romaji.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_938.npy'),
+	(988, 3, 5142658, '【公式】アイシテ  とあ feat 初音ミク　  LOVE ME  toa feat Hatsune Miku.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_988.npy'),
+	(1011, 1, 6175226, '【初音ミク・GUMI】あの日、描いたDIARY【オリジナル曲PV】OFFICIAL　MV.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_1011.npy'),
+	(1008, 1, 6742072, '【初音ミク】スターナイトスノウ【オリジナルMV�.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_1008.npy'),
+	(815, 0, 3325418, '(Reprint) 小悪魔笑顔とワガママボディー【初音ﾐｸﾀﾞﾖｰ オリジナルPV】 [ErksldUjSUI].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_815.npy'),
+	(898, 2, 3675539, '05 Night Glitter (Featuring Hatsune Miku).mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_898.npy'),
+	(911, 3, 8411420, '17 Yellow.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_911.npy'),
+	(920, 2, 6536436, 'CATS RULE THE WORLD   daniwell feat Hatsune Miku  Momone Momo.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_920.npy'),
+	(935, 1, 3791071, 'Hatsune Miku   Akeomeakeomeakeomeakeome (Happy New Year).mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_935.npy'),
+	(870, 0, 4765562, '【初音ミク（ぐにょ）】福寿草【作曲してみた】 [15HNvDg0Gq4].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_870.npy'),
+	(981, 1, 5384749, '‪【Hatsune Miku】‬Cerita SMU【Original】‬.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_981.npy'),
+	(974, 1, 4184609, '[Eng Sub] To the Lonely You and the Lone Me [Suzumu ft. Hatsune Miku] [EHxFEHPBDP8].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_974.npy'),
+	(948, 1, 6385343, 'LOST NOTE  No85 feat初音ミ�.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_948.npy'),
+	(956, 1, 5234911, 'Neru - ロストワンの号哭(Lost One''s Weeping) feat. Kagamine Rin.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_956.npy'),
+	(1016, 1, 6318888, 'ひとりぼっちとココロの本と - PIPPO feat. 初音ミク.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_1016.npy'),
+	(1033, NULL, 5628001, '初音ミク灯火syudou_192kbps.mp3', 0, 1, B'1', NULL, 1.00000, 0, 0.000, 100.000, 0.000, 0.000, 'features_1033.npy'),
+	(1034, NULL, 6625461, '夏至の踊り子 ／初音ミ�.mp3', 0, 1, B'1', NULL, 1.00000, 0, 0.000, 100.000, 0.000, 0.000, 'features_1034.npy'),
+	(1036, NULL, 1661360, '小説3こちら幸福安心委員会です女王様とハピネスサマーゲーム.mp3', 0, 1, B'1', NULL, 1.00000, 0, 0.000, 100.000, 0.000, 0.000, 'features_1036.npy'),
+	(1037, NULL, 6647404, '手�.mp3', 0, 1, B'1', NULL, 1.00000, 0, 0.000, 100.000, 0.000, 0.000, 'features_1037.npy'),
+	(1038, NULL, 6117641, '神のまにまに - れるりりfeat.ミク&リン&GUMI  At God''s Mercy - rerulili feat.Vocaloids.mp3', 0, 1, B'1', NULL, 1.00000, 0, 0.000, 100.000, 0.000, 0.000, 'features_1038.npy'),
+	(1039, NULL, 7278104, '神経衰弱  初音ミク 【 Nervous Breakdown  Hatsune Miku �.mp3', 0, 1, B'1', NULL, 1.00000, 0, 0.000, 100.000, 0.000, 0.000, 'features_1039.npy'),
+	(1040, NULL, 5408573, '私は足りないでいっぱい_192kbps.mp3', 0, 1, B'1', NULL, 1.00000, 0, 0.000, 100.000, 0.000, 0.000, 'features_1040.npy'),
+	(1042, NULL, 7087515, '膵臓  Luna feat 初音ミク ガールズコレクション.mp3', 0, 1, B'1', NULL, 1.00000, 0, 0.000, 100.000, 0.000, 0.000, 'features_1042.npy'),
+	(1043, NULL, 2568958, '鏡音レン唐傘さんが通るオリジナルPV.mp3', 0, 1, B'1', NULL, 1.00000, 0, 0.000, 100.000, 0.000, 0.000, 'features_1043.npy'),
+	(867, NULL, 4512043, '【初音ミク】祝祭と流転 English and romaji subs [ieEk2hXFkOw].mp3', 0, 1, B'1', NULL, 1.00000, 0, 0.000, 100.000, 0.000, 0.000, 'features_867.npy'),
+	(879, NULL, 7472180, '微熱の微笑み、微少女は微かに微睡ーム [FYTsVgSO-ms].mp3', 0, 1, B'1', NULL, 1.00000, 0, 0.000, 100.000, 0.000, 0.000, 'features_879.npy'),
+	(1035, NULL, 7311959, '大嫌いなはずだったHoneyWorks feat.GUMI初音ミク.mp3', 0, 1, B'1', NULL, 1.00000, 0, 0.000, 100.000, 0.000, 0.000, 'features_1035.npy'),
+	(882, NULL, 3489005, '最憂間で君は [fmbOTo1t1dk].mp3', 0, 1, B'1', NULL, 1.00000, 0, 0.000, 100.000, 0.000, 0.000, 'features_882.npy'),
+	(959, 3, 6144599, 'Ordinary   ポリスピカデリー feat 初音ミク  Ordinary   Police Piccadilly feat Hatsune Mik.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_959.npy'),
+	(979, 3, 5737281, '[VnSharing] Umi Yuri Kaiteitan   Hatsune Miku   Vocaloid vietsub.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_979.npy'),
+	(993, 1, 2801668, '【初音ミク】 Anata no Utahime (8ch arr) 【休闲の1月曲】.mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_993.npy'),
+	(871, 0, 4586189, 'とあ - 飛行機雲 - ft.初音ミク ( Toa - Contrail - ft.Hatsune Miku ) [RHCoZroZySA].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_871.npy'),
+	(1026, 2, 4160129, '初音ミク Project Diva f 2nd  nanou  Hatsune Miku  Glory 3usi9  Best of nanou (high volume).mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_1026.npy'),
+	(823, 0, 4163060, 'Koi wa Maboroshi de Ai wa Karamawari _ Nashimoto Ui (恋は幻で愛は空回り_梨本うい) [CfUZYBL6pr0].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_823.npy'),
+	(863, 0, 5612525, '【初音ミク】ゲーセン上のアリア【オリジナル曲】 [PEHddBaJyUA].mp3', 1, 1, B'1', NULL, 1.00000, 1, 0.000, 100.000, 0.000, 0.000, 'features_863.npy');
+
 
 --
 -- Data for Name: playlists; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO
-    public.playlists OVERRIDING SYSTEM VALUE
-VALUES (
-        1,
-        'Favoritos',
-        NULL,
-        '2026-02-22 18:57:37.569194-06',
-        B'1',
-        B'1'
-    );
+INSERT INTO public.playlists OVERRIDING SYSTEM VALUE VALUES
+	(1, 'Favoritos', 6, '2026-02-22 18:57:37.569194-06', B'1', B'1'),
+	(2, 'Prueba', 7, '2026-03-04 21:49:46.413684-06', B'1', B'0');
+
 
 --
 -- Data for Name: rel_playlists_canciones; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO
-    public.rel_playlists_canciones OVERRIDING SYSTEM VALUE
-VALUES (
-        1,
-        814,
-        1,
-        '2026-02-22 22:25:21.911593-06'
-    ),
-    (
-        2,
-        815,
-        1,
-        '2026-02-22 22:25:21.912944-06'
-    ),
-    (
-        3,
-        816,
-        1,
-        '2026-02-22 22:25:21.913479-06'
-    ),
-    (
-        4,
-        817,
-        1,
-        '2026-02-22 22:25:21.914002-06'
-    ),
-    (
-        5,
-        818,
-        1,
-        '2026-02-22 22:25:21.914607-06'
-    ),
-    (
-        6,
-        819,
-        1,
-        '2026-02-22 22:25:21.915139-06'
-    ),
-    (
-        7,
-        820,
-        1,
-        '2026-02-22 22:25:21.915628-06'
-    ),
-    (
-        8,
-        821,
-        1,
-        '2026-02-22 22:25:21.916036-06'
-    ),
-    (
-        9,
-        822,
-        1,
-        '2026-02-22 22:25:21.916563-06'
-    ),
-    (
-        10,
-        823,
-        1,
-        '2026-02-22 22:25:21.917255-06'
-    ),
-    (
-        11,
-        824,
-        1,
-        '2026-02-22 22:25:21.917863-06'
-    ),
-    (
-        12,
-        825,
-        1,
-        '2026-02-22 22:25:21.918371-06'
-    ),
-    (
-        13,
-        826,
-        1,
-        '2026-02-22 22:25:21.918902-06'
-    ),
-    (
-        14,
-        827,
-        1,
-        '2026-02-22 22:25:21.919478-06'
-    ),
-    (
-        15,
-        828,
-        1,
-        '2026-02-22 22:25:21.920162-06'
-    ),
-    (
-        16,
-        829,
-        1,
-        '2026-02-22 22:25:21.920744-06'
-    ),
-    (
-        17,
-        830,
-        1,
-        '2026-02-22 22:25:21.921241-06'
-    ),
-    (
-        18,
-        831,
-        1,
-        '2026-02-22 22:25:21.921762-06'
-    ),
-    (
-        19,
-        832,
-        1,
-        '2026-02-22 22:25:21.92219-06'
-    ),
-    (
-        20,
-        833,
-        1,
-        '2026-02-22 22:25:21.922696-06'
-    ),
-    (
-        21,
-        834,
-        1,
-        '2026-02-22 22:25:21.923147-06'
-    ),
-    (
-        22,
-        835,
-        1,
-        '2026-02-22 22:25:21.923565-06'
-    ),
-    (
-        23,
-        836,
-        1,
-        '2026-02-22 22:25:21.923957-06'
-    ),
-    (
-        24,
-        837,
-        1,
-        '2026-02-22 22:25:21.924358-06'
-    ),
-    (
-        25,
-        838,
-        1,
-        '2026-02-22 22:25:21.924815-06'
-    ),
-    (
-        26,
-        839,
-        1,
-        '2026-02-22 22:25:21.925383-06'
-    ),
-    (
-        27,
-        840,
-        1,
-        '2026-02-22 22:25:21.925864-06'
-    ),
-    (
-        28,
-        841,
-        1,
-        '2026-02-22 22:25:21.926278-06'
-    ),
-    (
-        29,
-        842,
-        1,
-        '2026-02-22 22:25:21.926675-06'
-    ),
-    (
-        30,
-        843,
-        1,
-        '2026-02-22 22:25:21.9271-06'
-    ),
-    (
-        31,
-        844,
-        1,
-        '2026-02-22 22:25:21.927631-06'
-    ),
-    (
-        32,
-        845,
-        1,
-        '2026-02-22 22:25:21.928102-06'
-    ),
-    (
-        33,
-        846,
-        1,
-        '2026-02-22 22:25:21.9285-06'
-    ),
-    (
-        34,
-        847,
-        1,
-        '2026-02-22 22:25:21.928885-06'
-    ),
-    (
-        35,
-        848,
-        1,
-        '2026-02-22 22:25:21.929288-06'
-    ),
-    (
-        36,
-        849,
-        1,
-        '2026-02-22 22:25:21.929668-06'
-    ),
-    (
-        37,
-        850,
-        1,
-        '2026-02-22 22:25:21.930068-06'
-    ),
-    (
-        38,
-        851,
-        1,
-        '2026-02-22 22:25:21.930458-06'
-    ),
-    (
-        39,
-        852,
-        1,
-        '2026-02-22 22:25:21.930837-06'
-    ),
-    (
-        40,
-        853,
-        1,
-        '2026-02-22 22:25:21.93127-06'
-    ),
-    (
-        41,
-        854,
-        1,
-        '2026-02-22 22:25:21.931678-06'
-    ),
-    (
-        42,
-        855,
-        1,
-        '2026-02-22 22:25:21.932062-06'
-    ),
-    (
-        43,
-        856,
-        1,
-        '2026-02-22 22:25:21.932495-06'
-    ),
-    (
-        44,
-        857,
-        1,
-        '2026-02-22 22:25:21.933229-06'
-    ),
-    (
-        45,
-        858,
-        1,
-        '2026-02-22 22:25:21.93384-06'
-    ),
-    (
-        46,
-        859,
-        1,
-        '2026-02-22 22:25:21.934451-06'
-    ),
-    (
-        47,
-        860,
-        1,
-        '2026-02-22 22:25:21.935106-06'
-    ),
-    (
-        48,
-        861,
-        1,
-        '2026-02-22 22:25:21.935789-06'
-    ),
-    (
-        49,
-        862,
-        1,
-        '2026-02-22 22:25:21.936501-06'
-    ),
-    (
-        50,
-        863,
-        1,
-        '2026-02-22 22:25:21.937188-06'
-    ),
-    (
-        51,
-        864,
-        1,
-        '2026-02-22 22:25:21.937798-06'
-    ),
-    (
-        52,
-        865,
-        1,
-        '2026-02-22 22:25:21.938397-06'
-    ),
-    (
-        53,
-        866,
-        1,
-        '2026-02-22 22:25:21.938866-06'
-    ),
-    (
-        54,
-        867,
-        1,
-        '2026-02-22 22:25:21.939447-06'
-    ),
-    (
-        55,
-        868,
-        1,
-        '2026-02-22 22:25:21.939918-06'
-    ),
-    (
-        56,
-        869,
-        1,
-        '2026-02-22 22:25:21.940382-06'
-    ),
-    (
-        57,
-        870,
-        1,
-        '2026-02-22 22:25:21.940841-06'
-    ),
-    (
-        58,
-        871,
-        1,
-        '2026-02-22 22:25:21.941252-06'
-    ),
-    (
-        59,
-        872,
-        1,
-        '2026-02-22 22:25:21.941737-06'
-    ),
-    (
-        60,
-        873,
-        1,
-        '2026-02-22 22:25:21.942178-06'
-    ),
-    (
-        61,
-        874,
-        1,
-        '2026-02-22 22:25:21.942585-06'
-    ),
-    (
-        62,
-        875,
-        1,
-        '2026-02-22 22:25:21.943018-06'
-    ),
-    (
-        63,
-        876,
-        1,
-        '2026-02-22 22:25:21.943412-06'
-    ),
-    (
-        64,
-        877,
-        1,
-        '2026-02-22 22:25:21.944047-06'
-    ),
-    (
-        65,
-        878,
-        1,
-        '2026-02-22 22:25:21.944451-06'
-    ),
-    (
-        66,
-        879,
-        1,
-        '2026-02-22 22:25:21.94484-06'
-    ),
-    (
-        67,
-        880,
-        1,
-        '2026-02-22 22:25:21.945225-06'
-    ),
-    (
-        68,
-        881,
-        1,
-        '2026-02-22 22:25:21.945616-06'
-    ),
-    (
-        69,
-        882,
-        1,
-        '2026-02-22 22:25:21.946019-06'
-    ),
-    (
-        70,
-        883,
-        1,
-        '2026-02-22 22:25:21.94641-06'
-    ),
-    (
-        71,
-        884,
-        1,
-        '2026-02-22 22:25:21.946798-06'
-    ),
-    (
-        72,
-        885,
-        1,
-        '2026-02-22 22:25:21.94719-06'
-    ),
-    (
-        73,
-        886,
-        1,
-        '2026-02-22 22:25:21.94762-06'
-    ),
-    (
-        74,
-        887,
-        1,
-        '2026-02-22 22:25:21.948087-06'
-    ),
-    (
-        75,
-        888,
-        1,
-        '2026-02-22 22:25:21.948495-06'
-    ),
-    (
-        76,
-        889,
-        1,
-        '2026-02-24 19:04:35.775904-06'
-    ),
-    (
-        77,
-        890,
-        1,
-        '2026-02-24 19:04:35.777168-06'
-    ),
-    (
-        78,
-        891,
-        1,
-        '2026-02-24 19:04:35.777892-06'
-    ),
-    (
-        79,
-        892,
-        1,
-        '2026-02-24 19:04:35.778708-06'
-    ),
-    (
-        80,
-        893,
-        1,
-        '2026-02-24 19:04:35.779742-06'
-    ),
-    (
-        81,
-        894,
-        1,
-        '2026-02-24 19:04:35.780629-06'
-    ),
-    (
-        82,
-        895,
-        1,
-        '2026-02-24 19:04:35.781371-06'
-    ),
-    (
-        83,
-        896,
-        1,
-        '2026-02-24 19:04:35.781892-06'
-    ),
-    (
-        84,
-        897,
-        1,
-        '2026-02-24 19:04:35.78251-06'
-    ),
-    (
-        85,
-        898,
-        1,
-        '2026-02-24 19:04:35.783052-06'
-    ),
-    (
-        86,
-        899,
-        1,
-        '2026-02-24 19:04:35.783667-06'
-    ),
-    (
-        87,
-        900,
-        1,
-        '2026-02-24 19:04:35.784166-06'
-    ),
-    (
-        88,
-        901,
-        1,
-        '2026-02-24 19:04:35.784763-06'
-    ),
-    (
-        89,
-        902,
-        1,
-        '2026-02-24 19:04:35.785239-06'
-    ),
-    (
-        90,
-        903,
-        1,
-        '2026-02-24 19:04:35.785692-06'
-    ),
-    (
-        91,
-        904,
-        1,
-        '2026-02-24 19:04:35.78614-06'
-    ),
-    (
-        92,
-        905,
-        1,
-        '2026-02-24 19:04:35.786587-06'
-    ),
-    (
-        93,
-        906,
-        1,
-        '2026-02-24 19:04:35.787337-06'
-    ),
-    (
-        94,
-        907,
-        1,
-        '2026-02-24 19:04:35.787982-06'
-    ),
-    (
-        95,
-        908,
-        1,
-        '2026-02-24 19:04:35.788544-06'
-    ),
-    (
-        96,
-        909,
-        1,
-        '2026-02-24 19:04:35.789173-06'
-    ),
-    (
-        97,
-        910,
-        1,
-        '2026-02-24 19:04:35.789674-06'
-    ),
-    (
-        98,
-        911,
-        1,
-        '2026-02-24 19:04:35.790244-06'
-    ),
-    (
-        99,
-        912,
-        1,
-        '2026-02-24 19:04:35.790966-06'
-    ),
-    (
-        100,
-        913,
-        1,
-        '2026-02-24 19:04:35.791526-06'
-    ),
-    (
-        101,
-        914,
-        1,
-        '2026-02-24 19:04:35.792063-06'
-    ),
-    (
-        102,
-        915,
-        1,
-        '2026-02-24 19:04:35.792836-06'
-    ),
-    (
-        103,
-        916,
-        1,
-        '2026-02-24 19:04:35.793809-06'
-    ),
-    (
-        104,
-        917,
-        1,
-        '2026-02-24 19:04:35.794587-06'
-    ),
-    (
-        105,
-        918,
-        1,
-        '2026-02-24 19:04:35.795234-06'
-    ),
-    (
-        106,
-        919,
-        1,
-        '2026-02-24 19:04:35.795858-06'
-    ),
-    (
-        107,
-        920,
-        1,
-        '2026-02-24 19:04:35.79646-06'
-    ),
-    (
-        108,
-        921,
-        1,
-        '2026-02-24 19:04:35.797511-06'
-    ),
-    (
-        109,
-        922,
-        1,
-        '2026-02-24 19:04:35.798251-06'
-    ),
-    (
-        110,
-        923,
-        1,
-        '2026-02-24 19:04:35.798959-06'
-    ),
-    (
-        111,
-        924,
-        1,
-        '2026-02-24 19:04:35.799535-06'
-    ),
-    (
-        112,
-        925,
-        1,
-        '2026-02-24 19:04:35.80006-06'
-    ),
-    (
-        113,
-        926,
-        1,
-        '2026-02-24 19:04:35.800967-06'
-    ),
-    (
-        114,
-        927,
-        1,
-        '2026-02-24 19:04:35.801449-06'
-    ),
-    (
-        115,
-        928,
-        1,
-        '2026-02-24 19:04:35.801907-06'
-    ),
-    (
-        116,
-        929,
-        1,
-        '2026-02-24 19:04:35.802358-06'
-    ),
-    (
-        117,
-        930,
-        1,
-        '2026-02-24 19:04:35.802808-06'
-    ),
-    (
-        118,
-        931,
-        1,
-        '2026-02-24 19:04:35.803292-06'
-    ),
-    (
-        119,
-        932,
-        1,
-        '2026-02-24 19:04:35.803994-06'
-    ),
-    (
-        120,
-        933,
-        1,
-        '2026-02-24 19:04:35.804742-06'
-    ),
-    (
-        121,
-        934,
-        1,
-        '2026-02-24 19:04:35.805372-06'
-    ),
-    (
-        122,
-        935,
-        1,
-        '2026-02-24 19:04:35.806073-06'
-    ),
-    (
-        123,
-        936,
-        1,
-        '2026-02-24 19:04:35.806757-06'
-    ),
-    (
-        124,
-        937,
-        1,
-        '2026-02-24 19:04:35.807374-06'
-    ),
-    (
-        125,
-        938,
-        1,
-        '2026-02-24 19:04:35.807909-06'
-    ),
-    (
-        126,
-        939,
-        1,
-        '2026-02-24 19:04:35.808466-06'
-    ),
-    (
-        127,
-        940,
-        1,
-        '2026-02-24 19:04:35.809107-06'
-    ),
-    (
-        128,
-        941,
-        1,
-        '2026-02-24 19:04:35.80971-06'
-    ),
-    (
-        129,
-        942,
-        1,
-        '2026-02-24 19:04:35.810221-06'
-    ),
-    (
-        130,
-        943,
-        1,
-        '2026-02-24 19:04:35.810791-06'
-    ),
-    (
-        131,
-        944,
-        1,
-        '2026-02-24 19:04:35.811283-06'
-    ),
-    (
-        132,
-        945,
-        1,
-        '2026-02-24 19:04:35.81175-06'
-    ),
-    (
-        133,
-        946,
-        1,
-        '2026-02-24 19:04:35.812182-06'
-    ),
-    (
-        134,
-        947,
-        1,
-        '2026-02-24 19:04:35.812689-06'
-    ),
-    (
-        135,
-        948,
-        1,
-        '2026-02-24 19:04:35.81312-06'
-    ),
-    (
-        136,
-        949,
-        1,
-        '2026-02-24 19:04:35.813531-06'
-    ),
-    (
-        137,
-        950,
-        1,
-        '2026-02-24 19:04:35.814312-06'
-    ),
-    (
-        138,
-        951,
-        1,
-        '2026-02-24 19:04:35.814953-06'
-    ),
-    (
-        139,
-        952,
-        1,
-        '2026-02-24 19:04:35.815428-06'
-    ),
-    (
-        140,
-        953,
-        1,
-        '2026-02-24 19:04:35.815867-06'
-    ),
-    (
-        141,
-        954,
-        1,
-        '2026-02-24 19:04:35.816314-06'
-    ),
-    (
-        142,
-        955,
-        1,
-        '2026-02-24 19:04:35.816788-06'
-    ),
-    (
-        143,
-        956,
-        1,
-        '2026-02-24 19:04:35.817319-06'
-    ),
-    (
-        144,
-        957,
-        1,
-        '2026-02-24 19:04:35.817768-06'
-    ),
-    (
-        145,
-        958,
-        1,
-        '2026-02-24 19:04:35.818192-06'
-    ),
-    (
-        146,
-        959,
-        1,
-        '2026-02-24 19:04:35.818601-06'
-    ),
-    (
-        147,
-        960,
-        1,
-        '2026-02-24 19:04:35.819092-06'
-    ),
-    (
-        148,
-        961,
-        1,
-        '2026-02-24 19:04:35.819613-06'
-    ),
-    (
-        149,
-        962,
-        1,
-        '2026-02-24 19:04:35.820306-06'
-    ),
-    (
-        150,
-        963,
-        1,
-        '2026-02-24 19:04:35.82097-06'
-    ),
-    (
-        151,
-        964,
-        1,
-        '2026-02-24 19:04:35.821575-06'
-    ),
-    (
-        152,
-        965,
-        1,
-        '2026-02-24 19:04:35.822124-06'
-    ),
-    (
-        153,
-        966,
-        1,
-        '2026-02-24 19:04:35.822635-06'
-    ),
-    (
-        154,
-        967,
-        1,
-        '2026-02-24 19:04:35.823115-06'
-    ),
-    (
-        155,
-        968,
-        1,
-        '2026-02-24 19:04:35.823544-06'
-    ),
-    (
-        156,
-        969,
-        1,
-        '2026-02-24 19:04:35.823976-06'
-    ),
-    (
-        157,
-        970,
-        1,
-        '2026-02-24 19:04:35.824388-06'
-    ),
-    (
-        158,
-        971,
-        1,
-        '2026-02-24 19:04:35.824901-06'
-    ),
-    (
-        159,
-        972,
-        1,
-        '2026-02-24 19:04:35.826614-06'
-    ),
-    (
-        160,
-        973,
-        1,
-        '2026-02-24 19:04:35.827587-06'
-    ),
-    (
-        161,
-        974,
-        1,
-        '2026-02-24 19:04:35.828331-06'
-    ),
-    (
-        162,
-        975,
-        1,
-        '2026-02-24 19:04:35.829096-06'
-    ),
-    (
-        163,
-        976,
-        1,
-        '2026-02-24 19:04:35.829816-06'
-    ),
-    (
-        164,
-        977,
-        1,
-        '2026-02-24 19:04:35.83035-06'
-    ),
-    (
-        165,
-        978,
-        1,
-        '2026-02-24 19:04:35.831292-06'
-    ),
-    (
-        166,
-        979,
-        1,
-        '2026-02-24 19:04:35.83175-06'
-    ),
-    (
-        167,
-        980,
-        1,
-        '2026-02-24 19:04:35.832478-06'
-    ),
-    (
-        168,
-        981,
-        1,
-        '2026-02-24 19:04:35.832981-06'
-    ),
-    (
-        169,
-        982,
-        1,
-        '2026-02-24 19:04:35.833494-06'
-    ),
-    (
-        170,
-        983,
-        1,
-        '2026-02-24 19:04:35.834011-06'
-    ),
-    (
-        171,
-        984,
-        1,
-        '2026-02-24 19:04:35.834428-06'
-    ),
-    (
-        172,
-        985,
-        1,
-        '2026-02-24 19:04:35.834849-06'
-    ),
-    (
-        173,
-        986,
-        1,
-        '2026-02-24 19:04:35.835603-06'
-    ),
-    (
-        174,
-        987,
-        1,
-        '2026-02-24 19:04:35.836157-06'
-    ),
-    (
-        175,
-        988,
-        1,
-        '2026-02-24 19:04:35.836638-06'
-    ),
-    (
-        176,
-        989,
-        1,
-        '2026-02-24 19:04:35.837263-06'
-    ),
-    (
-        177,
-        990,
-        1,
-        '2026-02-24 19:04:35.837833-06'
-    ),
-    (
-        178,
-        991,
-        1,
-        '2026-02-24 19:04:35.838346-06'
-    ),
-    (
-        179,
-        992,
-        1,
-        '2026-02-24 19:04:35.838907-06'
-    ),
-    (
-        180,
-        993,
-        1,
-        '2026-02-24 19:04:35.839422-06'
-    ),
-    (
-        181,
-        994,
-        1,
-        '2026-02-24 19:04:35.839848-06'
-    ),
-    (
-        182,
-        995,
-        1,
-        '2026-02-24 19:04:35.840317-06'
-    ),
-    (
-        183,
-        996,
-        1,
-        '2026-02-24 19:04:35.840743-06'
-    ),
-    (
-        184,
-        997,
-        1,
-        '2026-02-24 19:04:35.841154-06'
-    ),
-    (
-        185,
-        998,
-        1,
-        '2026-02-24 19:04:35.841598-06'
-    ),
-    (
-        186,
-        999,
-        1,
-        '2026-02-24 19:04:35.842319-06'
-    ),
-    (
-        187,
-        1000,
-        1,
-        '2026-02-24 19:04:35.842874-06'
-    ),
-    (
-        188,
-        1001,
-        1,
-        '2026-02-24 19:04:35.843397-06'
-    ),
-    (
-        189,
-        1002,
-        1,
-        '2026-02-24 19:04:35.84395-06'
-    ),
-    (
-        190,
-        1003,
-        1,
-        '2026-02-24 19:04:35.844455-06'
-    ),
-    (
-        191,
-        1004,
-        1,
-        '2026-02-24 19:04:35.845011-06'
-    ),
-    (
-        192,
-        1005,
-        1,
-        '2026-02-24 19:04:35.845475-06'
-    ),
-    (
-        193,
-        1006,
-        1,
-        '2026-02-24 19:04:35.846039-06'
-    ),
-    (
-        194,
-        1007,
-        1,
-        '2026-02-24 19:04:35.846471-06'
-    ),
-    (
-        195,
-        1008,
-        1,
-        '2026-02-24 19:04:35.846892-06'
-    ),
-    (
-        196,
-        1009,
-        1,
-        '2026-02-24 19:04:35.847319-06'
-    ),
-    (
-        197,
-        1010,
-        1,
-        '2026-02-24 19:04:35.847741-06'
-    ),
-    (
-        198,
-        1011,
-        1,
-        '2026-02-24 19:04:35.848164-06'
-    ),
-    (
-        199,
-        1012,
-        1,
-        '2026-02-24 19:04:35.848585-06'
-    ),
-    (
-        200,
-        1013,
-        1,
-        '2026-02-24 19:04:35.849314-06'
-    ),
-    (
-        201,
-        1014,
-        1,
-        '2026-02-24 19:04:35.84981-06'
-    ),
-    (
-        202,
-        1015,
-        1,
-        '2026-02-24 19:04:35.850236-06'
-    ),
-    (
-        203,
-        1016,
-        1,
-        '2026-02-24 19:04:35.850657-06'
-    ),
-    (
-        204,
-        1017,
-        1,
-        '2026-02-24 19:04:35.851058-06'
-    ),
-    (
-        205,
-        1018,
-        1,
-        '2026-02-24 19:04:35.851472-06'
-    ),
-    (
-        206,
-        1019,
-        1,
-        '2026-02-24 19:04:35.851878-06'
-    ),
-    (
-        207,
-        1020,
-        1,
-        '2026-02-24 19:04:35.852498-06'
-    ),
-    (
-        208,
-        1021,
-        1,
-        '2026-02-24 19:04:35.852923-06'
-    ),
-    (
-        209,
-        1022,
-        1,
-        '2026-02-24 19:04:35.853433-06'
-    ),
-    (
-        210,
-        1023,
-        1,
-        '2026-02-24 19:04:35.854028-06'
-    ),
-    (
-        211,
-        1024,
-        1,
-        '2026-02-24 19:04:35.854684-06'
-    ),
-    (
-        212,
-        1025,
-        1,
-        '2026-02-24 19:04:35.855122-06'
-    ),
-    (
-        213,
-        1026,
-        1,
-        '2026-02-24 19:04:35.855617-06'
-    ),
-    (
-        214,
-        1027,
-        1,
-        '2026-02-24 19:04:35.856125-06'
-    ),
-    (
-        215,
-        1028,
-        1,
-        '2026-02-24 19:04:35.856577-06'
-    ),
-    (
-        216,
-        1029,
-        1,
-        '2026-02-24 19:04:35.856997-06'
-    ),
-    (
-        217,
-        1030,
-        1,
-        '2026-02-24 19:04:35.857407-06'
-    ),
-    (
-        218,
-        1031,
-        1,
-        '2026-02-24 19:04:35.857879-06'
-    ),
-    (
-        219,
-        1032,
-        1,
-        '2026-02-24 19:04:35.858464-06'
-    ),
-    (
-        220,
-        1033,
-        1,
-        '2026-02-24 19:04:35.859072-06'
-    ),
-    (
-        221,
-        1034,
-        1,
-        '2026-02-24 19:04:35.859488-06'
-    ),
-    (
-        222,
-        1035,
-        1,
-        '2026-02-24 19:04:35.859912-06'
-    ),
-    (
-        223,
-        1036,
-        1,
-        '2026-02-24 19:04:35.860357-06'
-    ),
-    (
-        224,
-        1037,
-        1,
-        '2026-02-24 19:04:35.860789-06'
-    ),
-    (
-        225,
-        1038,
-        1,
-        '2026-02-24 19:04:35.861204-06'
-    ),
-    (
-        226,
-        1039,
-        1,
-        '2026-02-24 19:04:35.861602-06'
-    ),
-    (
-        227,
-        1040,
-        1,
-        '2026-02-24 19:04:35.862-06'
-    ),
-    (
-        228,
-        1041,
-        1,
-        '2026-02-24 19:04:35.862441-06'
-    ),
-    (
-        229,
-        1042,
-        1,
-        '2026-02-24 19:04:35.863091-06'
-    ),
-    (
-        230,
-        1043,
-        1,
-        '2026-02-24 19:04:35.863572-06'
-    );
+INSERT INTO public.rel_playlists_canciones OVERRIDING SYSTEM VALUE VALUES
+	(1, 814, 1, '2026-02-22 22:25:21.911593-06'),
+	(2, 815, 1, '2026-02-22 22:25:21.912944-06'),
+	(3, 816, 1, '2026-02-22 22:25:21.913479-06'),
+	(4, 817, 1, '2026-02-22 22:25:21.914002-06'),
+	(5, 818, 1, '2026-02-22 22:25:21.914607-06'),
+	(6, 819, 1, '2026-02-22 22:25:21.915139-06'),
+	(7, 820, 1, '2026-02-22 22:25:21.915628-06'),
+	(8, 821, 1, '2026-02-22 22:25:21.916036-06'),
+	(9, 822, 1, '2026-02-22 22:25:21.916563-06'),
+	(10, 823, 1, '2026-02-22 22:25:21.917255-06'),
+	(11, 824, 1, '2026-02-22 22:25:21.917863-06'),
+	(12, 825, 1, '2026-02-22 22:25:21.918371-06'),
+	(13, 826, 1, '2026-02-22 22:25:21.918902-06'),
+	(14, 827, 1, '2026-02-22 22:25:21.919478-06'),
+	(15, 828, 1, '2026-02-22 22:25:21.920162-06'),
+	(16, 829, 1, '2026-02-22 22:25:21.920744-06'),
+	(17, 830, 1, '2026-02-22 22:25:21.921241-06'),
+	(18, 831, 1, '2026-02-22 22:25:21.921762-06'),
+	(19, 832, 1, '2026-02-22 22:25:21.92219-06'),
+	(20, 833, 1, '2026-02-22 22:25:21.922696-06'),
+	(21, 834, 1, '2026-02-22 22:25:21.923147-06'),
+	(22, 835, 1, '2026-02-22 22:25:21.923565-06'),
+	(23, 836, 1, '2026-02-22 22:25:21.923957-06'),
+	(24, 837, 1, '2026-02-22 22:25:21.924358-06'),
+	(25, 838, 1, '2026-02-22 22:25:21.924815-06'),
+	(26, 839, 1, '2026-02-22 22:25:21.925383-06'),
+	(27, 840, 1, '2026-02-22 22:25:21.925864-06'),
+	(28, 841, 1, '2026-02-22 22:25:21.926278-06'),
+	(29, 842, 1, '2026-02-22 22:25:21.926675-06'),
+	(30, 843, 1, '2026-02-22 22:25:21.9271-06'),
+	(31, 844, 1, '2026-02-22 22:25:21.927631-06'),
+	(32, 845, 1, '2026-02-22 22:25:21.928102-06'),
+	(33, 846, 1, '2026-02-22 22:25:21.9285-06'),
+	(34, 847, 1, '2026-02-22 22:25:21.928885-06'),
+	(35, 848, 1, '2026-02-22 22:25:21.929288-06'),
+	(36, 849, 1, '2026-02-22 22:25:21.929668-06'),
+	(37, 850, 1, '2026-02-22 22:25:21.930068-06'),
+	(38, 851, 1, '2026-02-22 22:25:21.930458-06'),
+	(39, 852, 1, '2026-02-22 22:25:21.930837-06'),
+	(40, 853, 1, '2026-02-22 22:25:21.93127-06'),
+	(41, 854, 1, '2026-02-22 22:25:21.931678-06'),
+	(42, 855, 1, '2026-02-22 22:25:21.932062-06'),
+	(43, 856, 1, '2026-02-22 22:25:21.932495-06'),
+	(44, 857, 1, '2026-02-22 22:25:21.933229-06'),
+	(45, 858, 1, '2026-02-22 22:25:21.93384-06'),
+	(46, 859, 1, '2026-02-22 22:25:21.934451-06'),
+	(47, 860, 1, '2026-02-22 22:25:21.935106-06'),
+	(48, 861, 1, '2026-02-22 22:25:21.935789-06'),
+	(49, 862, 1, '2026-02-22 22:25:21.936501-06'),
+	(50, 863, 1, '2026-02-22 22:25:21.937188-06'),
+	(51, 864, 1, '2026-02-22 22:25:21.937798-06'),
+	(52, 865, 1, '2026-02-22 22:25:21.938397-06'),
+	(53, 866, 1, '2026-02-22 22:25:21.938866-06'),
+	(54, 867, 1, '2026-02-22 22:25:21.939447-06'),
+	(55, 868, 1, '2026-02-22 22:25:21.939918-06'),
+	(56, 869, 1, '2026-02-22 22:25:21.940382-06'),
+	(57, 870, 1, '2026-02-22 22:25:21.940841-06'),
+	(58, 871, 1, '2026-02-22 22:25:21.941252-06'),
+	(59, 872, 1, '2026-02-22 22:25:21.941737-06'),
+	(60, 873, 1, '2026-02-22 22:25:21.942178-06'),
+	(61, 874, 1, '2026-02-22 22:25:21.942585-06'),
+	(62, 875, 1, '2026-02-22 22:25:21.943018-06'),
+	(63, 876, 1, '2026-02-22 22:25:21.943412-06'),
+	(64, 877, 1, '2026-02-22 22:25:21.944047-06'),
+	(65, 878, 1, '2026-02-22 22:25:21.944451-06'),
+	(66, 879, 1, '2026-02-22 22:25:21.94484-06'),
+	(67, 880, 1, '2026-02-22 22:25:21.945225-06'),
+	(68, 881, 1, '2026-02-22 22:25:21.945616-06'),
+	(69, 882, 1, '2026-02-22 22:25:21.946019-06'),
+	(70, 883, 1, '2026-02-22 22:25:21.94641-06'),
+	(71, 884, 1, '2026-02-22 22:25:21.946798-06'),
+	(72, 885, 1, '2026-02-22 22:25:21.94719-06'),
+	(73, 886, 1, '2026-02-22 22:25:21.94762-06'),
+	(74, 887, 1, '2026-02-22 22:25:21.948087-06'),
+	(75, 888, 1, '2026-02-22 22:25:21.948495-06'),
+	(76, 889, 1, '2026-02-24 19:04:35.775904-06'),
+	(77, 890, 1, '2026-02-24 19:04:35.777168-06'),
+	(78, 891, 1, '2026-02-24 19:04:35.777892-06'),
+	(79, 892, 1, '2026-02-24 19:04:35.778708-06'),
+	(80, 893, 1, '2026-02-24 19:04:35.779742-06'),
+	(81, 894, 1, '2026-02-24 19:04:35.780629-06'),
+	(82, 895, 1, '2026-02-24 19:04:35.781371-06'),
+	(83, 896, 1, '2026-02-24 19:04:35.781892-06'),
+	(84, 897, 1, '2026-02-24 19:04:35.78251-06'),
+	(85, 898, 1, '2026-02-24 19:04:35.783052-06'),
+	(86, 899, 1, '2026-02-24 19:04:35.783667-06'),
+	(87, 900, 1, '2026-02-24 19:04:35.784166-06'),
+	(88, 901, 1, '2026-02-24 19:04:35.784763-06'),
+	(89, 902, 1, '2026-02-24 19:04:35.785239-06'),
+	(90, 903, 1, '2026-02-24 19:04:35.785692-06'),
+	(91, 904, 1, '2026-02-24 19:04:35.78614-06'),
+	(92, 905, 1, '2026-02-24 19:04:35.786587-06'),
+	(93, 906, 1, '2026-02-24 19:04:35.787337-06'),
+	(94, 907, 1, '2026-02-24 19:04:35.787982-06'),
+	(95, 908, 1, '2026-02-24 19:04:35.788544-06'),
+	(96, 909, 1, '2026-02-24 19:04:35.789173-06'),
+	(97, 910, 1, '2026-02-24 19:04:35.789674-06'),
+	(98, 911, 1, '2026-02-24 19:04:35.790244-06'),
+	(99, 912, 1, '2026-02-24 19:04:35.790966-06'),
+	(100, 913, 1, '2026-02-24 19:04:35.791526-06'),
+	(101, 914, 1, '2026-02-24 19:04:35.792063-06'),
+	(102, 915, 1, '2026-02-24 19:04:35.792836-06'),
+	(103, 916, 1, '2026-02-24 19:04:35.793809-06'),
+	(104, 917, 1, '2026-02-24 19:04:35.794587-06'),
+	(105, 918, 1, '2026-02-24 19:04:35.795234-06'),
+	(106, 919, 1, '2026-02-24 19:04:35.795858-06'),
+	(107, 920, 1, '2026-02-24 19:04:35.79646-06'),
+	(108, 921, 1, '2026-02-24 19:04:35.797511-06'),
+	(109, 922, 1, '2026-02-24 19:04:35.798251-06'),
+	(110, 923, 1, '2026-02-24 19:04:35.798959-06'),
+	(111, 924, 1, '2026-02-24 19:04:35.799535-06'),
+	(112, 925, 1, '2026-02-24 19:04:35.80006-06'),
+	(113, 926, 1, '2026-02-24 19:04:35.800967-06'),
+	(114, 927, 1, '2026-02-24 19:04:35.801449-06'),
+	(115, 928, 1, '2026-02-24 19:04:35.801907-06'),
+	(116, 929, 1, '2026-02-24 19:04:35.802358-06'),
+	(117, 930, 1, '2026-02-24 19:04:35.802808-06'),
+	(118, 931, 1, '2026-02-24 19:04:35.803292-06'),
+	(119, 932, 1, '2026-02-24 19:04:35.803994-06'),
+	(120, 933, 1, '2026-02-24 19:04:35.804742-06'),
+	(121, 934, 1, '2026-02-24 19:04:35.805372-06'),
+	(122, 935, 1, '2026-02-24 19:04:35.806073-06'),
+	(123, 936, 1, '2026-02-24 19:04:35.806757-06'),
+	(124, 937, 1, '2026-02-24 19:04:35.807374-06'),
+	(125, 938, 1, '2026-02-24 19:04:35.807909-06'),
+	(126, 939, 1, '2026-02-24 19:04:35.808466-06'),
+	(127, 940, 1, '2026-02-24 19:04:35.809107-06'),
+	(128, 941, 1, '2026-02-24 19:04:35.80971-06'),
+	(129, 942, 1, '2026-02-24 19:04:35.810221-06'),
+	(130, 943, 1, '2026-02-24 19:04:35.810791-06'),
+	(131, 944, 1, '2026-02-24 19:04:35.811283-06'),
+	(132, 945, 1, '2026-02-24 19:04:35.81175-06'),
+	(133, 946, 1, '2026-02-24 19:04:35.812182-06'),
+	(134, 947, 1, '2026-02-24 19:04:35.812689-06'),
+	(135, 948, 1, '2026-02-24 19:04:35.81312-06'),
+	(136, 949, 1, '2026-02-24 19:04:35.813531-06'),
+	(137, 950, 1, '2026-02-24 19:04:35.814312-06'),
+	(138, 951, 1, '2026-02-24 19:04:35.814953-06'),
+	(139, 952, 1, '2026-02-24 19:04:35.815428-06'),
+	(140, 953, 1, '2026-02-24 19:04:35.815867-06'),
+	(141, 954, 1, '2026-02-24 19:04:35.816314-06'),
+	(142, 955, 1, '2026-02-24 19:04:35.816788-06'),
+	(143, 956, 1, '2026-02-24 19:04:35.817319-06'),
+	(144, 957, 1, '2026-02-24 19:04:35.817768-06'),
+	(145, 958, 1, '2026-02-24 19:04:35.818192-06'),
+	(146, 959, 1, '2026-02-24 19:04:35.818601-06'),
+	(147, 960, 1, '2026-02-24 19:04:35.819092-06'),
+	(148, 961, 1, '2026-02-24 19:04:35.819613-06'),
+	(149, 962, 1, '2026-02-24 19:04:35.820306-06'),
+	(150, 963, 1, '2026-02-24 19:04:35.82097-06'),
+	(151, 964, 1, '2026-02-24 19:04:35.821575-06'),
+	(152, 965, 1, '2026-02-24 19:04:35.822124-06'),
+	(153, 966, 1, '2026-02-24 19:04:35.822635-06'),
+	(154, 967, 1, '2026-02-24 19:04:35.823115-06'),
+	(155, 968, 1, '2026-02-24 19:04:35.823544-06'),
+	(156, 969, 1, '2026-02-24 19:04:35.823976-06'),
+	(157, 970, 1, '2026-02-24 19:04:35.824388-06'),
+	(158, 971, 1, '2026-02-24 19:04:35.824901-06'),
+	(159, 972, 1, '2026-02-24 19:04:35.826614-06'),
+	(160, 973, 1, '2026-02-24 19:04:35.827587-06'),
+	(161, 974, 1, '2026-02-24 19:04:35.828331-06'),
+	(162, 975, 1, '2026-02-24 19:04:35.829096-06'),
+	(163, 976, 1, '2026-02-24 19:04:35.829816-06'),
+	(164, 977, 1, '2026-02-24 19:04:35.83035-06'),
+	(165, 978, 1, '2026-02-24 19:04:35.831292-06'),
+	(166, 979, 1, '2026-02-24 19:04:35.83175-06'),
+	(167, 980, 1, '2026-02-24 19:04:35.832478-06'),
+	(168, 981, 1, '2026-02-24 19:04:35.832981-06'),
+	(169, 982, 1, '2026-02-24 19:04:35.833494-06'),
+	(170, 983, 1, '2026-02-24 19:04:35.834011-06'),
+	(171, 984, 1, '2026-02-24 19:04:35.834428-06'),
+	(172, 985, 1, '2026-02-24 19:04:35.834849-06'),
+	(173, 986, 1, '2026-02-24 19:04:35.835603-06'),
+	(174, 987, 1, '2026-02-24 19:04:35.836157-06'),
+	(175, 988, 1, '2026-02-24 19:04:35.836638-06'),
+	(176, 989, 1, '2026-02-24 19:04:35.837263-06'),
+	(177, 990, 1, '2026-02-24 19:04:35.837833-06'),
+	(178, 991, 1, '2026-02-24 19:04:35.838346-06'),
+	(179, 992, 1, '2026-02-24 19:04:35.838907-06'),
+	(180, 993, 1, '2026-02-24 19:04:35.839422-06'),
+	(181, 994, 1, '2026-02-24 19:04:35.839848-06'),
+	(182, 995, 1, '2026-02-24 19:04:35.840317-06'),
+	(183, 996, 1, '2026-02-24 19:04:35.840743-06'),
+	(184, 997, 1, '2026-02-24 19:04:35.841154-06'),
+	(185, 998, 1, '2026-02-24 19:04:35.841598-06'),
+	(186, 999, 1, '2026-02-24 19:04:35.842319-06'),
+	(187, 1000, 1, '2026-02-24 19:04:35.842874-06'),
+	(188, 1001, 1, '2026-02-24 19:04:35.843397-06'),
+	(189, 1002, 1, '2026-02-24 19:04:35.84395-06'),
+	(190, 1003, 1, '2026-02-24 19:04:35.844455-06'),
+	(191, 1004, 1, '2026-02-24 19:04:35.845011-06'),
+	(192, 1005, 1, '2026-02-24 19:04:35.845475-06'),
+	(193, 1006, 1, '2026-02-24 19:04:35.846039-06'),
+	(194, 1007, 1, '2026-02-24 19:04:35.846471-06'),
+	(195, 1008, 1, '2026-02-24 19:04:35.846892-06'),
+	(196, 1009, 1, '2026-02-24 19:04:35.847319-06'),
+	(197, 1010, 1, '2026-02-24 19:04:35.847741-06'),
+	(198, 1011, 1, '2026-02-24 19:04:35.848164-06'),
+	(199, 1012, 1, '2026-02-24 19:04:35.848585-06'),
+	(200, 1013, 1, '2026-02-24 19:04:35.849314-06'),
+	(230, 1043, 1, '2026-02-24 19:04:35.863572-06'),
+	(229, 1042, 1, '2026-02-24 19:04:35.863091-06'),
+	(228, 1041, 1, '2026-02-24 19:04:35.862441-06'),
+	(227, 1040, 1, '2026-02-24 19:04:35.862-06'),
+	(226, 1039, 1, '2026-02-24 19:04:35.861602-06'),
+	(225, 1038, 1, '2026-02-24 19:04:35.861204-06'),
+	(224, 1037, 1, '2026-02-24 19:04:35.860789-06'),
+	(223, 1036, 1, '2026-02-24 19:04:35.860357-06'),
+	(222, 1035, 1, '2026-02-24 19:04:35.859912-06'),
+	(221, 1034, 1, '2026-02-24 19:04:35.859488-06'),
+	(220, 1033, 1, '2026-02-24 19:04:35.859072-06'),
+	(219, 1032, 1, '2026-02-24 19:04:35.858464-06'),
+	(218, 1031, 1, '2026-02-24 19:04:35.857879-06'),
+	(217, 1030, 1, '2026-02-24 19:04:35.857407-06'),
+	(216, 1029, 1, '2026-02-24 19:04:35.856997-06'),
+	(215, 1028, 1, '2026-02-24 19:04:35.856577-06'),
+	(214, 1027, 1, '2026-02-24 19:04:35.856125-06'),
+	(213, 1026, 1, '2026-02-24 19:04:35.855617-06'),
+	(212, 1025, 1, '2026-02-24 19:04:35.855122-06'),
+	(211, 1024, 1, '2026-02-24 19:04:35.854684-06'),
+	(210, 1023, 1, '2026-02-24 19:04:35.854028-06'),
+	(209, 1022, 1, '2026-02-24 19:04:35.853433-06'),
+	(208, 1021, 1, '2026-02-24 19:04:35.852923-06'),
+	(207, 1020, 1, '2026-02-24 19:04:35.852498-06'),
+	(206, 1019, 1, '2026-02-24 19:04:35.851878-06'),
+	(205, 1018, 1, '2026-02-24 19:04:35.851472-06'),
+	(204, 1017, 1, '2026-02-24 19:04:35.851058-06'),
+	(203, 1016, 1, '2026-02-24 19:04:35.850657-06'),
+	(202, 1015, 1, '2026-02-24 19:04:35.850236-06'),
+	(201, 1014, 1, '2026-02-24 19:04:35.84981-06'),
+	(231, 830, 2, '2026-03-04 21:54:04.761008-06'),
+	(232, 831, 2, '2026-03-04 21:54:04.761008-06'),
+	(233, 832, 2, '2026-03-04 21:54:04.761008-06'),
+	(234, 833, 2, '2026-03-04 21:54:04.761008-06'),
+	(235, 836, 2, '2026-03-04 21:54:04.761008-06'),
+	(236, 837, 2, '2026-03-04 21:54:04.761008-06'),
+	(237, 817, 2, '2026-03-04 21:54:04.761008-06'),
+	(238, 834, 2, '2026-03-04 21:54:04.761008-06'),
+	(239, 839, 2, '2026-03-04 21:54:04.761008-06'),
+	(240, 841, 2, '2026-03-04 21:54:04.761008-06'),
+	(241, 842, 2, '2026-03-04 21:54:04.761008-06'),
+	(242, 843, 2, '2026-03-04 21:54:04.761008-06'),
+	(243, 844, 2, '2026-03-04 21:54:04.761008-06'),
+	(244, 845, 2, '2026-03-04 21:54:04.761008-06'),
+	(245, 846, 2, '2026-03-04 21:54:04.761008-06'),
+	(246, 848, 2, '2026-03-04 21:54:04.761008-06'),
+	(247, 849, 2, '2026-03-04 21:54:04.761008-06'),
+	(248, 850, 2, '2026-03-04 21:54:04.761008-06'),
+	(249, 851, 2, '2026-03-04 21:54:04.761008-06'),
+	(250, 853, 2, '2026-03-04 21:54:04.761008-06'),
+	(251, 873, 2, '2026-03-04 21:54:04.761008-06'),
+	(252, 857, 2, '2026-03-04 21:54:04.761008-06'),
+	(253, 858, 2, '2026-03-04 21:54:04.761008-06'),
+	(254, 859, 2, '2026-03-04 21:54:04.761008-06'),
+	(255, 860, 2, '2026-03-04 21:54:04.761008-06'),
+	(256, 868, 2, '2026-03-04 21:54:04.761008-06'),
+	(257, 864, 2, '2026-03-04 21:54:04.761008-06'),
+	(258, 862, 2, '2026-03-04 21:54:04.761008-06'),
+	(259, 835, 2, '2026-03-04 21:54:04.761008-06'),
+	(260, 854, 2, '2026-03-04 21:54:04.761008-06'),
+	(261, 855, 2, '2026-03-04 21:54:04.761008-06'),
+	(262, 856, 2, '2026-03-04 21:54:04.761008-06'),
+	(263, 861, 2, '2026-03-04 21:54:04.761008-06'),
+	(264, 865, 2, '2026-03-04 21:54:04.761008-06'),
+	(265, 819, 2, '2026-03-04 21:54:04.761008-06'),
+	(266, 818, 2, '2026-03-04 21:54:04.761008-06'),
+	(267, 820, 2, '2026-03-04 21:54:04.761008-06'),
+	(268, 824, 2, '2026-03-04 21:54:04.761008-06'),
+	(269, 822, 2, '2026-03-04 21:54:04.761008-06'),
+	(270, 821, 2, '2026-03-04 21:54:04.761008-06'),
+	(271, 815, 2, '2026-03-04 21:54:04.761008-06'),
+	(272, 825, 2, '2026-03-04 21:54:04.761008-06'),
+	(273, 827, 2, '2026-03-04 21:54:04.761008-06'),
+	(274, 866, 2, '2026-03-04 21:54:04.761008-06'),
+	(275, 840, 2, '2026-03-04 21:54:04.761008-06'),
+	(276, 891, 2, '2026-03-04 21:54:04.761008-06'),
+	(277, 894, 2, '2026-03-04 21:54:04.761008-06'),
+	(278, 895, 2, '2026-03-04 21:54:04.761008-06'),
+	(279, 896, 2, '2026-03-04 21:54:04.761008-06'),
+	(280, 897, 2, '2026-03-04 21:54:04.761008-06'),
+	(281, 898, 2, '2026-03-04 21:54:04.761008-06'),
+	(282, 899, 2, '2026-03-04 21:54:04.761008-06'),
+	(283, 901, 2, '2026-03-04 21:54:04.761008-06'),
+	(284, 900, 2, '2026-03-04 21:54:04.761008-06'),
+	(285, 903, 2, '2026-03-04 21:54:04.761008-06'),
+	(286, 904, 2, '2026-03-04 21:54:04.761008-06'),
+	(287, 905, 2, '2026-03-04 21:54:04.761008-06'),
+	(288, 907, 2, '2026-03-04 21:54:04.761008-06'),
+	(289, 908, 2, '2026-03-04 21:54:04.761008-06'),
+	(290, 909, 2, '2026-03-04 21:54:04.761008-06'),
+	(291, 910, 2, '2026-03-04 21:54:04.761008-06'),
+	(292, 911, 2, '2026-03-04 21:54:04.761008-06'),
+	(293, 913, 2, '2026-03-04 21:54:04.761008-06'),
+	(294, 915, 2, '2026-03-04 21:54:04.761008-06'),
+	(295, 916, 2, '2026-03-04 21:54:04.761008-06'),
+	(296, 917, 2, '2026-03-04 21:54:04.761008-06'),
+	(297, 920, 2, '2026-03-04 21:54:04.761008-06'),
+	(298, 919, 2, '2026-03-04 21:54:04.761008-06'),
+	(299, 921, 2, '2026-03-04 21:54:04.761008-06'),
+	(300, 922, 2, '2026-03-04 21:54:04.761008-06'),
+	(301, 923, 2, '2026-03-04 21:54:04.761008-06'),
+	(302, 927, 2, '2026-03-04 21:54:04.761008-06'),
+	(303, 925, 2, '2026-03-04 21:54:04.761008-06'),
+	(304, 926, 2, '2026-03-04 21:54:04.761008-06'),
+	(305, 929, 2, '2026-03-04 21:54:04.761008-06'),
+	(306, 930, 2, '2026-03-04 21:54:04.761008-06'),
+	(307, 931, 2, '2026-03-04 21:54:04.761008-06'),
+	(308, 932, 2, '2026-03-04 21:54:04.761008-06'),
+	(309, 934, 2, '2026-03-04 21:54:04.761008-06'),
+	(310, 935, 2, '2026-03-04 21:54:04.761008-06'),
+	(311, 936, 2, '2026-03-04 21:54:04.761008-06'),
+	(312, 889, 2, '2026-03-04 21:54:04.761008-06'),
+	(313, 872, 2, '2026-03-04 21:54:04.761008-06'),
+	(314, 875, 2, '2026-03-04 21:54:04.761008-06'),
+	(315, 869, 2, '2026-03-04 21:54:04.761008-06'),
+	(316, 876, 2, '2026-03-04 21:54:04.761008-06'),
+	(317, 870, 2, '2026-03-04 21:54:04.761008-06'),
+	(318, 890, 2, '2026-03-04 21:54:04.761008-06'),
+	(319, 814, 2, '2026-03-04 21:54:04.761008-06'),
+	(320, 877, 2, '2026-03-04 21:54:04.761008-06'),
+	(321, 878, 2, '2026-03-04 21:54:04.761008-06'),
+	(322, 880, 2, '2026-03-04 21:54:04.761008-06'),
+	(323, 881, 2, '2026-03-04 21:54:04.761008-06'),
+	(324, 883, 2, '2026-03-04 21:54:04.761008-06'),
+	(325, 816, 2, '2026-03-04 21:54:04.761008-06'),
+	(326, 884, 2, '2026-03-04 21:54:04.761008-06'),
+	(327, 885, 2, '2026-03-04 21:54:04.761008-06'),
+	(328, 826, 2, '2026-03-04 21:54:04.761008-06'),
+	(329, 893, 2, '2026-03-04 21:54:04.761008-06'),
+	(330, 886, 2, '2026-03-04 21:54:04.761008-06'),
+	(331, 887, 2, '2026-03-04 21:54:04.761008-06'),
+	(332, 888, 2, '2026-03-04 21:54:04.761008-06'),
+	(333, 983, 2, '2026-03-04 21:54:04.761008-06'),
+	(334, 981, 2, '2026-03-04 21:54:04.761008-06'),
+	(335, 939, 2, '2026-03-04 21:54:04.761008-06'),
+	(336, 940, 2, '2026-03-04 21:54:04.761008-06'),
+	(337, 941, 2, '2026-03-04 21:54:04.761008-06'),
+	(338, 974, 2, '2026-03-04 21:54:04.761008-06'),
+	(339, 942, 2, '2026-03-04 21:54:04.761008-06'),
+	(340, 943, 2, '2026-03-04 21:54:04.761008-06'),
+	(341, 944, 2, '2026-03-04 21:54:04.761008-06'),
+	(342, 945, 2, '2026-03-04 21:54:04.761008-06'),
+	(343, 946, 2, '2026-03-04 21:54:04.761008-06'),
+	(344, 947, 2, '2026-03-04 21:54:04.761008-06'),
+	(345, 948, 2, '2026-03-04 21:54:04.761008-06'),
+	(346, 950, 2, '2026-03-04 21:54:04.761008-06'),
+	(347, 951, 2, '2026-03-04 21:54:04.761008-06'),
+	(348, 952, 2, '2026-03-04 21:54:04.761008-06'),
+	(349, 953, 2, '2026-03-04 21:54:04.761008-06'),
+	(350, 976, 2, '2026-03-04 21:54:04.761008-06'),
+	(351, 977, 2, '2026-03-04 21:54:04.761008-06'),
+	(352, 955, 2, '2026-03-04 21:54:04.761008-06'),
+	(353, 956, 2, '2026-03-04 21:54:04.761008-06'),
+	(354, 957, 2, '2026-03-04 21:54:04.761008-06'),
+	(355, 958, 2, '2026-03-04 21:54:04.761008-06'),
+	(356, 960, 2, '2026-03-04 21:54:04.761008-06'),
+	(357, 962, 2, '2026-03-04 21:54:04.761008-06'),
+	(358, 985, 2, '2026-03-04 21:54:04.761008-06'),
+	(359, 963, 2, '2026-03-04 21:54:04.761008-06'),
+	(360, 964, 2, '2026-03-04 21:54:04.761008-06'),
+	(361, 965, 2, '2026-03-04 21:54:04.761008-06'),
+	(362, 978, 2, '2026-03-04 21:54:04.761008-06'),
+	(363, 968, 2, '2026-03-04 21:54:04.761008-06'),
+	(364, 967, 2, '2026-03-04 21:54:04.761008-06'),
+	(365, 979, 2, '2026-03-04 21:54:04.761008-06'),
+	(366, 980, 2, '2026-03-04 21:54:04.761008-06'),
+	(367, 969, 2, '2026-03-04 21:54:04.761008-06'),
+	(368, 971, 2, '2026-03-04 21:54:04.761008-06'),
+	(369, 972, 2, '2026-03-04 21:54:04.761008-06'),
+	(370, 973, 2, '2026-03-04 21:54:04.761008-06'),
+	(371, 986, 2, '2026-03-04 21:54:04.761008-06'),
+	(372, 987, 2, '2026-03-04 21:54:04.761008-06'),
+	(373, 1000, 2, '2026-03-04 21:54:04.761008-06'),
+	(374, 993, 2, '2026-03-04 21:54:04.761008-06'),
+	(375, 990, 2, '2026-03-04 21:54:04.761008-06'),
+	(376, 999, 2, '2026-03-04 21:54:04.761008-06'),
+	(377, 994, 2, '2026-03-04 21:54:04.761008-06'),
+	(378, 995, 2, '2026-03-04 21:54:04.761008-06'),
+	(379, 989, 2, '2026-03-04 21:54:04.761008-06'),
+	(380, 996, 2, '2026-03-04 21:54:04.761008-06'),
+	(381, 997, 2, '2026-03-04 21:54:04.761008-06'),
+	(382, 991, 2, '2026-03-04 21:54:04.761008-06'),
+	(383, 975, 2, '2026-03-04 21:54:04.761008-06'),
+	(384, 998, 2, '2026-03-04 21:54:04.761008-06'),
+	(385, 949, 2, '2026-03-04 21:54:04.761008-06'),
+	(386, 959, 2, '2026-03-04 21:54:04.761008-06'),
+	(387, 1015, 2, '2026-03-04 21:54:04.761008-06'),
+	(388, 1020, 2, '2026-03-04 21:54:04.761008-06'),
+	(389, 1014, 2, '2026-03-04 21:54:04.761008-06'),
+	(390, 1021, 2, '2026-03-04 21:54:04.761008-06'),
+	(391, 871, 2, '2026-03-04 21:54:04.761008-06'),
+	(392, 1019, 2, '2026-03-04 21:54:04.761008-06'),
+	(393, 1022, 2, '2026-03-04 21:54:04.761008-06'),
+	(394, 1017, 2, '2026-03-04 21:54:04.761008-06'),
+	(395, 1018, 2, '2026-03-04 21:54:04.761008-06'),
+	(396, 1023, 2, '2026-03-04 21:54:04.761008-06'),
+	(397, 1024, 2, '2026-03-04 21:54:04.761008-06'),
+	(398, 1001, 2, '2026-03-04 21:54:04.761008-06'),
+	(399, 1002, 2, '2026-03-04 21:54:04.761008-06'),
+	(400, 1003, 2, '2026-03-04 21:54:04.761008-06'),
+	(401, 1005, 2, '2026-03-04 21:54:04.761008-06'),
+	(402, 1006, 2, '2026-03-04 21:54:04.761008-06'),
+	(403, 1025, 2, '2026-03-04 21:54:04.761008-06'),
+	(404, 1026, 2, '2026-03-04 21:54:04.761008-06'),
+	(405, 1007, 2, '2026-03-04 21:54:04.761008-06'),
+	(406, 1029, 2, '2026-03-04 21:54:04.761008-06'),
+	(407, 1030, 2, '2026-03-04 21:54:04.761008-06'),
+	(408, 1028, 2, '2026-03-04 21:54:04.761008-06'),
+	(409, 1031, 2, '2026-03-04 21:54:04.761008-06'),
+	(410, 1027, 2, '2026-03-04 21:54:04.761008-06'),
+	(411, 1032, 2, '2026-03-04 21:54:04.761008-06'),
+	(412, 1009, 2, '2026-03-04 21:54:04.761008-06'),
+	(413, 1004, 2, '2026-03-04 21:54:04.761008-06'),
+	(414, 1010, 2, '2026-03-04 21:54:04.761008-06'),
+	(415, 1012, 2, '2026-03-04 21:54:04.761008-06'),
+	(416, 823, 2, '2026-03-04 21:54:04.761008-06'),
+	(417, 829, 2, '2026-03-04 21:54:04.761008-06'),
+	(418, 838, 2, '2026-03-04 21:54:04.761008-06'),
+	(419, 852, 2, '2026-03-04 21:54:04.761008-06'),
+	(420, 982, 2, '2026-03-04 21:54:04.761008-06'),
+	(421, 892, 2, '2026-03-04 21:54:04.761008-06'),
+	(422, 902, 2, '2026-03-04 21:54:04.761008-06'),
+	(423, 914, 2, '2026-03-04 21:54:04.761008-06'),
+	(424, 928, 2, '2026-03-04 21:54:04.761008-06'),
+	(425, 1013, 2, '2026-03-04 21:54:04.761008-06'),
+	(426, 1016, 2, '2026-03-04 21:54:04.761008-06'),
+	(427, 1033, 2, '2026-03-04 21:54:04.761008-06'),
+	(428, 1034, 2, '2026-03-04 21:54:04.761008-06'),
+	(429, 1036, 2, '2026-03-04 21:54:04.761008-06'),
+	(430, 1037, 2, '2026-03-04 21:54:04.761008-06'),
+	(431, 1038, 2, '2026-03-04 21:54:04.761008-06'),
+	(432, 1039, 2, '2026-03-04 21:54:04.761008-06'),
+	(433, 1040, 2, '2026-03-04 21:54:04.761008-06'),
+	(434, 1042, 2, '2026-03-04 21:54:04.761008-06'),
+	(435, 1043, 2, '2026-03-04 21:54:04.761008-06'),
+	(436, 863, 2, '2026-03-04 21:54:04.761008-06'),
+	(437, 828, 2, '2026-03-04 21:54:04.761008-06'),
+	(438, 906, 2, '2026-03-04 21:54:04.761008-06'),
+	(439, 912, 2, '2026-03-04 21:54:04.761008-06'),
+	(440, 918, 2, '2026-03-04 21:54:04.761008-06'),
+	(441, 924, 2, '2026-03-04 21:54:04.761008-06'),
+	(442, 933, 2, '2026-03-04 21:54:04.761008-06'),
+	(443, 874, 2, '2026-03-04 21:54:04.761008-06'),
+	(444, 937, 2, '2026-03-04 21:54:04.761008-06'),
+	(445, 984, 2, '2026-03-04 21:54:04.761008-06'),
+	(446, 954, 2, '2026-03-04 21:54:04.761008-06'),
+	(447, 961, 2, '2026-03-04 21:54:04.761008-06'),
+	(448, 966, 2, '2026-03-04 21:54:04.761008-06'),
+	(449, 970, 2, '2026-03-04 21:54:04.761008-06'),
+	(450, 992, 2, '2026-03-04 21:54:04.761008-06'),
+	(451, 847, 2, '2026-03-04 21:54:04.761008-06'),
+	(452, 938, 2, '2026-03-04 21:54:04.761008-06'),
+	(453, 988, 2, '2026-03-04 21:54:04.761008-06'),
+	(454, 1011, 2, '2026-03-04 21:54:04.761008-06'),
+	(455, 1008, 2, '2026-03-04 21:54:04.761008-06'),
+	(456, 867, 2, '2026-03-04 21:54:04.761008-06'),
+	(457, 879, 2, '2026-03-04 21:54:04.761008-06'),
+	(458, 1035, 2, '2026-03-04 21:54:04.761008-06'),
+	(459, 1041, 2, '2026-03-04 21:54:04.761008-06'),
+	(460, 882, 2, '2026-03-04 21:54:04.761008-06');
+
 
 --
 -- Data for Name: tipos_datos; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO
-    public.tipos_datos OVERRIDING SYSTEM VALUE
-VALUES (
-        1,
-        'archivo',
-        'file',
-        'archivos que se guardan en disco con formato .mp3 (primeras pruebas)'
-    ),
-    (
-        2,
-        'enlace',
-        'link',
-        'enlaces extraidos de otros sitios (por definir)'
-    );
+INSERT INTO public.tipos_datos OVERRIDING SYSTEM VALUE VALUES
+	(1, 'archivo', 'file', 'archivos que se guardan en disco con formato .mp3 (primeras pruebas)'),
+	(2, 'enlace', 'link', 'enlaces extraidos de otros sitios (por definir)');
+
 
 --
 -- Data for Name: ts_modelos; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
+INSERT INTO public.ts_modelos OVERRIDING SYSTEM VALUE VALUES
+	(6, B'1', 196, 50, '2026-03-04 22:27:45.63778-06', '2026-03-04 22:27:45.63778-06', 'model_global', 8.678975, 0.4615, 2, B'1', 0.00100000, 32, 4, 128, '{"type":"sequential","layers":[{"type":"dense","units":64,"activation":"relu","init":"heNormal"},{"type":"dropout","rate":0.3},{"type":"dense","units":32,"activation":"relu","init":"heNormal"},{"type":"dropout","rate":0.3},{"type":"dense","units":4,"activation":"softmax"}]}'),
+	(7, B'1', 196, 50, '2026-03-04 22:27:47.961535-06', '2026-03-04 22:27:47.961535-06', 'model_local_pl_2', 12.913116, 0.1923, 2, B'0', 0.00100000, 32, 4, 128, '{"type":"sequential","layers":[{"type":"dense","units":64,"activation":"relu","init":"heNormal"},{"type":"dropout","rate":0.3},{"type":"dense","units":32,"activation":"relu","init":"heNormal"},{"type":"dropout","rate":0.3},{"type":"dense","units":4,"activation":"softmax"}]}');
+
+
 --
 -- Name: calibracion_cl_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval ( 'public.calibracion_cl_id_seq', 1, false );
+SELECT pg_catalog.setval('public.calibracion_cl_id_seq', 1014, true);
+
 
 --
 -- Name: canciones_evaluadas_ce_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval (
-        'public.canciones_evaluadas_ce_id_seq', 1043, true
-    );
+SELECT pg_catalog.setval('public.canciones_evaluadas_ce_id_seq', 1043, true);
+
 
 --
 -- Name: playlists_pl_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval ( 'public.playlists_pl_id_seq', 1, true );
+SELECT pg_catalog.setval('public.playlists_pl_id_seq', 2, true);
+
 
 --
 -- Name: rel_playlists_canciones_pc_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval (
-        'public.rel_playlists_canciones_pc_id_seq', 230, true
-    );
+SELECT pg_catalog.setval('public.rel_playlists_canciones_pc_id_seq', 460, true);
+
 
 --
 -- Name: tipos_datos_td_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval ( 'public.tipos_datos_td_id_seq', 2, true );
+SELECT pg_catalog.setval('public.tipos_datos_td_id_seq', 2, true);
+
 
 --
 -- Name: ts_modelos_ts_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval ( 'public.ts_modelos_ts_id_seq', 1, false );
+SELECT pg_catalog.setval('public.ts_modelos_ts_id_seq', 7, true);
+
 
 --
 -- Name: canciones PK_509f2887bb0bd963b5f723f27be; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.canciones
-ADD CONSTRAINT "PK_509f2887bb0bd963b5f723f27be" PRIMARY KEY (ca_id);
+    ADD CONSTRAINT "PK_509f2887bb0bd963b5f723f27be" PRIMARY KEY (ca_id);
+
 
 --
 -- Name: tipos_datos tipos_datos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.tipos_datos
-ADD CONSTRAINT tipos_datos_pkey PRIMARY KEY (td_id);
+    ADD CONSTRAINT tipos_datos_pkey PRIMARY KEY (td_id);
+
 
 --
 -- Name: calibracion unique_calibracion_cl_id; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.calibracion
-ADD CONSTRAINT unique_calibracion_cl_id UNIQUE (cl_id);
+    ADD CONSTRAINT unique_calibracion_cl_id UNIQUE (cl_id);
+
 
 --
 -- Name: playlists unique_playlists_pl_id; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.playlists
-ADD CONSTRAINT unique_playlists_pl_id UNIQUE (pl_id);
+    ADD CONSTRAINT unique_playlists_pl_id UNIQUE (pl_id);
+
 
 --
 -- Name: rel_playlists_canciones unique_rel_playlists_canciones_pc_id; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.rel_playlists_canciones
-ADD CONSTRAINT unique_rel_playlists_canciones_pc_id UNIQUE (pc_id);
+    ADD CONSTRAINT unique_rel_playlists_canciones_pc_id UNIQUE (pc_id);
+
 
 --
 -- Name: ts_modelos unique_ts_modelos_ts_id; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.ts_modelos
-ADD CONSTRAINT unique_ts_modelos_ts_id UNIQUE (ts_id);
+    ADD CONSTRAINT unique_ts_modelos_ts_id UNIQUE (ts_id);
+
 
 --
 -- Name: index_cl_id_cancion; Type: INDEX; Schema: public; Owner: postgres
@@ -5685,11 +1778,13 @@ ADD CONSTRAINT unique_ts_modelos_ts_id UNIQUE (ts_id);
 
 CREATE INDEX index_cl_id_cancion ON public.calibracion USING btree (cl_id_cancion);
 
+
 --
 -- Name: index_cl_id_modelo; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX index_cl_id_modelo ON public.calibracion USING btree (cl_id_modelo);
+
 
 --
 -- Name: index_pr_ca_id; Type: INDEX; Schema: public; Owner: postgres
@@ -5697,61 +1792,70 @@ CREATE INDEX index_cl_id_modelo ON public.calibracion USING btree (cl_id_modelo)
 
 CREATE INDEX index_pr_ca_id ON public.rel_playlists_canciones USING btree (pr_ca_id);
 
+
 --
 -- Name: index_pr_pl_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX index_pr_pl_id ON public.rel_playlists_canciones USING btree (pr_pl_id);
 
+
 --
 -- Name: tipos_datos_td_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX tipos_datos_td_id ON public.tipos_datos USING btree (td_id)
-WITH (deduplicate_items = 'false');
+CREATE INDEX tipos_datos_td_id ON public.tipos_datos USING btree (td_id) WITH (deduplicate_items='false');
+
 
 --
 -- Name: canciones FK_canciones_tipos_datos; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.canciones
-ADD CONSTRAINT "FK_canciones_tipos_datos" FOREIGN KEY (ca_id_tipodato) REFERENCES public.tipos_datos (td_id) NOT VALID;
+    ADD CONSTRAINT "FK_canciones_tipos_datos" FOREIGN KEY (ca_id_tipodato) REFERENCES public.tipos_datos(td_id) NOT VALID;
+
 
 --
 -- Name: calibracion link_canciones_calibracion; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.calibracion
-ADD CONSTRAINT link_canciones_calibracion FOREIGN KEY (cl_id_cancion) REFERENCES public.canciones (ca_id) MATCH FULL ON UPDATE CASCADE;
+    ADD CONSTRAINT link_canciones_calibracion FOREIGN KEY (cl_id_cancion) REFERENCES public.canciones(ca_id) MATCH FULL ON UPDATE CASCADE;
+
 
 --
 -- Name: rel_playlists_canciones link_canciones_rel_playlists_canciones; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.rel_playlists_canciones
-ADD CONSTRAINT link_canciones_rel_playlists_canciones FOREIGN KEY (pr_ca_id) REFERENCES public.canciones (ca_id) MATCH FULL ON UPDATE CASCADE ON DELETE CASCADE;
+    ADD CONSTRAINT link_canciones_rel_playlists_canciones FOREIGN KEY (pr_ca_id) REFERENCES public.canciones(ca_id) MATCH FULL ON UPDATE CASCADE ON DELETE CASCADE;
+
 
 --
 -- Name: rel_playlists_canciones link_playlists_rel_playlists_canciones; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.rel_playlists_canciones
-ADD CONSTRAINT link_playlists_rel_playlists_canciones FOREIGN KEY (pr_pl_id) REFERENCES public.playlists (pl_id) MATCH FULL ON UPDATE CASCADE ON DELETE CASCADE;
+    ADD CONSTRAINT link_playlists_rel_playlists_canciones FOREIGN KEY (pr_pl_id) REFERENCES public.playlists(pl_id) MATCH FULL ON UPDATE CASCADE ON DELETE CASCADE;
+
 
 --
 -- Name: calibracion link_ts_modelos_calibracion; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.calibracion
-ADD CONSTRAINT link_ts_modelos_calibracion FOREIGN KEY (cl_id_modelo) REFERENCES public.ts_modelos (ts_id) MATCH FULL ON UPDATE CASCADE ON DELETE CASCADE;
+    ADD CONSTRAINT link_ts_modelos_calibracion FOREIGN KEY (cl_id_modelo) REFERENCES public.ts_modelos(ts_id) MATCH FULL ON UPDATE CASCADE ON DELETE CASCADE;
+
 
 --
 -- Name: playlists link_ts_modelos_playlists; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.playlists
-ADD CONSTRAINT link_ts_modelos_playlists FOREIGN KEY (pl_id_ts_modelo) REFERENCES public.ts_modelos (ts_id) MATCH FULL ON UPDATE CASCADE;
+    ADD CONSTRAINT link_ts_modelos_playlists FOREIGN KEY (pl_id_ts_modelo) REFERENCES public.ts_modelos(ts_id) MATCH FULL ON UPDATE CASCADE;
+
 
 --
 -- PostgreSQL database dump complete
 --
+

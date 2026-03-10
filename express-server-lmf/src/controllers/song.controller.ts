@@ -5,7 +5,7 @@ import path from "path";
 import fs from "fs";
 import { paths } from "../main";
 import { isExtractionActive } from "../services/feature-extraction.service";
-import { isTrainingActive, startTraining } from "../services/tensorflow.service";
+import { isTrainingActive, startTraining, isPredictionActive, startPrediction } from "../services/tensorflow.service";
 
 export async function serveSongById(req: Request, res: Response): Promise<void> {
   try {
@@ -136,14 +136,46 @@ export async function trainSongsByIds(req: Request, res: Response): Promise<void
 }
 
 export async function predictSongsByIds(req: Request, res: Response): Promise<void> {
-  let songIds: number[];
+  // Verificar si hay un proceso de extracción de features activo
+  if (isExtractionActive()) {
+    sendError(res, 'La extracción de features aún está en progreso. Intente de nuevo cuando termine.', Locked, null);
+    return;
+  }
+
+  // Verificar si hay un proceso de entrenamiento activo
+  if (isTrainingActive()) {
+    sendError(res, 'Hay un proceso de entrenamiento activo. Intente de nuevo cuando termine.', Locked, null);
+    return;
+  }
+
+  // Verificar si hay un proceso de predicción activo
+  if (isPredictionActive()) {
+    sendError(res, 'Ya hay un proceso de predicción activo. Intente más tarde.', Locked, null);
+    return;
+  }
+
   try {
-    songIds = JSON.parse(req.body.songIds);
-    console.log('IDs de canciones recibidos para predicción:', songIds);
-    res.status(200).json({ success: true, message: 'Predicción iniciada. Revise la consola del servidor.' });
-    return;
-  } catch {
-    sendError(res, 'Error al parsear songIds. Envíe un JSON válido.', BadRequest, null);
-    return;
+    let songIds: number[];
+    try {
+      songIds = JSON.parse(req.body.songIds);
+    } catch {
+      sendError(res, 'Error al parsear songIds. Envíe un JSON válido.', BadRequest, null);
+      return;
+    }
+
+    if (!songIds || !Array.isArray(songIds) || songIds.length === 0) {
+      sendError(res, 'Lista de IDs de canciones vacía o inválida', BadRequest, null);
+      return;
+    }
+
+    // Fire-and-forget: iniciar predicción en background
+    startPrediction(songIds);
+
+    res.status(200).json({
+      success: true,
+      message: `Predicción iniciada para ${songIds.length} canciones. Revise la consola del servidor.`
+    });
+  } catch (error) {
+    sendError(res, 'Error al iniciar la predicción', InternalServerError, error instanceof Error ? error : null);
   }
 }
