@@ -15,6 +15,7 @@ export class PlayerComponent implements OnDestroy {
   setup: {
     list: Array<Song>,
     playingIndex: number | null,
+    lockRate: boolean
   }
 
   // Audio player
@@ -32,7 +33,8 @@ export class PlayerComponent implements OnDestroy {
   ) {
     this.setup = {
       playingIndex: null,
-      list: []
+      list: [],
+      lockRate: false
     }
 
     // Inicializar el elemento de audio
@@ -43,8 +45,10 @@ export class PlayerComponent implements OnDestroy {
     effect(() => {
       const currentSongs = this.globalPlaylistService.songList();
       const songPlaying = this.globalPlaylistService.currentSong();
+      const lockRateStatus = this.globalPlaylistService.getLockRateState();
+      if (lockRateStatus.ok)
+        this.setup.lockRate = lockRateStatus.value || false;
 
-      // Detectar si la canción que se está reproduciendo cambió
       if (songPlaying) {
         const currentPlayingSong = this.setup.list[this.setup.playingIndex!];
         if (!currentPlayingSong || (currentPlayingSong.id !== songPlaying.id)) {
@@ -255,6 +259,8 @@ export class PlayerComponent implements OnDestroy {
   }
 
   rateSong(score: number): void {
+    if (this.setup.lockRate) return;
+
     // Validar que el score sea válido
     if (score < 0 || score > 3) {
       console.error('Score inválido:', score);

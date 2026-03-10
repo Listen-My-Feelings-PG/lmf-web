@@ -189,7 +189,8 @@
             <div class="flex justify-center items-center gap-1">
               <!-- Thumbs Down (Score 0) -->
               <button (click)="rateSong(row.original, 0)"
-                class="p-1 hover:scale-125 transition-transform">
+                [disabled]="lockRate"
+                [class]="'p-1 transition-transform ' + (lockRate ? 'opacity-50 cursor-not-allowed' : 'hover:scale-125')">
                 <i
                   [class]="row.original.userScore === 0 ? 'fas fa-thumbs-down text-red-500' : 'far fa-thumbs-down text-gray-600'"></i>
               </button>
@@ -197,7 +198,8 @@
               <!-- Stars (Score 1-3) -->
               @for (star of [1, 2, 3]; track star) {
               <button (click)="rateSong(row.original, $any(star))"
-                class="p-1 hover:scale-125 transition-transform">
+                [disabled]="lockRate"
+                [class]="'p-1 transition-transform ' + (lockRate ? 'opacity-50 cursor-not-allowed' : 'hover:scale-125')">
                 <i
                   [class]="(row.original.userScore ?? 0) >= star ? 'fas fa-star text-yellow-400' : 'far fa-star text-gray-600'"></i>
               </button>

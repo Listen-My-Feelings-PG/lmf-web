@@ -30,7 +30,8 @@ export class MainComponent implements OnInit {
             this.globalPlaylistService.initialize({
               playlists: playlists,
               songList: songList,
-              selected: defaultPlaylist
+              selected: defaultPlaylist,
+              lockRate: false
             });
           }
         }
@@ -40,7 +41,9 @@ export class MainComponent implements OnInit {
     }
   }
 
-  navigateToTraining(): void {
-    this.router.navigate(['/main/training']);
+  navigateTo(view: 'training' | 'prediction'): void {
+    this.router.navigate([`/main/${view}`]).catch(error => console.error(`Error al navegar a ${view}:`, error));
   }
+
+
 }

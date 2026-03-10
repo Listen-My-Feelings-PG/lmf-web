@@ -18,6 +18,7 @@ export interface GlobalPlaylistSetup {
   playlists: Array<Playlist>,
   songList: Array<Song>,
   selected: Playlist | null,
+  lockRate: boolean,
   songPlaying?: Song,
   initialized?: boolean
 }

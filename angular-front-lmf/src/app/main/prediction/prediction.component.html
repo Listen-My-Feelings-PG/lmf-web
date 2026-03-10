@@ -1,0 +1,33 @@
+<div class="flex flex-col h-full bg-gray-900 text-gray-100 border-2 border-gray-700 rounded-lg shadow-2xl p-6 gap-6">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <h2 class="text-3xl font-bold text-primary flex items-center gap-3">
+      <i class="fas fa-brain"></i>
+      Predicción Personalizada
+    </h2>
+  </div>
+
+  <!-- Panel de Configuración -->
+  <div class="bg-gray-800 border-2 border-gray-700 rounded-lg shadow-lg">
+
+    <!-- Header del Panel con Toggle -->
+    <div class="flex items-center justify-between p-4 transition-colors">
+      <button [disabled]="listForTraining.list.length === 0"
+        (click)="startPrediction()"
+        class="px-6 py-2 bg-gradient-to-r from-primary via-secondary to-accent hover:opacity-90 text-white font-bold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+        <i class="fas fa-play-circle"></i>
+        Predecir calificaciones de la lista actual
+      </button>
+    </div>
+  </div>
+
+  <!-- Lista de Canciones -->
+  <div class="flex-1 min-h-0">
+    <app-list [componentMode]="'child'"
+      [list]="listForTraining.list"
+      (onSelectSong)="playSong($event)"
+      [lockRate]="true"></app-list>
+  </div>
+
+</div>

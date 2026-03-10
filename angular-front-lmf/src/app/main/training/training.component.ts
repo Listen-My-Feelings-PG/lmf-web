@@ -22,7 +22,6 @@ export class TrainingComponent implements OnInit {
 
   configPanelCollapsed = false;
   selectedMode: 'clean' | 'infer';
-  includePlaylistTraining = false;
   selectedRatings: Set<number> = new Set();
 
   // Estado del botón de entrenamiento
@@ -40,13 +39,10 @@ export class TrainingComponent implements OnInit {
 
   private applyFiltersToList(): void {
     let filteredList = this.listForTraining.listFull;
-    filteredList = this.selectedMode === 'clean' ? filteredList.filter(song => song.tsTrainLevelGlobal === 0) : filteredList.filter(song => song.tsTrainLevelGlobal < 0)
-    if (this.includePlaylistTraining)
-      filteredList = this.selectedMode === 'clean' ? filteredList.filter(song => song.tsTrainLevelLocal === 0) : filteredList.filter(song => song.tsTrainLevelLocal < 0)
+    filteredList = this.selectedMode === 'clean' ? filteredList.filter(song => song.tsTrainLevelGlobal === 0) : filteredList.filter(song => song.tsTrainLevelGlobal > 0)
     const ratingsSelected = Array.from(this.selectedRatings);
     if (ratingsSelected.length > 0)
       filteredList = filteredList.filter(song => ratingsSelected.includes(song.userScore as number));
-    console.log('filteredList', filteredList.filter(song => song.userScore === null));
     this.listForTraining.list = filteredList;
   }
 
@@ -60,9 +56,10 @@ export class TrainingComponent implements OnInit {
       const scoredSongs = await this.httpService.getSongsScoredByUser();
       this.listForTraining = {
         listFull: scoredSongs,
-        playlistMode: 'multiple',
+        playlistMode: 'single',
         list: scoredSongs.filter((song) => song.tsTrainLevelGlobal === 0)
       };
+      this.globalPlaylistService.setLockRate(false);
     } catch (error) {
       console.error('Error al cargar datos para entrenamiento:', error);
     }
@@ -70,20 +67,12 @@ export class TrainingComponent implements OnInit {
 
   playSong(event: Song): void {
     try {
-      const setSongListResult = this.globalPlaylistService.setSongList(
+      this.globalPlaylistService.setLockRate(false);
+      this.globalPlaylistService.setSongList(
         this.listForTraining.list,
         { emptyPlaylistList: true, clearSelectedPlaylist: true }
       );
-
-      if (!setSongListResult.ok) {
-        console.error('Error al configurar la lista de canciones:', setSongListResult.error);
-        return;
-      }
-
-      const setSongPlayingResult = this.globalPlaylistService.setSongPlaying(event);
-      if (!setSongPlayingResult.ok) {
-        console.error('Error al reproducir canción:', setSongPlayingResult.error);
-      }
+      this.globalPlaylistService.setSongPlaying(event);
     } catch (error) {
       console.error('Error al reproducir canción:', error);
     }
@@ -124,8 +113,6 @@ export class TrainingComponent implements OnInit {
     const filters: string[] = [];
     if (this.selectedMode === 'infer')
       filters.push('Modo: Inferir');
-    if (this.includePlaylistTraining)
-      filters.push('Incluye Playlist');
     if (this.selectedRatings.size > 0) {
       const ratings = Array.from(this.selectedRatings).sort().map(r => `Rating ${r}`).join(', ');
       filters.push(ratings);
@@ -141,7 +128,7 @@ export class TrainingComponent implements OnInit {
     this.trainingMessage = null;
 
     try {
-      const result = await this.httpService.trainSongsByIds(songIds, this.selectedMode, this.includePlaylistTraining);
+      const result = await this.httpService.trainSongsByIds(songIds, this.selectedMode, false);
       this.trainingMessage = result.message;
       this.trainingMessageType = 'success';
     } catch (error: any) {

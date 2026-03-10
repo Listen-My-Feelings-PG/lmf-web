@@ -12,7 +12,8 @@ export class GlobalPlaylistService {
       initialized: false,
       playlists: [],
       selected: null,
-      songList: []
+      songList: [],
+      lockRate: false
     });
   }
 
@@ -25,8 +26,18 @@ export class GlobalPlaylistService {
   initialize(setup: GlobalPlaylistSetup): void {
     this.state.set({
       ...setup,
-      initialized: true
+      initialized: true,
     });
+  }
+
+  setLockRate(locked: boolean): Result<void> {
+    const currentState = this.state();
+    if (!currentState.initialized) return { ok: false, error: 'La playlist global no ha sido inicializada. No se puede actualizar el estado de bloqueo de calificación.' };
+    this.state.update(state => ({
+      ...state,
+      lockRate: locked
+    }));
+    return { ok: true };
   }
 
   getSongPlaying(): Result<Song | null> {
@@ -168,5 +179,11 @@ export class GlobalPlaylistService {
       songList: []
     }));
     return { ok: true };
+  }
+
+  getLockRateState(): Result<boolean> {
+    const currentState = this.state();
+    if (!currentState.initialized) return { ok: false, error: 'La playlist global no ha sido inicializada. No se puede obtener el estado de bloqueo de calificación.' };
+    return { ok: true, value: currentState.lockRate || false };
   }
 }

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { BadRequest, InternalServerError, Locked, NotFound, sendError } from "../services/http-response-handler.service";
+import { BadRequest, InternalServerError, Locked, NotFound, NotImplemented, sendError } from "../services/http-response-handler.service";
 import SongModel from "../models/song.model";
 import path from "path";
 import fs from "fs";
@@ -56,12 +56,35 @@ export async function rateSongById(req: Request, res: Response): Promise<void> {
   }
 }
 
-export async function getAllSongsScoredByUser(_req: Request, res: Response): Promise<void> {
+export async function getAllSongsScoredByUserInPlaylists(req: Request, res: Response): Promise<void> {
   try {
-    const songs = await SongModel.getAllSongsScoredByUser();
-    res.status(200).json({ success: true, data: songs, message: 'Canciones puntuadas por el usuario obtenidas correctamente' });
+    const playlistsIds = req.params.playlistsIds ? JSON.parse(req.params.playlistsIds) : null;
+    if (playlistsIds) {
+      sendError(res, 'Funcionalidad no implementada', NotImplemented, null);
+      return;
+    } else {
+      const songs = await SongModel.getAllSongsScoredByUserInDefaultPlaylist();
+      res.status(200).json({ success: true, data: songs, message: 'Canciones puntuadas por el usuario obtenidas correctamente' });
+    }
+
   } catch (error) {
     sendError(res, 'Error al obtener las canciones puntuadas por el usuario', InternalServerError, error instanceof Error ? error : null);
+  }
+}
+
+export async function getSongsForPrediction(req: Request, res: Response): Promise<void> {
+  try {
+    const playlistsIds = req.params.playlistsIds ? JSON.parse(req.params.playlistsIds) : null;
+    if (playlistsIds) {
+      sendError(res, 'Funcionalidad no implementada', NotImplemented, null);
+      return;
+    } else {
+      const songs = await SongModel.getAllSongsInDefaultPlaylist();
+      res.status(200).json({ success: true, data: songs, message: 'Canciones para predicción obtenidas correctamente' });
+    }
+  } catch (error) {
+    sendError(res, 'Error al obtener las canciones para predicción', InternalServerError, error instanceof Error ? error : null);
+    return;
   }
 }
 

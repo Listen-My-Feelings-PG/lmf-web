@@ -348,7 +348,52 @@ class SongModel {
     }
   }
 
-  static async getAllSongsScoredByUser(): Promise<Array<Song>> {
+  static async getAllSongsInDefaultPlaylist(): Promise<Array<Song>> {
+    try {
+      const songs = await psql<any[]>`SELECT 
+          ca_id as id,
+          ca_calif_usuario as "userScore",
+          ca_filename as "fileName",
+          ca_filesize as "fileSize",
+          ca_id_tipodato,
+          ca_metadata as metadata,
+          ca_ts_calif_global as "tsGlobalScore",
+          ca_train_level_local as "tsTrainLevelLocal",
+          ca_train_level_global as "tsTrainLevelGlobal",
+          ca_ts_prob_calif_0 as "tsProbScore0",
+          ca_ts_prob_calif_1 as "tsProbScore1",
+          ca_ts_prob_calif_2 as "tsProbScore2",
+          ca_ts_prob_calif_3 as "tsProbScore3",
+          ca_ts_features_filename as "tsFeaturesFileName",
+          pr_pl_id as "idPlaylist"
+        FROM rel_playlists_canciones
+        left join canciones on ca_id=pr_ca_id
+        left join playlists on pr_pl_id=pl_id
+        where pl_is_default = B'1' AND ca_activo = B'1'`;
+      return songs.map(song => ({
+        id: song.id,
+        userScore: song.userScore ?? null,
+        fileName: song.fileName,
+        fileSize: song.fileSize,
+        dataType: song.ca_id_tipodato === 1 ? 'file' : 'link',
+        metadata: song.metadata && song.metadata.trim().startsWith('{') ? JSON.parse(song.metadata) : undefined,
+        tsGlobalScore: song.tsGlobalScore ?? null,
+        tsTrainLevelLocal: song.tsTrainLevelLocal ?? null,
+        tsTrainLevelGlobal: song.tsTrainLevelGlobal ?? null,
+        tsProbScore0: song.tsProbScore0 ?? null,
+        tsProbScore1: song.tsProbScore1 ?? null,
+        tsProbScore2: song.tsProbScore2 ?? null,
+        tsProbScore3: song.tsProbScore3 ?? null,
+        tsFeaturesFileName: song.tsFeaturesFileName ?? null,
+        idPlaylist: song.idPlaylist
+      }));
+    } catch (error) {
+      console.error('Error al obtener canciones sin predicción en playlist por defecto:', error);
+      throw error;
+    }
+  }
+
+  static async getAllSongsScoredByUserInDefaultPlaylist(): Promise<Array<Song>> {
     try {
       const songs = await psql<any[]>`SELECT 
           ca_id,
@@ -368,7 +413,8 @@ class SongModel {
           pr_pl_id as "idPlaylist"
       FROM rel_playlists_canciones
       left join canciones on ca_id=pr_ca_id
-      where ca_calif_usuario is not null AND ca_activo = B'1'`;
+      left join playlists on pr_pl_id=pl_id
+      where ca_calif_usuario is not null AND pl_is_default = B'1' AND ca_activo = B'1'`;
       return songs.map(song => ({
         id: song.ca_id,
         userScore: song.ca_calif_usuario ?? null,

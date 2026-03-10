@@ -27,6 +27,7 @@ export class ListComponent implements OnInit, OnDestroy, OnChanges {
   @Input('list') list: Array<Song>;
   @Input('componentMode') componentMode: 'outlet' | 'child';
   @Input('songPlaying') songPlaying: Song | null;
+  @Input('lockRate') lockRate: boolean;
   @Output('onSelectSong') onSelectSong: EventEmitter<Song>;
   @Output('onRateSong') onRateSong: EventEmitter<{ song: Song, score: UserScore }>;
 
@@ -92,6 +93,7 @@ export class ListComponent implements OnInit, OnDestroy, OnChanges {
     this.componentMode = 'outlet';
     this.onSelectSong = new EventEmitter<Song>();
     this.onRateSong = new EventEmitter<{ song: Song, score: UserScore }>();
+    this.lockRate = false;
 
     // Effect en constructor (contexto de inyección válido)
     effect(() => {

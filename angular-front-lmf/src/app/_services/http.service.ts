@@ -45,9 +45,9 @@ export class HttpService {
     });
   }
 
-  getSongsScoredByUser(): Promise<Array<Song>> {
+  getSongsScoredByUser(playlistsIds?: Array<number>): Promise<Array<Song>> { //Si no se especifica ninguna playlist: se cargan todas las canciones calificadas por el usuario de la playlist default.
     return new Promise((resolve, reject) => {
-      this.http.get<HttpResponseSuccess>(this.apiUrl + `/songs/scored-by-user`).subscribe({
+      this.http.get<HttpResponseSuccess>(this.apiUrl + `/songs/scored-by-user/${playlistsIds !== undefined ? JSON.stringify(playlistsIds) : 'null'}`).subscribe({
         next: (response) => resolve(response.data as Array<Song>),
         error: (error) => reject({ error, at: 'getSongsScoredByUser' })
       });
@@ -59,6 +59,15 @@ export class HttpService {
       this.http.post<{ success: boolean, message: string }>(this.apiUrl + `/songs/train-songs-by-ids`, { songIds: JSON.stringify(songIds), mode, includeLocalTraining }).subscribe({
         next: (response) => resolve(response),
         error: (error) => reject({ error, at: 'trainSongsByIds' })
+      });
+    });
+  }
+
+  getSongsForPrediction(playlistsIds?: Array<number>): Promise<Array<Song>> {
+    return new Promise((resolve, reject) => {
+      this.http.get<HttpResponseSuccess>(this.apiUrl + `/songs/songs-for-prediction/${playlistsIds !== undefined ? JSON.stringify(playlistsIds) : null}`).subscribe({
+        next: (response) => resolve(response.data as Array<Song>),
+        error: (error) => reject({ error, at: 'getSongsForPrediction' })
       });
     });
   }
