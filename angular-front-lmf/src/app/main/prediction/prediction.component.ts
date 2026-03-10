@@ -64,7 +64,12 @@ export class PredictionComponent implements OnInit {
     }
   }
 
-  startPrediction(): void {
-
+  async startPrediction(): Promise<void> {
+    try {
+      const songIds = this.listForTraining.list.map(song => song.id as number);
+      const predictionResult = await this.httpService.predictSongsByIds(songIds);
+    } catch (error) {
+      console.error('Error al iniciar la predicción:', error);
+    }
   }
 }

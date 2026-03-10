@@ -71,4 +71,13 @@ export class HttpService {
       });
     });
   }
+
+  predictSongsByIds(songIds: number[]): Promise<Array<{ success: boolean, message: string }>> {
+    return new Promise((resolve, reject) => {
+      this.http.post<Array<{ success: boolean, message: string }>>(this.apiUrl + `/songs/predict-songs-by-ids`, { songIds: JSON.stringify(songIds) }).subscribe({
+        next: (response) => resolve(response),
+        error: (error) => reject({ error, at: 'predictSongsByIds' })
+      });
+    });
+  }
 }

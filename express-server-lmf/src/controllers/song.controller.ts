@@ -134,3 +134,16 @@ export async function trainSongsByIds(req: Request, res: Response): Promise<void
     sendError(res, 'Error al iniciar el entrenamiento', InternalServerError, error instanceof Error ? error : null);
   }
 }
+
+export async function predictSongsByIds(req: Request, res: Response): Promise<void> {
+  let songIds: number[];
+  try {
+    songIds = JSON.parse(req.body.songIds);
+    console.log('IDs de canciones recibidos para predicción:', songIds);
+    res.status(200).json({ success: true, message: 'Predicción iniciada. Revise la consola del servidor.' });
+    return;
+  } catch {
+    sendError(res, 'Error al parsear songIds. Envíe un JSON válido.', BadRequest, null);
+    return;
+  }
+}
