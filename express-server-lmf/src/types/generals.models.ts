@@ -15,6 +15,7 @@ export interface Song {
   tsTrainLevelGlobal?: number;
   tsFeaturesFileName?: string;
   idPlaylist?: number;
+  accuracy?: number | null;
 }
 
 export interface Playlist {

@@ -45,6 +45,7 @@ export class TrainingComponent {
   }
 
   async tuneSong(idSong: number): Promise<void> {
+    console.log('Fine-tuning canción con ID:', idSong);
     const tunedSong = await this.httpService.tuneSongByIdSong(idSong);
     const indexInList = this.listForTraining.list.findIndex(song => song.id === idSong);
     if (indexInList !== -1) {

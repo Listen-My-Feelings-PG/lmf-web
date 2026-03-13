@@ -28,6 +28,7 @@ export class ListComponent implements OnInit, OnDestroy, OnChanges {
   @Input('componentMode') componentMode: 'outlet' | 'child';
   @Input('songPlaying') songPlaying: Song | null;
   @Input('lockRate') lockRate: boolean;
+  @Input('showTuneButton') showTuneButton: boolean;
   @Output('onSelectSong') onSelectSong: EventEmitter<Song>;
   @Output('onRateSong') onRateSong: EventEmitter<{ song: Song, score: UserScore }>;
   @Output('onTuneSong') onTuneSong: EventEmitter<number>;
@@ -40,7 +41,7 @@ export class ListComponent implements OnInit, OnDestroy, OnChanges {
   data = signal<Song[]>([]);
   globalFilter = signal('');
   columnOrder = signal<string[]>([
-    'id', 'title', 'artist', 'album', 'userScore', 'modelPrediction', 'tsTrainLevelGlobal', 'fileName'
+    'id', 'title', 'artist', 'album', 'userScore', 'modelPrediction', 'accuracy', 'tsTrainLevelGlobal', 'tune', 'fileName'
   ]);
   selectedRows = signal<Set<number>>(new Set());
   hoveredRow = signal<number | null>(null);
@@ -60,6 +61,8 @@ export class ListComponent implements OnInit, OnDestroy, OnChanges {
     { accessorKey: 'userScore', id: 'userScore', header: 'Rating', cell: info => info.getValue(), enableSorting: false, size: 130, minSize: 130, maxSize: 130, },
     { accessorFn: row => row, id: 'modelPrediction', header: 'Predicción', cell: info => info.getValue(), enableSorting: false, size: 180, minSize: 180, maxSize: 180, },
     { accessorKey: 'tsTrainLevelGlobal', id: 'tsTrainLevelGlobal', header: 'Nivel Entren. Global', cell: info => info.getValue(), size: 120, minSize: 100, maxSize: 150, },
+    { accessorKey: 'accuracy', id: 'accuracy', header: 'Precisión', cell: info => info.getValue(), size: 100, minSize: 80, maxSize: 130, },
+    { id: 'tune', header: '', cell: () => null, enableSorting: false, enableResizing: false, size: 50, minSize: 50, maxSize: 50, },
     { accessorKey: 'fileName', id: 'fileName', header: 'Nombre de archivo', cell: info => info.getValue(), minSize: 200, },
   ];
 
@@ -83,6 +86,7 @@ export class ListComponent implements OnInit, OnDestroy, OnChanges {
         this.columnOrder.set(updater);
     }, enableColumnResizing: true, columnResizeMode: 'onChange' as const, getCoreRowModel: getCoreRowModel(), getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(), getPaginationRowModel: getPaginationRowModel(),
+    autoResetPageIndex: false,
     initialState: { pagination: { pageSize: 25, }, },
   }));
 
@@ -96,6 +100,7 @@ export class ListComponent implements OnInit, OnDestroy, OnChanges {
     this.onSelectSong = new EventEmitter<Song>();
     this.onRateSong = new EventEmitter<{ song: Song, score: UserScore }>();
     this.lockRate = false;
+    this.showTuneButton = false;
     this.onTuneSong = new EventEmitter<number>();
 
     // Effect en constructor (contexto de inyección válido)
@@ -132,6 +137,7 @@ export class ListComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   trainSingleSong(idSong: number): void {
+    console.log('Entrenando canción con ID:', idSong);
     if (this.componentMode == 'child')
       this.onTuneSong.emit(idSong);
   }

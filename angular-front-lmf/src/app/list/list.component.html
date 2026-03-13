@@ -85,7 +85,9 @@
           </th>
 
           @for (header of headerGroup.headers; track header.id) {
-          @if ((header.column.id === 'modelPrediction' || header.column.id === 'tsTrainLevelGlobal') && componentMode !== 'child')
+          @if ((header.column.id === 'modelPrediction' || header.column.id === 'tsTrainLevelGlobal' || header.column.id ===
+          'accuracy' || header.column.id === 'tune') && componentMode !== 'child'
+          || (header.column.id === 'tune' && !showTuneButton))
           {
           <!-- Skip child-only columns in outlet mode -->
           } @else {
@@ -158,7 +160,10 @@
           </td>
 
           @for (cell of row.getVisibleCells(); track cell.id) {
-          @if ((cell.column.id === 'modelPrediction' || cell.column.id === 'tsTrainLevelGlobal') && componentMode !== 'child') {
+          @if ((cell.column.id === 'modelPrediction' || cell.column.id === 'tsTrainLevelGlobal' || cell.column.id === 'accuracy'
+          || cell.column.id === 'tune')
+          && componentMode !== 'child'
+          || (cell.column.id === 'tune' && !showTuneButton)) {
           <!-- Skip child-only columns in outlet mode -->
           } @else if (cell.column.id === 'id') {
           <!-- ID Column -->
@@ -252,6 +257,27 @@
           <!-- Train Level Global Column -->
           <td class="px-2 py-2 text-center">
             <span class="text-xs font-mono text-gray-300">{{ row.original.tsTrainLevelGlobal }}</span>
+          </td>
+          } @else if (cell.column.id === 'accuracy' && componentMode === 'child') {
+          <!-- Accuracy Column -->
+          <td class="px-2 py-2 text-center">
+            @if (row.original.accuracy !== null && row.original.accuracy !== undefined) {
+            <span class="text-xs font-mono"
+              [class]="+row.original.accuracy >= 80 ? 'text-emerald-400' : +row.original.accuracy >= 50 ? 'text-yellow-400' : 'text-red-400'">{{ (+row.original.accuracy).toFixed(1) }}%</span>
+            } @else {
+            <span class="text-gray-600 text-xs">—</span>
+            }
+          </td>
+          } @else if (cell.column.id === 'tune' && componentMode === 'child') {
+          <!-- Tune Button Column -->
+          <td class="px-2 py-2 text-center"
+            (click)="$event.stopPropagation()">
+            <button (click)="trainSingleSong(row.original.id!)"
+              [disabled]="row.original.userScore == null || row.original.tsPrediction == null"
+              class="w-7 h-7 flex items-center justify-center rounded border border-gray-600 text-gray-400 hover:text-primary hover:border-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-gray-400 disabled:hover:border-gray-600"
+              title="Fine-tune esta canción">
+              <i class="fas fa-bullseye text-sm"></i>
+            </button>
           </td>
           } @else if (cell.column.id === 'fileName') {
           <!-- FileName Column -->

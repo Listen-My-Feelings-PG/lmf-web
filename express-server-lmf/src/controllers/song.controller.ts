@@ -5,10 +5,26 @@ import path from "path";
 import fs from "fs";
 import { paths } from "../main";
 import { isExtractionActive } from "../services/feature-extraction.service";
-import { isTrainingActive, startTraining, isPredictionActive, startPrediction } from "../services/tensorflow.service";
+import { isTrainingActive, startTraining, isPredictionActive, startPrediction, tuneSingleSongById } from "../services/tensorflow.service";
 
 export async function tuneSingleSong(req: Request, res: Response): Promise<void> {
   const idSong = parseInt(req.params.idSong, 10);
+  if (isNaN(idSong)) {
+    sendError(res, 'ID de canción inválido', BadRequest, null);
+    return;
+  }
+
+  if (isTrainingActive()) {
+    sendError(res, 'Hay un proceso de entrenamiento activo. Intente más tarde.', Locked, null);
+    return;
+  }
+
+  try {
+    const updatedSong = await tuneSingleSongById(idSong);
+    res.status(200).json({ success: true, data: updatedSong, message: 'Fine-tuning completado' });
+  } catch (error) {
+    sendError(res, 'Error al hacer fine-tuning', InternalServerError, error instanceof Error ? error : null);
+  }
 }
 
 export async function serveSongById(req: Request, res: Response): Promise<void> {

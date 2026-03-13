@@ -230,6 +230,7 @@
   <div class="flex-1 min-h-0">
     <app-list [componentMode]="'child'"
       [list]="listForTraining.listFiltered"
+      [showTuneButton]="true"
       (onSelectSong)="playSong($event)"
       (onRateSong)="rateSongByUser($event)"
       (onTuneSong)="tuneSong($event)"></app-list>

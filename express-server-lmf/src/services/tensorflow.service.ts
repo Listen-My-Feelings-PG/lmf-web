@@ -797,10 +797,13 @@ async function runPrediction(songIds: number[]): Promise<void> {
       const globalScore = rawOutput[0] * 3;
 
       // Calcular precisión: 100 - (|predicción - userScore| / 3) * 100
+      const hasUserScore = song.userScore !== undefined && song.userScore !== null;
       const userScore = song.userScore ?? 0;
-      const predictionAccuracy = Math.max(0, 100 - (Math.abs(globalScore - userScore) / 3) * 100);
+      const predictionAccuracy = hasUserScore
+        ? Math.max(0, 100 - (Math.abs(globalScore - userScore) / 3) * 100)
+        : null;
 
-      logInfo(`  Canción ${song.id}: predicción=${globalScore.toFixed(4)} | usuario=${userScore} | precisión=${predictionAccuracy.toFixed(1)}%`);
+      logInfo(`  Canción ${song.id}: predicción=${globalScore.toFixed(4)} | usuario=${hasUserScore ? userScore : 'N/A'} | precisión=${predictionAccuracy !== null ? predictionAccuracy.toFixed(1) + '%' : 'N/A'}`);
 
       // Actualizar tabla canciones
       await SongModel.updateTrainingResults(song.id!, {
@@ -845,4 +848,119 @@ async function runPrediction(songIds: number[]): Promise<void> {
   logInfo('─'.repeat(40));
   logSuccess(`Predicción completada: ${predicted} predichas, ${skipped} omitidas`);
   logInfo('═'.repeat(60));
+}
+
+// ─── Fine-tuning de canción individual ──────────────────────────────────────
+/**
+ * Fine-tune del modelo global sobre una sola canción y predicción inmediata.
+ * Usa learning rate reducido y pocas épocas para ajustar sin olvido catastrófico.
+ * Retorna la canción actualizada con nueva predicción y precisión.
+ */
+export async function tuneSingleSongById(songId: number): Promise<Song> {
+  logInfo('─'.repeat(40));
+  logInfo(`Fine-tuning canción ${songId}`);
+
+  // 1. Obtener canción
+  const song = await SongModel.getSongById(songId);
+  if (!song) throw new Error(`Canción ${songId} no encontrada`);
+  if (song.userScore === undefined || song.userScore === null)
+    throw new Error(`Canción ${songId} no tiene calificación del usuario`);
+  if (!song.tsFeaturesFileName)
+    throw new Error(`Canción ${songId} no tiene archivo de features`);
+
+  // 2. Cargar features
+  const featuresDir = path.resolve(paths.features);
+  const featurePath = path.join(featuresDir, song.tsFeaturesFileName);
+  if (!fs.existsSync(featurePath))
+    throw new Error(`Archivo de features no encontrado: ${featurePath}`);
+
+  const npy = readNpy(featurePath);
+  const pooled = meanPoolEmbeddings(npy.data, npy.shape);
+  const normalized = normalizeEmbedding(pooled);
+
+  // 3. Obtener modelo global
+  const globalModel = await TsModelModel.getGlobalModel();
+  if (!globalModel) throw new Error('No existe modelo global entrenado');
+
+  const modelsDir = path.resolve(paths.models);
+  const modelPath = path.join(modelsDir, globalModel.filename);
+  const modelJsonPath = path.join(modelPath, 'model.json');
+  if (!fs.existsSync(modelJsonPath))
+    throw new Error(`Archivo de modelo no encontrado: ${modelJsonPath}`);
+
+  const model = await tf.loadLayersModel(nodeLoadHandler(modelPath));
+
+  // Fine-tune: LR reducido (1/10) para no destruir el conocimiento previo
+  const tuneLr = globalModel.learningRate / 10;
+  const tuneEpochs = 10;
+  compileModel(model, tuneLr);
+
+  // 4. Fine-tune con la canción
+  const featureArray = Array.from(normalized);
+  const xs = tf.tensor2d([featureArray], [1, DEFAULT_CONFIG.inputDim]);
+  const ys = tf.tensor1d([song.userScore / 3], 'float32');
+
+  const history = await (model as tf.LayersModel).fit(xs, ys, {
+    epochs: tuneEpochs,
+    batchSize: 1,
+    shuffle: false,
+  });
+
+  const lossArr = history.history['loss'] as number[];
+  const finalLoss = lossArr[lossArr.length - 1];
+  logInfo(`  Fine-tune completado — loss: ${finalLoss.toFixed(6)} (${tuneEpochs} épocas, lr=${tuneLr})`);
+
+  // 5. Guardar modelo
+  await model.save(nodeSaveHandler(modelPath));
+
+  // 6. Predecir inmediatamente
+  const input = tf.tensor2d([featureArray], [1, DEFAULT_CONFIG.inputDim]);
+  const prediction = model.predict(input) as tf.Tensor;
+  const rawOutput = await prediction.data();
+  const globalScore = rawOutput[0] * 3;
+  const predictionAccuracy = Math.max(0, 100 - (Math.abs(globalScore - song.userScore) / 3) * 100);
+
+  logSuccess(`  Canción ${songId}: predicción=${globalScore.toFixed(4)} | usuario=${song.userScore} | precisión=${predictionAccuracy.toFixed(1)}%`);
+
+  // 7. Actualizar BD
+  await SongModel.updateTrainingResults(songId, { globalScore });
+
+  const now = new Date();
+  await CalibrationModel.create({
+    songId,
+    modelId: globalModel.id!,
+    interactionType: 'infer',
+    interactionDate: now,
+    globalScore,
+    userScore: song.userScore,
+    configEpochs: tuneEpochs,
+    loss: finalLoss,
+    accuracy: predictionAccuracy,
+    learningRate: tuneLr,
+    batchSize: 1
+  });
+
+  // Actualizar versión del modelo
+  await TsModelModel.updateAfterTraining(globalModel.id!, {
+    trainedSongs: globalModel.trainedSongs,
+    completedEpochs: (globalModel.completedEpochs || 0) + tuneEpochs,
+    loss: finalLoss,
+    accuracy: globalModel.accuracy,
+    version: (globalModel.version || 1) + 1
+  });
+
+  // Limpiar tensores
+  xs.dispose();
+  ys.dispose();
+  input.dispose();
+  prediction.dispose();
+  model.dispose();
+
+  logSuccess(`Fine-tuning y predicción completados para canción ${songId}`);
+
+  // Retornar canción actualizada
+  const updatedSong = await SongModel.getSongById(songId);
+  if (!updatedSong) throw new Error(`No se pudo obtener canción actualizada ${songId}`);
+  updatedSong.accuracy = predictionAccuracy;
+  return updatedSong;
 }
