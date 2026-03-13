@@ -13,10 +13,6 @@ export interface Song {
   tsGlobalScore?: number;
   tsTrainLevelLocal?: number;
   tsTrainLevelGlobal?: number;
-  tsProbScore0?: number;
-  tsProbScore1?: number;
-  tsProbScore2?: number;
-  tsProbScore3?: number;
   tsFeaturesFileName?: string;
   idPlaylist?: number;
 }
@@ -58,12 +54,8 @@ export interface Calibration {
   globalScore?: number;
   userScore: number;
   configEpochs: number;
-  probScore0?: number;
-  probScore1?: number;
-  probScore2?: number;
-  probScore3?: number;
   loss?: number;
-  accuracy?: number;
+  accuracy?: number | null;
   learningRate?: number;
   batchSize?: number;
 }

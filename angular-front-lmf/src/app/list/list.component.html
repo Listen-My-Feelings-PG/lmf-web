@@ -209,47 +209,44 @@
           } @else if (cell.column.id === 'modelPrediction' && componentMode === 'child') {
           <!-- Model Prediction Column -->
           <td class="px-2 py-2">
-            <div class="flex justify-center items-center gap-2">
-              <!-- Thumbs Down (Score 0 Prediction) -->
-              <div class="relative w-8 h-8 flex items-center justify-center group cursor-help"
-                [title]="row.original.tsProbScore0 !== null ? Math.round(row.original.tsProbScore0) + '%' : 'Sin predicción'">
-                <div class="absolute inset-0 rounded-full"
-                  [style.background]="getCircularProgressStyle(row.original.tsProbScore0)"></div>
-                <div class="absolute inset-1 bg-gray-900 rounded-full"></div>
-                <i
-                  [class]="row.original.tsProbScore0 !== null ? 'far fa-thumbs-down text-red-500 text-xs relative z-10' : 'far fa-thumbs-down text-gray-600 text-xs relative z-10'"></i>
+            @if (row.original.tsGlobalScore !== null && row.original.tsGlobalScore !== undefined) {
+            <div class="flex items-center gap-2 w-fit mx-auto">
+              <!-- Icons + bar column -->
+              <div class="flex flex-col gap-1">
+                <!-- Icons row: thumbs down + 3 stars -->
+                <div class="flex items-center gap-1">
+                  <i [class]="+row.original.tsGlobalScore < 0.85
+                    ? 'fas fa-thumbs-down text-red-500'
+                    : 'far fa-thumbs-down text-gray-600'"
+                    class="text-xs"></i>
+                  <i [class]="+row.original.tsGlobalScore >= 0.85
+                    ? 'fas fa-star text-yellow-400'
+                    : 'far fa-star text-gray-600'"
+                    class="text-xs"></i>
+                  <i [class]="+row.original.tsGlobalScore >= 1.75
+                    ? 'fas fa-star text-yellow-400'
+                    : 'far fa-star text-gray-600'"
+                    class="text-xs"></i>
+                  <i [class]="+row.original.tsGlobalScore >= 2.8
+                    ? 'fas fa-star text-yellow-400'
+                    : 'far fa-star text-gray-600'"
+                    class="text-xs"></i>
+                </div>
+                <!-- Progress bar 0-3 -->
+                <div class="h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                  <div class="h-full rounded-full transition-all duration-300"
+                    [style.width.%]="(+row.original.tsGlobalScore / 3) * 100"
+                    style="background-color: #46f0be">
+                  </div>
+                </div>
               </div>
-
-              <!-- Star 1 (Score 1 Prediction) -->
-              <div class="relative w-8 h-8 flex items-center justify-center group cursor-help"
-                [title]="row.original.tsProbScore1 !== null ? Math.round(row.original.tsProbScore1) + '%' : 'Sin predicción'">
-                <div class="absolute inset-0 rounded-full"
-                  [style.background]="getCircularProgressStyle(row.original.tsProbScore1)"></div>
-                <div class="absolute inset-1 bg-gray-900 rounded-full"></div>
-                <i
-                  [class]="row.original.tsProbScore1 !== null ? 'fas fa-star text-yellow-400 text-xs relative z-10' : 'far fa-star text-gray-600 text-xs relative z-10'"></i>
-              </div>
-
-              <!-- Star 2 (Score 2 Prediction) -->
-              <div class="relative w-8 h-8 flex items-center justify-center group cursor-help"
-                [title]="row.original.tsProbScore2 !== null ? Math.round(row.original.tsProbScore2) + '%' : 'Sin predicción'">
-                <div class="absolute inset-0 rounded-full"
-                  [style.background]="getCircularProgressStyle(row.original.tsProbScore2)"></div>
-                <div class="absolute inset-1 bg-gray-900 rounded-full"></div>
-                <i
-                  [class]="row.original.tsProbScore2 !== null ? 'fas fa-star text-yellow-400 text-xs relative z-10' : 'far fa-star text-gray-600 text-xs relative z-10'"></i>
-              </div>
-
-              <!-- Star 3 (Score 3 Prediction) -->
-              <div class="relative w-8 h-8 flex items-center justify-center group cursor-help"
-                [title]="row.original.tsProbScore3 !== null ? Math.round(row.original.tsProbScore3) + '%' : 'Sin predicción'">
-                <div class="absolute inset-0 rounded-full"
-                  [style.background]="getCircularProgressStyle(row.original.tsProbScore3)"></div>
-                <div class="absolute inset-1 bg-gray-900 rounded-full"></div>
-                <i
-                  [class]="row.original.tsProbScore3 !== null ? 'fas fa-star text-yellow-400 text-xs relative z-10' : 'far fa-star text-gray-600 text-xs relative z-10'"></i>
-              </div>
+              <!-- Exact prediction value -->
+              <span
+                class="text-xs font-mono text-gray-300 whitespace-nowrap">{{ (+row.original.tsGlobalScore).toFixed(2) }}</span>
             </div>
+            } @else {
+            <span class="text-gray-600 text-xs">—</span>
+            }
           </td>
           } @else if (cell.column.id === 'fileName') {
           <!-- FileName Column -->

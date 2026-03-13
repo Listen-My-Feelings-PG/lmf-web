@@ -25,7 +25,7 @@ const ARCHITECTURE_JSON = JSON.stringify({
     { type: 'dropout', rate: 0.3 },
     { type: 'dense', units: 32, activation: 'relu', init: 'heNormal' },
     { type: 'dropout', rate: 0.3 },
-    { type: 'dense', units: 4, activation: 'softmax' }
+    { type: 'dense', units: 1, activation: 'sigmoid', note: 'output * 3 → rango [0,3]' }
   ]
 });
 
@@ -162,73 +162,34 @@ function normalizeEmbedding(data: Float32Array): Float32Array {
  * Crea la arquitectura del modelo de clasificación.
  *
  * ── Visión general ──────────────────────────────────────────────────────────
- * Red neuronal feedforward (MLP) diseñada para clasificar canciones en 4
- * categorías de sentimiento (scores 0-3) a partir de embeddings de audio
- * generados por VGGish.
+ * Red neuronal feedforward (MLP) de regresión diseñada para predecir una
+ * calificación continua (0-3) a partir de embeddings de audio VGGish.
  *
  * ── Flujo de datos ──────────────────────────────────────────────────────────
  *
  *   Input (128)          Vector mean-pooled de embeddings VGGish.
- *       │                Cada canción produce N frames de 128 dims; el mean
- *       │                pooling los colapsa a un único vector (128,).
  *       ▼
- *   Dense (128 → 64)     Capa fully-connected que reduce la dimensionalidad
- *       │                a 64 neuronas. Aprende combinaciones no lineales de
- *       │                las 128 features acústicas.
- *       │                • Activación: ReLU — f(x) = max(0, x). Introduce
- *       │                  no-linealidad y evita el problema del gradiente
- *       │                  desvaneciente mejor que sigmoid/tanh.
- *       │                • Inicialización: He Normal — pesos ~ N(0, √(2/n_in)).
- *       │                  Diseñada específicamente para ReLU; mantiene la
- *       │                  varianza estable entre capas y evita que los
- *       │                  gradientes exploten o se desvanezcan al inicio.
+ *   Dense (128 → 64)     ReLU + He Normal.
  *       ▼
- *   Dropout (30%)        Durante el entrenamiento, desactiva aleatoriamente
- *       │                el 30% de las 64 neuronas en cada batch. Esto obliga
- *       │                al modelo a no depender de neuronas individuales,
- *       │                actuando como regularización implícita y reduciendo
- *       │                el sobreajuste (overfitting). En inferencia no se
- *       │                aplica (todas las neuronas activas, escaladas).
+ *   Dropout (30%)
  *       ▼
- *   Dense (64 → 32)      Segunda capa oculta que comprime la representación
- *       │                a 32 neuronas. Captura patrones más abstractos y de
- *       │                mayor nivel a partir de la representación intermedia.
- *       │                • Activación: ReLU (mismas ventajas que arriba).
- *       │                • Inicialización: He Normal.
+ *   Dense (64 → 32)      ReLU + He Normal.
  *       ▼
- *   Dropout (30%)        Segunda capa de regularización. Misma lógica:
- *       │                previene co-adaptación de neuronas en esta capa.
+ *   Dropout (30%)
  *       ▼
- *   Dense (32 → 4)       Capa de salida con 4 neuronas, una por cada clase
- *       │                de sentimiento (scores 0, 1, 2, 3).
- *       │                • Activación: Softmax — convierte los logits en una
- *       │                  distribución de probabilidad que suma 1.0.
- *       │                  P(clase_i) = e^(z_i) / Σ e^(z_j)
- *       │                  La clase predicha es argmax de estas probabilidades.
+ *   Dense (32 → 1)       Sigmoid → salida en [0,1], escalada × 3 → [0,3].
  *       ▼
- *   Output (4)           [P(score=0), P(score=1), P(score=2), P(score=3)]
+ *   Output (1)           Calificación nominal continua en rango [0, 3].
  *
  * ── Resumen de parámetros ───────────────────────────────────────────────────
  *   Capa 1 (Dense):  128×64 + 64 bias  =  8.256 parámetros
  *   Capa 2 (Dense):   64×32 + 32 bias  =  2.080 parámetros
- *   Capa 3 (Dense):    32×4 +  4 bias  =    132 parámetros
+ *   Capa 3 (Dense):    32×1 +  1 bias  =     33 parámetros
  *   ─────────────────────────────────────────────────
- *   Total:                                 10.468 parámetros entrenables
- *   (Las capas Dropout no tienen parámetros entrenables)
- *
- * ── ¿Por qué esta arquitectura? ────────────────────────────────────────────
- *   • Modelo compacto (~10K params) ideal para datasets pequeños (~230 canciones).
- *     Redes más grandes sobreajustarían con tan pocos ejemplos.
- *   • Reducción progresiva 128→64→32→4: cada capa abstrae más la información,
- *     creando un "embudo" que comprime features acústicas hacia la decisión final.
- *   • Dropout al 30% en ambas capas ocultas: tasa moderada que regulariza sin
- *     sacrificar demasiada capacidad de aprendizaje.
- *   • Softmax final + sparseCategoricalCrossentropy (en compile): combinación
- *     estándar para clasificación multiclase donde las etiquetas son enteros.
+ *   Total:                                 10.369 parámetros entrenables
  */
 function createModelArchitecture(
-  inputDim: number = DEFAULT_CONFIG.inputDim,
-  numClasses: number = DEFAULT_CONFIG.numClasses
+  inputDim: number = DEFAULT_CONFIG.inputDim
 ): tf.Sequential {
   const model = tf.sequential();
 
@@ -253,10 +214,10 @@ function createModelArchitecture(
   // Regularización: segunda barrera contra overfitting
   model.add(tf.layers.dropout({ rate: 0.3 }));
 
-  // Capa de salida: 4 neuronas con softmax → distribución de probabilidad sobre los scores
+  // Capa de salida: 1 neurona con sigmoid → [0,1], se escala × 3 → [0,3]
   model.add(tf.layers.dense({
-    units: numClasses,
-    activation: 'softmax'
+    units: 1,
+    activation: 'sigmoid'
   }));
 
   return model;
@@ -268,8 +229,8 @@ function createModelArchitecture(
 function compileModel(model: tf.LayersModel, learningRate: number = DEFAULT_CONFIG.learningRate): void {
   model.compile({
     optimizer: tf.train.adam(learningRate),
-    loss: 'sparseCategoricalCrossentropy',
-    metrics: ['accuracy']
+    loss: 'meanSquaredError',
+    metrics: ['mae']
   });
 }
 
@@ -561,11 +522,11 @@ async function trainSingleModel(
     return;
   }
 
-  // Log de distribución de clases y cálculo de class weights
+  // Log de distribución de labels
   const classCount = [0, 0, 0, 0];
   labels.forEach(l => classCount[l]++);
   logInfo(`Canciones a entrenar: ${features.length}`);
-  logInfo(`Distribución de clases: 0=${classCount[0]}, 1=${classCount[1]}, 2=${classCount[2]}, 3=${classCount[3]}`);
+  logInfo(`Distribución de labels: 0=${classCount[0]}, 1=${classCount[1]}, 2=${classCount[2]}, 3=${classCount[3]}`);
 
   // Diagnóstico: mostrar rango de features (ya normalizados)
   const allVals = features.flatMap(f => Array.from(f));
@@ -573,18 +534,6 @@ async function trainSingleModel(
   const fMax = Math.max(...allVals.slice(0, 1000));
   const fMean = allVals.slice(0, 1000).reduce((a, b) => a + b, 0) / Math.min(allVals.length, 1000);
   logInfo(`Features normalizados — min: ${fMin.toFixed(4)}, max: ${fMax.toFixed(4)}, mean: ${fMean.toFixed(4)}`);
-
-  // Class weights balanceados: weight_i = N_total / (N_clases * N_i)
-  // Compensa el desbalance de clases para evitar que el modelo colapse
-  // hacia la clase mayoritaria (mode collapse).
-  const numClasses = DEFAULT_CONFIG.numClasses;
-  const classWeight: { [key: number]: number } = {};
-  for (let c = 0; c < numClasses; c++) {
-    classWeight[c] = classCount[c] > 0
-      ? features.length / (numClasses * classCount[c])
-      : 1;
-  }
-  logInfo(`Class weights: ${Object.entries(classWeight).map(([k, v]) => `${k}=${v.toFixed(3)}`).join(', ')}`);
 
   // Cargar modelo desde disco
   const modelsDir = path.resolve(paths.models);
@@ -597,7 +546,7 @@ async function trainSingleModel(
     model = await tf.loadLayersModel(nodeLoadHandler(modelPath));
   } else {
     logInfo('Archivo de modelo no encontrado en disco. Recreando arquitectura...');
-    model = createModelArchitecture(tsModel.inputDim, tsModel.numClasses);
+    model = createModelArchitecture(tsModel.inputDim);
   }
 
   compileModel(model, tsModel.learningRate);
@@ -607,7 +556,8 @@ async function trainSingleModel(
   features.forEach((feat, i) => xData.set(feat, i * DEFAULT_CONFIG.inputDim));
 
   const xs = tf.tensor2d(xData, [features.length, DEFAULT_CONFIG.inputDim]);
-  const ys = tf.tensor1d(labels, 'float32');
+  // Labels normalizados a [0,1] para sigmoid: label / 3
+  const ys = tf.tensor1d(labels.map(l => l / 3), 'float32');
 
   // Entrenar
   const epochs = DEFAULT_CONFIG.epochs;
@@ -627,14 +577,13 @@ async function trainSingleModel(
     batchSize,
     validationSplit: useValidation ? DEFAULT_CONFIG.validationSplit : 0,
     shuffle: true,
-    classWeight,
     callbacks: {
       onEpochEnd: (epoch, logs) => {
         if ((epoch + 1) % 10 === 0 || epoch === 0) {
           const loss = logs?.loss?.toFixed(4) ?? '?';
-          const acc = (logs?.acc ?? logs?.accuracy)?.toFixed(4) ?? '?';
+          const mae = (logs?.mae)?.toFixed(4) ?? '?';
           const valLoss = logs?.val_loss?.toFixed(4) ?? '-';
-          logInfo(`  Época ${epoch + 1}/${epochs} — loss: ${loss} | acc: ${acc} | val_loss: ${valLoss}`);
+          logInfo(`  Época ${epoch + 1}/${epochs} — loss: ${loss} | mae: ${mae} | val_loss: ${valLoss}`);
         }
 
         // Early stopping basado en val_loss
@@ -657,12 +606,12 @@ async function trainSingleModel(
 
   // Obtener métricas finales
   const lossArr = history.history['loss'] as number[];
-  const accArr = (history.history['acc'] || history.history['accuracy']) as number[];
+  const maeArr = history.history['mae'] as number[];
   const finalLoss = lossArr[lossArr.length - 1];
-  const finalAcc = accArr[accArr.length - 1];
+  const finalMae = maeArr[maeArr.length - 1];
   const actualEpochs = lossArr.length;
 
-  logSuccess(`Entrenamiento completado — loss: ${finalLoss.toFixed(4)} | acc: ${finalAcc.toFixed(4)} | épocas: ${actualEpochs}/${epochs}${stoppedEarly ? ' (early stop)' : ''}`);
+  logSuccess(`Entrenamiento completado — loss(MSE): ${finalLoss.toFixed(4)} | mae: ${finalMae.toFixed(4)} | épocas: ${actualEpochs}/${epochs}${stoppedEarly ? ' (early stop)' : ''}`);
 
   // Guardar modelo actualizado a disco
   if (!fs.existsSync(modelPath)) {
@@ -680,7 +629,7 @@ async function trainSingleModel(
     trainedSongs: newTrainedSongs,
     completedEpochs: newEpochs,
     loss: finalLoss,
-    accuracy: finalAcc,
+    accuracy: finalMae,
     version: newVersion
   });
 
@@ -702,7 +651,7 @@ async function trainSingleModel(
       userScore: labels[i],
       configEpochs: epochs,
       loss: finalLoss,
-      accuracy: finalAcc,
+      accuracy: null,
       learningRate: tsModel.learningRate,
       batchSize
     });
@@ -842,26 +791,20 @@ async function runPrediction(songIds: number[]): Promise<void> {
       // Crear tensor de entrada (1, 128)
       const input = tf.tensor2d([Array.from(normalized)], [1, DEFAULT_CONFIG.inputDim]);
       const prediction = model.predict(input) as tf.Tensor;
-      const probs = await prediction.data();
+      const rawOutput = await prediction.data();
 
-      // Escalar probabilidades: softmax (0-1) → (0-100)
-      const probScore0 = probs[0] * 100;
-      const probScore1 = probs[1] * 100;
-      const probScore2 = probs[2] * 100;
-      const probScore3 = probs[3] * 100;
+      // Sigmoid produce [0,1], escalar × 3 → [0,3]
+      const globalScore = rawOutput[0] * 3;
 
-      // Calcular globalScore: media ponderada P(0)*0 + P(1)*1 + P(2)*2 + P(3)*3 → rango 0-3
-      const globalScore = probs[0] * 0 + probs[1] * 1 + probs[2] * 2 + probs[3] * 3;
+      // Calcular precisión: 100 - (|predicción - userScore| / 3) * 100
+      const userScore = song.userScore ?? 0;
+      const predictionAccuracy = Math.max(0, 100 - (Math.abs(globalScore - userScore) / 3) * 100);
 
-      logInfo(`  Canción ${song.id}: P=[${probScore0.toFixed(1)}, ${probScore1.toFixed(1)}, ${probScore2.toFixed(1)}, ${probScore3.toFixed(1)}] | global=${globalScore.toFixed(4)}`);
+      logInfo(`  Canción ${song.id}: predicción=${globalScore.toFixed(4)} | usuario=${userScore} | precisión=${predictionAccuracy.toFixed(1)}%`);
 
       // Actualizar tabla canciones
       await SongModel.updateTrainingResults(song.id!, {
-        globalScore,
-        probScore0,
-        probScore1,
-        probScore2,
-        probScore3
+        globalScore
       });
 
       // Preparar entrada de calibración
@@ -871,14 +814,10 @@ async function runPrediction(songIds: number[]): Promise<void> {
         interactionType: 'predict',
         interactionDate: now,
         globalScore,
-        userScore: song.userScore ?? 0,
+        userScore,
         configEpochs: globalModel.completedEpochs,
-        probScore0,
-        probScore1,
-        probScore2,
-        probScore3,
         loss: globalModel.loss,
-        accuracy: globalModel.accuracy,
+        accuracy: predictionAccuracy,
         learningRate: globalModel.learningRate,
         batchSize: globalModel.batchSize
       });

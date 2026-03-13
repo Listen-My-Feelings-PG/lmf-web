@@ -7,10 +7,6 @@ export class Song {
   public tsGlobalScore: number | null = null;
   public tsTrainLevelLocal: number = 0;
   public tsTrainLevelGlobal: number = 0;
-  public tsProbScore0: number | null = null;
-  public tsProbScore1: number | null = null;
-  public tsProbScore2: number | null = null;
-  public tsProbScore3: number | null = null;
   public tsFeaturesFileName: string | null = null;
   public idPlaylist?: number;
   public metadata?: {
