@@ -144,6 +144,19 @@ function meanPoolEmbeddings(data: Float32Array, shape: number[]): Float32Array {
   return result;
 }
 
+/**
+ * Normaliza un embedding VGGish dividiendo entre 255.
+ * VGGish produce embeddings cuantizados en rango [0, 255].
+ * Sin normalizar, la magnitud causa saturación de softmax y gradientes zero → mode collapse.
+ */
+function normalizeEmbedding(data: Float32Array): Float32Array {
+  const normalized = new Float32Array(data.length);
+  for (let i = 0; i < data.length; i++) {
+    normalized[i] = data[i] / 255.0;
+  }
+  return normalized;
+}
+
 // ─── Creación de modelo ──────────────────────────────────────────────────────
 /**
  * Crea la arquitectura del modelo de clasificación.
@@ -383,7 +396,8 @@ function prepareSongsForTraining(
     try {
       const npy = readNpy(featurePath);
       const pooled = meanPoolEmbeddings(npy.data, npy.shape);
-      features.push(pooled);
+      const normalized = normalizeEmbedding(pooled);
+      features.push(normalized);
       labels.push(song.userScore);
       songIds.push(song.id!);
     } catch (err) {
@@ -552,6 +566,13 @@ async function trainSingleModel(
   labels.forEach(l => classCount[l]++);
   logInfo(`Canciones a entrenar: ${features.length}`);
   logInfo(`Distribución de clases: 0=${classCount[0]}, 1=${classCount[1]}, 2=${classCount[2]}, 3=${classCount[3]}`);
+
+  // Diagnóstico: mostrar rango de features (ya normalizados)
+  const allVals = features.flatMap(f => Array.from(f));
+  const fMin = Math.min(...allVals.slice(0, 1000));
+  const fMax = Math.max(...allVals.slice(0, 1000));
+  const fMean = allVals.slice(0, 1000).reduce((a, b) => a + b, 0) / Math.min(allVals.length, 1000);
+  logInfo(`Features normalizados — min: ${fMin.toFixed(4)}, max: ${fMax.toFixed(4)}, mean: ${fMean.toFixed(4)}`);
 
   // Class weights balanceados: weight_i = N_total / (N_clases * N_i)
   // Compensa el desbalance de clases para evitar que el modelo colapse
@@ -816,9 +837,10 @@ async function runPrediction(songIds: number[]): Promise<void> {
       // Leer y procesar features
       const npy = readNpy(featurePath);
       const pooled = meanPoolEmbeddings(npy.data, npy.shape);
+      const normalized = normalizeEmbedding(pooled);
 
       // Crear tensor de entrada (1, 128)
-      const input = tf.tensor2d([Array.from(pooled)], [1, DEFAULT_CONFIG.inputDim]);
+      const input = tf.tensor2d([Array.from(normalized)], [1, DEFAULT_CONFIG.inputDim]);
       const prediction = model.predict(input) as tf.Tensor;
       const probs = await prediction.data();
 
