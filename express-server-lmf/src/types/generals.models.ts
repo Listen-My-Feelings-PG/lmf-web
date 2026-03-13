@@ -10,7 +10,7 @@ export interface Song {
     album: string,
     urlAlbumArt: string
   };
-  tsGlobalScore?: number;
+  tsPrediction?: number;
   tsTrainLevelLocal?: number;
   tsTrainLevelGlobal?: number;
   tsFeaturesFileName?: string;

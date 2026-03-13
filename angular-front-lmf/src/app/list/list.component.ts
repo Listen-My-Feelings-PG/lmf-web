@@ -30,6 +30,7 @@ export class ListComponent implements OnInit, OnDestroy, OnChanges {
   @Input('lockRate') lockRate: boolean;
   @Output('onSelectSong') onSelectSong: EventEmitter<Song>;
   @Output('onRateSong') onRateSong: EventEmitter<{ song: Song, score: UserScore }>;
+  @Output('onTuneSong') onTuneSong: EventEmitter<number>;
 
   private previousPlaylistId: number | null;
   private previousSongsCount: number;
@@ -39,7 +40,7 @@ export class ListComponent implements OnInit, OnDestroy, OnChanges {
   data = signal<Song[]>([]);
   globalFilter = signal('');
   columnOrder = signal<string[]>([
-    'id', 'title', 'artist', 'album', 'userScore', 'modelPrediction', 'fileName'
+    'id', 'title', 'artist', 'album', 'userScore', 'modelPrediction', 'tsTrainLevelGlobal', 'fileName'
   ]);
   selectedRows = signal<Set<number>>(new Set());
   hoveredRow = signal<number | null>(null);
@@ -58,6 +59,7 @@ export class ListComponent implements OnInit, OnDestroy, OnChanges {
     { accessorFn: row => row.metadata?.album, id: 'album', header: 'Álbum', cell: info => info.getValue() || '-', size: 150, minSize: 120, },
     { accessorKey: 'userScore', id: 'userScore', header: 'Rating', cell: info => info.getValue(), enableSorting: false, size: 130, minSize: 130, maxSize: 130, },
     { accessorFn: row => row, id: 'modelPrediction', header: 'Predicción', cell: info => info.getValue(), enableSorting: false, size: 180, minSize: 180, maxSize: 180, },
+    { accessorKey: 'tsTrainLevelGlobal', id: 'tsTrainLevelGlobal', header: 'Nivel Entren. Global', cell: info => info.getValue(), size: 120, minSize: 100, maxSize: 150, },
     { accessorKey: 'fileName', id: 'fileName', header: 'Nombre de archivo', cell: info => info.getValue(), minSize: 200, },
   ];
 
@@ -94,6 +96,7 @@ export class ListComponent implements OnInit, OnDestroy, OnChanges {
     this.onSelectSong = new EventEmitter<Song>();
     this.onRateSong = new EventEmitter<{ song: Song, score: UserScore }>();
     this.lockRate = false;
+    this.onTuneSong = new EventEmitter<number>();
 
     // Effect en constructor (contexto de inyección válido)
     effect(() => {
@@ -126,6 +129,11 @@ export class ListComponent implements OnInit, OnDestroy, OnChanges {
         }
       }
     });
+  }
+
+  trainSingleSong(idSong: number): void {
+    if (this.componentMode == 'child')
+      this.onTuneSong.emit(idSong);
   }
 
   ngOnChanges(changes: SimpleChanges): void {

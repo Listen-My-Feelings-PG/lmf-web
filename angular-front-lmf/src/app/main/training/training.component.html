@@ -229,9 +229,9 @@
   <!-- Lista de Canciones -->
   <div class="flex-1 min-h-0">
     <app-list [componentMode]="'child'"
-      [list]="listForTraining.list"
+      [list]="listForTraining.listFiltered"
       (onSelectSong)="playSong($event)"
-      (onRateSong)="rateSongByUser($event)"></app-list>
+      (onRateSong)="rateSongByUser($event)"
+      (onTuneSong)="tuneSong($event)"></app-list>
   </div>
-
 </div>

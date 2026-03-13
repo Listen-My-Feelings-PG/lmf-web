@@ -7,6 +7,10 @@ import { paths } from "../main";
 import { isExtractionActive } from "../services/feature-extraction.service";
 import { isTrainingActive, startTraining, isPredictionActive, startPrediction } from "../services/tensorflow.service";
 
+export async function tuneSingleSong(req: Request, res: Response): Promise<void> {
+  const idSong = parseInt(req.params.idSong, 10);
+}
+
 export async function serveSongById(req: Request, res: Response): Promise<void> {
   try {
     const idSong = parseInt(req.params.idSong, 10);
@@ -118,8 +122,8 @@ export async function trainSongsByIds(req: Request, res: Response): Promise<void
       return;
     }
 
-    if (!['clean', 'incremental'].includes(mode)) {
-      sendError(res, 'Modo de entrenamiento inválido. Use "clean" o "incremental".', BadRequest, null);
+    if (!['clean', 'infer'].includes(mode)) {
+      sendError(res, 'Modo de entrenamiento inválido. Use "clean" o "infer".', BadRequest, null);
       return;
     }
 

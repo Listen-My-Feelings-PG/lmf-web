@@ -45,11 +45,20 @@ export class HttpService {
     });
   }
 
-  getSongsScoredByUser(playlistsIds?: Array<number>): Promise<Array<Song>> { //Si no se especifica ninguna playlist: se cargan todas las canciones calificadas por el usuario de la playlist default.
+  getAllSongsByPlaylistId(idPlaylist: number): Promise<Array<Song>> {
     return new Promise((resolve, reject) => {
-      this.http.get<HttpResponseSuccess>(this.apiUrl + `/songs/scored-by-user/${playlistsIds !== undefined ? JSON.stringify(playlistsIds) : 'null'}`).subscribe({
+      this.http.get<HttpResponseSuccess>(this.apiUrl + `/playlists/content/${idPlaylist}`).subscribe({
         next: (response) => resolve(response.data as Array<Song>),
-        error: (error) => reject({ error, at: 'getSongsScoredByUser' })
+        error: (error) => reject({ error, at: 'getAllSongsByPlaylistId' })
+      });
+    });
+  }
+
+  tuneSongByIdSong(idSong: number): Promise<Song> {
+    return new Promise((resolve, reject) => {
+      this.http.post<HttpResponseSuccess>(this.apiUrl + `/songs/tune/${idSong}`, {}).subscribe({
+        next: (response) => resolve(response.data as Song),
+        error: (error) => reject({ error, at: 'tuneSongByIdSong' })
       });
     });
   }

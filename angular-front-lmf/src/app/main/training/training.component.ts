@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, effect, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Song } from '../../_types/generals.models';
@@ -13,11 +13,10 @@ import { UserScore } from '../../_types/generals.interfaces';
   templateUrl: './training.component.html',
   styleUrl: './training.component.scss'
 })
-export class TrainingComponent implements OnInit {
+export class TrainingComponent {
   listForTraining: {
-    list: Array<Song>,
-    listFull: Array<Song>,
-    playlistMode: 'multiple' | 'single'
+    listFiltered: Array<Song>,
+    list: Array<Song>
   }
 
   configPanelCollapsed = false;
@@ -31,19 +30,36 @@ export class TrainingComponent implements OnInit {
   constructor(private httpService: HttpService, private globalPlaylistService: GlobalPlaylistService) {
     this.selectedMode = 'clean';
     this.listForTraining = {
-      list: [],
-      playlistMode: 'single',
-      listFull: []
+      listFiltered: [],
+      list: []
+    }
+    effect(async () => {
+      const playlists = this.globalPlaylistService.getCurrentPlaylistList();
+      if (playlists.ok) {
+        const defaultPlaylist = playlists.value?.find(pl => pl.isDefault);
+        const songs = await this.httpService.getAllSongsByPlaylistId(defaultPlaylist?.id as number);
+        this.listForTraining.list = songs;
+        this.applyFiltersToList();
+      }
+    });
+  }
+
+  async tuneSong(idSong: number): Promise<void> {
+    const tunedSong = await this.httpService.tuneSongByIdSong(idSong);
+    const indexInList = this.listForTraining.list.findIndex(song => song.id === idSong);
+    if (indexInList !== -1) {
+      this.listForTraining.list[indexInList] = tunedSong;
+      this.applyFiltersToList();
     }
   }
 
   private applyFiltersToList(): void {
-    let filteredList = this.listForTraining.listFull;
+    let filteredList = this.listForTraining.list;
     filteredList = this.selectedMode === 'clean' ? filteredList.filter(song => song.tsTrainLevelGlobal === 0) : filteredList.filter(song => song.tsTrainLevelGlobal > 0)
     const ratingsSelected = Array.from(this.selectedRatings);
     if (ratingsSelected.length > 0)
       filteredList = filteredList.filter(song => ratingsSelected.includes(song.userScore as number));
-    this.listForTraining.list = filteredList;
+    this.listForTraining.listFiltered = filteredList;
   }
 
   setModality(mode: 'clean' | 'infer'): void {
@@ -51,25 +67,11 @@ export class TrainingComponent implements OnInit {
     this.applyFiltersToList();
   }
 
-  async ngOnInit(): Promise<void> {
-    try {
-      const scoredSongs = await this.httpService.getSongsScoredByUser();
-      this.listForTraining = {
-        listFull: scoredSongs,
-        playlistMode: 'single',
-        list: scoredSongs.filter((song) => song.tsTrainLevelGlobal === 0)
-      };
-      this.globalPlaylistService.setLockRate(false);
-    } catch (error) {
-      console.error('Error al cargar datos para entrenamiento:', error);
-    }
-  }
-
   playSong(event: Song): void {
     try {
       this.globalPlaylistService.setLockRate(false);
       this.globalPlaylistService.setSongList(
-        this.listForTraining.list,
+        this.listForTraining.listFiltered,
         { emptyPlaylistList: true, clearSelectedPlaylist: true }
       );
       this.globalPlaylistService.setSongPlaying(event);
@@ -82,7 +84,7 @@ export class TrainingComponent implements OnInit {
     try {
       this.httpService.rateSongByIdSong(event.song.id as number, event.score as UserScore).then(() => {
         const result = this.globalPlaylistService.setSongList(
-          this.listForTraining.list,
+          this.listForTraining.listFiltered,
           { emptyPlaylistList: true, clearSelectedPlaylist: true }
         );
         if (!result.ok) {
@@ -121,13 +123,14 @@ export class TrainingComponent implements OnInit {
   }
 
   async startTraining(): Promise<void> {
-    const songIds = this.listForTraining.list.map(song => song.id as number);
+    const songIds = this.listForTraining.listFiltered.map(song => song.id as number);
 
     if (songIds.length === 0) return;
 
     this.trainingMessage = null;
 
     try {
+      console.log('songIds', songIds);
       const result = await this.httpService.trainSongsByIds(songIds, this.selectedMode, false);
       this.trainingMessage = result.message;
       this.trainingMessageType = 'success';

@@ -42,8 +42,8 @@ class SongModel {
         updates.push('ca_metadata = ' + psql([songData.metadata ? JSON.stringify(songData.metadata) : null]));
       if (songData.dataType !== undefined)
         updates.push('ca_id_tipodato = ' + psql([songData.dataType === 'file' ? 1 : 2]));
-      if (songData.tsGlobalScore !== undefined)
-        updates.push('ca_ts_calif_global = ' + psql([songData.tsGlobalScore]));
+      if (songData.tsPrediction !== undefined)
+        updates.push('ca_ts_calif_global = ' + psql([songData.tsPrediction]));
       if (songData.tsTrainLevelLocal !== undefined)
         updates.push('ca_train_level_local = ' + psql([songData.tsTrainLevelLocal]));
       if (songData.tsTrainLevelGlobal !== undefined)
@@ -57,7 +57,7 @@ class SongModel {
           ${songData.userScore !== undefined ? psql`, ca_calif_usuario = ${songData.userScore}` : psql``}
           ${songData.metadata !== undefined ? psql`, ca_metadata = ${songData.metadata ? JSON.stringify(songData.metadata) : null}` : psql``}
           ${songData.dataType !== undefined ? psql`, ca_id_tipodato = ${songData.dataType === 'file' ? 1 : 2}` : psql``}
-          ${songData.tsGlobalScore !== undefined ? psql`, ca_ts_calif_global = ${songData.tsGlobalScore}` : psql``}
+          ${songData.tsPrediction !== undefined ? psql`, ca_ts_calif_global = ${songData.tsPrediction}` : psql``}
           ${songData.tsTrainLevelLocal !== undefined ? psql`, ca_train_level_local = ${songData.tsTrainLevelLocal}` : psql``}
           ${songData.tsTrainLevelGlobal !== undefined ? psql`, ca_train_level_global = ${songData.tsTrainLevelGlobal}` : psql``}
           ${songData.tsFeaturesFileName !== undefined ? psql`, ca_ts_features_filename = ${songData.tsFeaturesFileName}` : psql``}
@@ -130,7 +130,7 @@ class SongModel {
           ca_filesize as "fileSize",
           ca_id_tipodato,
           ca_metadata as metadata,
-          ca_ts_calif_global as "tsGlobalScore",
+          ca_ts_calif_global as "tsPrediction",
           ca_train_level_local as "tsTrainLevelLocal",
           ca_train_level_global as "tsTrainLevelGlobal",
           ca_ts_features_filename as "tsFeaturesFileName"
@@ -143,7 +143,7 @@ class SongModel {
         fileSize: song.fileSize,
         dataType: song.ca_id_tipodato === 1 ? 'file' : 'link',
         metadata: song.metadata && song.metadata.trim().startsWith('{') ? JSON.parse(song.metadata) : undefined,
-        tsGlobalScore: song.tsGlobalScore ?? null,
+        tsPrediction: song.tsPrediction ?? null,
         tsTrainLevelLocal: song.tsTrainLevelLocal ?? null,
         tsTrainLevelGlobal: song.tsTrainLevelGlobal ?? null,
         tsFeaturesFileName: song.tsFeaturesFileName ?? null
@@ -163,7 +163,7 @@ class SongModel {
           ca_filesize as "fileSize",
           ca_id_tipodato,
           ca_metadata as metadata,
-          ca_ts_calif_global as "tsGlobalScore",
+          ca_ts_calif_global as "tsPrediction",
           ca_train_level_local as "tsTrainLevelLocal",
           ca_train_level_global as "tsTrainLevelGlobal",
           ca_ts_features_filename as "tsFeaturesFileName"
@@ -176,7 +176,7 @@ class SongModel {
         fileSize: song.fileSize,
         dataType: song.ca_id_tipodato === 1 ? 'file' : 'link',
         metadata: song.metadata && song.metadata.trim().startsWith('{') ? JSON.parse(song.metadata) : undefined,
-        tsGlobalScore: song.tsGlobalScore ?? null,
+        tsPrediction: song.tsPrediction ?? null,
         tsTrainLevelLocal: song.tsTrainLevelLocal ?? null,
         tsTrainLevelGlobal: song.tsTrainLevelGlobal ?? null,
         tsFeaturesFileName: song.tsFeaturesFileName ?? null
@@ -196,7 +196,7 @@ class SongModel {
           ca_filesize as "fileSize",
           ca_id_tipodato,
           ca_metadata as metadata,
-          ca_ts_calif_global as "tsGlobalScore",
+          ca_ts_calif_global as "tsPrediction",
           ca_train_level_local as "tsTrainLevelLocal",
           ca_train_level_global as "tsTrainLevelGlobal",
           ca_ts_features_filename as "tsFeaturesFileName"
@@ -210,7 +210,7 @@ class SongModel {
         fileSize: song.fileSize,
         dataType: song.ca_id_tipodato === 1 ? 'file' : 'link',
         metadata: song.metadata && song.metadata.trim().startsWith('{') ? JSON.parse(song.metadata) : undefined,
-        tsGlobalScore: song.tsGlobalScore ?? null,
+        tsPrediction: song.tsPrediction ?? null,
         tsTrainLevelLocal: song.tsTrainLevelLocal ?? null,
         tsTrainLevelGlobal: song.tsTrainLevelGlobal ?? null,
         tsFeaturesFileName: song.tsFeaturesFileName ?? null
@@ -230,7 +230,7 @@ class SongModel {
           ca_filesize as "fileSize",
           ca_id_tipodato,
           ca_metadata as metadata,
-          ca_ts_calif_global as "tsGlobalScore",
+          ca_ts_calif_global as "tsPrediction",
           ca_train_level_local as "tsTrainLevelLocal",
           ca_train_level_global as "tsTrainLevelGlobal",
           ca_ts_features_filename as "tsFeaturesFileName"
@@ -244,7 +244,7 @@ class SongModel {
         fileSize: song.fileSize,
         dataType: song.ca_id_tipodato === 1 ? 'file' : 'link',
         metadata: song.metadata && song.metadata.trim().startsWith('{') ? JSON.parse(song.metadata) : undefined,
-        tsGlobalScore: song.tsGlobalScore ?? null,
+        tsPrediction: song.tsPrediction ?? null,
         tsTrainLevelLocal: song.tsTrainLevelLocal ?? null,
         tsTrainLevelGlobal: song.tsTrainLevelGlobal ?? null,
         tsFeaturesFileName: song.tsFeaturesFileName ?? null
@@ -278,7 +278,7 @@ class SongModel {
         fileSize: song.ca_filesize,
         dataType: song.ca_id_tipodato === 1 ? 'file' : 'link',
         metadata: song.ca_metadata && song.ca_metadata.trim().startsWith('{') ? JSON.parse(song.ca_metadata) : undefined,
-        tsGlobalScore: song.ca_ts_calif_global ?? null,
+        tsPrediction: song.ca_ts_calif_global ?? null,
         tsTrainLevelLocal: song.ca_train_level_local ?? null,
         tsTrainLevelGlobal: song.ca_train_level_global ?? null,
         tsFeaturesFileName: song.ca_ts_features_filename ?? null,
@@ -313,7 +313,7 @@ class SongModel {
           ca_filesize as "fileSize",
           ca_id_tipodato,
           ca_metadata as metadata,
-          ca_ts_calif_global as "tsGlobalScore",
+          ca_ts_calif_global as "tsPrediction",
           ca_train_level_local as "tsTrainLevelLocal",
           ca_train_level_global as "tsTrainLevelGlobal",
           ca_ts_features_filename as "tsFeaturesFileName",
@@ -329,7 +329,7 @@ class SongModel {
         fileSize: song.fileSize,
         dataType: song.ca_id_tipodato === 1 ? 'file' : 'link',
         metadata: song.metadata && song.metadata.trim().startsWith('{') ? JSON.parse(song.metadata) : undefined,
-        tsGlobalScore: song.tsGlobalScore ?? null,
+        tsPrediction: song.tsPrediction ?? null,
         tsTrainLevelLocal: song.tsTrainLevelLocal ?? null,
         tsTrainLevelGlobal: song.tsTrainLevelGlobal ?? null,
         tsFeaturesFileName: song.tsFeaturesFileName ?? null,
@@ -366,7 +366,7 @@ class SongModel {
         fileSize: song.ca_filesize,
         dataType: song.ca_id_tipodato === 1 ? 'file' : 'link',
         metadata: song.ca_metadata && song.ca_metadata.trim().startsWith('{') ? JSON.parse(song.ca_metadata) : undefined,
-        tsGlobalScore: song.ca_ts_calif_global ?? null,
+        tsPrediction: song.ca_ts_calif_global ?? null,
         tsTrainLevelLocal: song.ca_train_level_local ?? null,
         tsTrainLevelGlobal: song.ca_train_level_global ?? null,
         tsFeaturesFileName: song.ca_ts_features_filename ?? null,
@@ -391,7 +391,7 @@ class SongModel {
           ca_filesize as "fileSize",
           ca_id_tipodato,
           ca_metadata as metadata,
-          ca_ts_calif_global as "tsGlobalScore",
+          ca_ts_calif_global as "tsPrediction",
           ca_train_level_local as "tsTrainLevelLocal",
           ca_train_level_global as "tsTrainLevelGlobal",
           ca_ts_features_filename as "tsFeaturesFileName"
@@ -404,7 +404,7 @@ class SongModel {
         fileSize: song.fileSize,
         dataType: song.ca_id_tipodato === 1 ? 'file' : 'link',
         metadata: song.metadata && song.metadata.trim().startsWith('{') ? JSON.parse(song.metadata) : undefined,
-        tsGlobalScore: song.tsGlobalScore ?? null,
+        tsPrediction: song.tsPrediction ?? null,
         tsTrainLevelLocal: song.tsTrainLevelLocal ?? null,
         tsTrainLevelGlobal: song.tsTrainLevelGlobal ?? null,
         tsFeaturesFileName: song.tsFeaturesFileName ?? null
