@@ -1,5 +1,4 @@
-import { Component, OnInit, OnDestroy, effect } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnDestroy, effect } from '@angular/core';
 import { Song } from '../_types/generals.models';
 import { GlobalPlaylistService } from '../_services/global-playlist.service';
 import { HttpService } from '../_services/http.service';
@@ -7,7 +6,7 @@ import { UserScore } from '../_types/generals.interfaces';
 
 @Component({
   selector: 'app-player',
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './player.component.html',
   styleUrl: './player.component.scss'
 })

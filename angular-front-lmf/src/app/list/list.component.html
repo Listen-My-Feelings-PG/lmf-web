@@ -5,8 +5,8 @@
 }">
 
   <!-- Header Section -->
-  <div *ngIf="componentMode=='outlet'"
-    class="mb-6">
+  @if(componentMode=='outlet'){
+  <div class="mb-6">
     <div class="flex items-center justify-between mb-4">
       <div class="flex items-center space-x-3">
         <div class="w-16 h-16 bg-gray-950 border-2 border-primary rounded shadow-lg overflow-hidden">
@@ -42,6 +42,8 @@
       </div>
     </div>
   </div>
+  }
+
 
   <!-- Controls Section -->
   <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
