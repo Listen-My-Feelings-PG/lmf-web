@@ -23,5 +23,19 @@ export interface GlobalPlaylistSetup {
   initialized?: boolean
 }
 
+export interface Calibration {
+  userScore: UserScore;
+  tsPredictionGlobal: number | null;
+  tsPredictionLocal: number | null;
+  epochsTrainedGlobal: number;
+  epochsTrainedLocal: number;
+  accuracyGlobal: number | null;
+  accuracyLocal: number | null;
+  learningRateGlobal: number | null;
+  learningRateLocal: number | null;
+}
+
+export type TrainingModality = 'clean' | 'infer' | 'none';
+
 export type UserScore = 0 | 1 | 2 | 3 | null;
 

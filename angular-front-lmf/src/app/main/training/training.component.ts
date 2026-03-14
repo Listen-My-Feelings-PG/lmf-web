@@ -5,7 +5,7 @@ import { Song } from '../../_types/generals.models';
 import { HttpService } from '../../_services/http.service';
 import { ListComponent } from "../../list/list.component";
 import { GlobalPlaylistService } from '../../_services/global-playlist.service';
-import { UserScore } from '../../_types/generals.interfaces';
+import { TrainingModality, UserScore } from '../../_types/generals.interfaces';
 
 @Component({
   selector: 'app-training',
@@ -20,7 +20,7 @@ export class TrainingComponent {
   }
 
   configPanelCollapsed = false;
-  selectedMode: 'clean' | 'infer';
+  selectedMode: TrainingModality;
   selectedRatings: Set<number> = new Set();
 
   // Estado del botón de entrenamiento
@@ -28,7 +28,7 @@ export class TrainingComponent {
   trainingMessageType: 'success' | 'error' | 'locked' = 'success';
 
   constructor(private httpService: HttpService, private globalPlaylistService: GlobalPlaylistService) {
-    this.selectedMode = 'clean';
+    this.selectedMode = 'none';
     this.listForTraining = {
       listFiltered: [],
       list: []
@@ -56,14 +56,21 @@ export class TrainingComponent {
 
   private applyFiltersToList(): void {
     let filteredList = this.listForTraining.list;
-    filteredList = this.selectedMode === 'clean' ? filteredList.filter(song => song.tsTrainLevelGlobal === 0) : filteredList.filter(song => song.tsTrainLevelGlobal > 0)
+    switch (this.selectedMode) {
+      case 'clean':
+        filteredList = filteredList.filter(song => song.tsTrainLevelGlobal === 0);
+        break;
+      case 'infer':
+        filteredList = filteredList.filter(song => song.tsTrainLevelGlobal > 0);
+        break;
+    }
     const ratingsSelected = Array.from(this.selectedRatings);
     if (ratingsSelected.length > 0)
       filteredList = filteredList.filter(song => ratingsSelected.includes(song.userScore as number));
     this.listForTraining.listFiltered = filteredList;
   }
 
-  setModality(mode: 'clean' | 'infer'): void {
+  setModality(mode: TrainingModality): void {
     this.selectedMode = mode;
     this.applyFiltersToList();
   }
@@ -88,9 +95,8 @@ export class TrainingComponent {
           this.listForTraining.listFiltered,
           { emptyPlaylistList: true, clearSelectedPlaylist: true }
         );
-        if (!result.ok) {
+        if (!result.ok)
           console.error('Error al actualizar la lista de canciones:', result.error);
-        }
       }).catch(error => {
         console.error('Error al calificar canción:', error);
       });
@@ -124,8 +130,8 @@ export class TrainingComponent {
   }
 
   async startTraining(): Promise<void> {
-    const songIds = this.listForTraining.listFiltered.map(song => song.id as number);
-
+    const songIds = this.listForTraining.listFiltered.filter((s) => s.userScore !== null).map(song => song.id as number);
+    console.log('songIds', songIds);
     if (songIds.length === 0) return;
 
     this.trainingMessage = null;

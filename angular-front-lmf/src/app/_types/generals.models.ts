@@ -1,4 +1,4 @@
-import { UserScore } from "./generals.interfaces";
+import { Calibration, UserScore } from "./generals.interfaces";
 
 export class Song {
   public id?: number;
@@ -16,6 +16,7 @@ export class Song {
     album: string,
     urlAlbumArt: string
   };
+  public stats?: Array<Calibration>;
   constructor(data: Partial<Song> = {}) {
     Object.assign(this, data);
   }

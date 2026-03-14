@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Song } from '../_types/generals.models';
-import { HttpResponseSuccess, Playlist, UserScore } from '../_types/generals.interfaces';
+import { HttpResponseSuccess, Playlist, TrainingModality, UserScore } from '../_types/generals.interfaces';
 
 @Injectable({
   providedIn: 'root'
@@ -63,7 +63,7 @@ export class HttpService {
     });
   }
 
-  trainSongsByIds(songIds: number[], mode: 'clean' | 'infer', includeLocalTraining: boolean): Promise<{ success: boolean, message: string }> {
+  trainSongsByIds(songIds: number[], mode: TrainingModality, includeLocalTraining: boolean): Promise<{ success: boolean, message: string }> {
     return new Promise((resolve, reject) => {
       this.http.post<{ success: boolean, message: string }>(this.apiUrl + `/songs/train-songs-by-ids`, { songIds: JSON.stringify(songIds), mode, includeLocalTraining }).subscribe({
         next: (response) => resolve(response),

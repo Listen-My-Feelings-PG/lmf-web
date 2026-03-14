@@ -57,6 +57,11 @@
               Modalidad
             </label>
             <div class="flex items-center justify-center bg-gray-950 rounded-lg p-2 border border-gray-700">
+              <button (click)="setModality('none')"
+                [class]="selectedMode === 'none' ? 'flex-1 px-4 py-3 rounded-md font-semibold transition-all duration-200 bg-primary text-white shadow-lg' : 'flex-1 px-4 py-3 rounded-md font-semibold transition-all duration-200 text-gray-400 hover:text-gray-200 hover:bg-gray-800'">
+                <i class="fa-solid fa-list mr-2"></i>
+                Lista completa
+              </button>
               <button (click)="setModality('clean')"
                 [class]="selectedMode === 'clean' ? 'flex-1 px-4 py-3 rounded-md font-semibold transition-all duration-200 bg-primary text-white shadow-lg' : 'flex-1 px-4 py-3 rounded-md font-semibold transition-all duration-200 text-gray-400 hover:text-gray-200 hover:bg-gray-800'">
                 <i class="fas fa-graduation-cap mr-2"></i>
