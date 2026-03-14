@@ -1,21 +1,27 @@
-export interface Song {
-  id?: number;
-  userScore?: number;
-  fileName: string;
-  fileSize: number;
-  dataType: 'file' | 'link';
-  metadata?: {
+import { UserScore } from "./generals.types";
+
+export class Song {
+  public id?: number;
+  public fileName!: string;
+  public userScore: UserScore = null;
+  public tsPrediction: number | null = null;
+  public tsTrainLevelLocal: number = 0;
+  public tsTrainLevelGlobal: number = 0;
+  public tsFeaturesFileName: string | null = null;
+  public fileSize?: number;
+  public dataType?: 'file';
+  public idPlaylist?: number;
+  public accuracy?: number | null;
+  public metadata?: {
     title: string,
     artist: string,
     album: string,
     urlAlbumArt: string
   };
-  tsPrediction?: number;
-  tsTrainLevelLocal?: number;
-  tsTrainLevelGlobal?: number;
-  tsFeaturesFileName?: string;
-  idPlaylist?: number;
-  accuracy?: number | null;
+  public stats?: Array<Calibration>;
+  constructor(data: Partial<Song> = {}) {
+    Object.assign(this, data);
+  }
 }
 
 export interface Playlist {
@@ -50,7 +56,7 @@ export interface Calibration {
   id?: number;
   songId: number;
   modelId: number;
-  interactionType: 'fit' | 'predict' | 'infer';
+  interactionType: 'fit' | 'predict';
   interactionDate: Date;
   globalScore?: number;
   userScore: number;

@@ -17,6 +17,29 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
+--
+-- Name: lmf_db; Type: DATABASE; Schema: -; Owner: postgres
+--
+
+CREATE DATABASE lmf_db WITH TEMPLATE = template0 ENCODING = 'UTF8' LOCALE_PROVIDER = libc LOCALE = 'es_ES.UTF-8';
+
+
+ALTER DATABASE lmf_db OWNER TO postgres;
+
+\connect lmf_db
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
@@ -103,7 +126,6 @@ CREATE TABLE public.canciones (
     ca_calif_usuario integer,
     ca_filesize integer,
     ca_filename text,
-    ca_train_level_local integer DEFAULT 0 NOT NULL,
     ca_id_tipodato integer NOT NULL,
     ca_activo bit(1) DEFAULT '1'::"bit" NOT NULL,
     ca_metadata text,

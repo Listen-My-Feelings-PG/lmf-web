@@ -70,11 +70,10 @@ export async function syncStoragedSongs(audioPath: string): Promise<void> {
         const filePath = path.join(audioPath, fileName);
         const stats = fs.statSync(filePath);
 
-        const newSong: Song = {
+        const newSong = new Song({
           fileName,
-          fileSize: stats.size,
-          dataType: 'file'
-        };
+          fileSize: stats.size
+        });
 
         const result = await SongModel.newSong(newSong);
         newSongIds.push(result.id);

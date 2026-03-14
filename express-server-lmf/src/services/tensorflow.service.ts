@@ -913,7 +913,23 @@ export async function tuneSingleSongById(songId: number): Promise<Song> {
   // 5. Guardar modelo
   await model.save(nodeSaveHandler(modelPath));
 
-  // 6. Predecir inmediatamente
+  const now = new Date();
+
+  // 6. Registro de calibración tipo 'fit' (como en startTraining)
+  await CalibrationModel.create({
+    songId,
+    modelId: globalModel.id!,
+    interactionType: 'fit',
+    interactionDate: now,
+    userScore: song.userScore,
+    configEpochs: tuneEpochs,
+    loss: finalLoss,
+    accuracy: null,
+    learningRate: tuneLr,
+    batchSize: 1
+  });
+
+  // 7. Predecir inmediatamente
   const input = tf.tensor2d([featureArray], [1, DEFAULT_CONFIG.inputDim]);
   const prediction = model.predict(input) as tf.Tensor;
   const rawOutput = await prediction.data();
@@ -922,25 +938,28 @@ export async function tuneSingleSongById(songId: number): Promise<Song> {
 
   logSuccess(`  Canción ${songId}: predicción=${globalScore.toFixed(4)} | usuario=${song.userScore} | precisión=${predictionAccuracy.toFixed(1)}%`);
 
-  // 7. Actualizar BD
-  await SongModel.updateTrainingResults(songId, { globalScore });
+  // 8. Actualizar canción: globalScore + incrementar trainLevelGlobal
+  await SongModel.updateTrainingResults(songId, {
+    globalScore,
+    trainLevelGlobal: (song.tsTrainLevelGlobal || 0) + 1
+  });
 
-  const now = new Date();
+  // 9. Registro de calibración tipo 'predict' (como en startPrediction)
   await CalibrationModel.create({
     songId,
     modelId: globalModel.id!,
-    interactionType: 'infer',
+    interactionType: 'predict',
     interactionDate: now,
     globalScore,
     userScore: song.userScore,
-    configEpochs: tuneEpochs,
-    loss: finalLoss,
+    configEpochs: globalModel.completedEpochs,
+    loss: globalModel.loss,
     accuracy: predictionAccuracy,
-    learningRate: tuneLr,
-    batchSize: 1
+    learningRate: globalModel.learningRate,
+    batchSize: globalModel.batchSize
   });
 
-  // Actualizar versión del modelo
+  // 10. Actualizar versión del modelo
   await TsModelModel.updateAfterTraining(globalModel.id!, {
     trainedSongs: globalModel.trainedSongs,
     completedEpochs: (globalModel.completedEpochs || 0) + tuneEpochs,

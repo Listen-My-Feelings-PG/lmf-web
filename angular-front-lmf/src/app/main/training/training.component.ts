@@ -45,7 +45,6 @@ export class TrainingComponent {
   }
 
   async tuneSong(idSong: number): Promise<void> {
-    console.log('Fine-tuning canción con ID:', idSong);
     const tunedSong = await this.httpService.tuneSongByIdSong(idSong);
     const indexInList = this.listForTraining.list.findIndex(song => song.id === idSong);
     if (indexInList !== -1) {
@@ -55,7 +54,7 @@ export class TrainingComponent {
   }
 
   private applyFiltersToList(): void {
-    let filteredList = this.listForTraining.list;
+    let filteredList: Array<Song> = JSON.parse(JSON.stringify(this.listForTraining.list));
     switch (this.selectedMode) {
       case 'clean':
         filteredList = filteredList.filter(song => song.tsTrainLevelGlobal === 0);
@@ -131,13 +130,11 @@ export class TrainingComponent {
 
   async startTraining(): Promise<void> {
     const songIds = this.listForTraining.listFiltered.filter((s) => s.userScore !== null).map(song => song.id as number);
-    console.log('songIds', songIds);
     if (songIds.length === 0) return;
 
     this.trainingMessage = null;
 
     try {
-      console.log('songIds', songIds);
       const result = await this.httpService.trainSongsByIds(songIds, this.selectedMode, false);
       this.trainingMessage = result.message;
       this.trainingMessageType = 'success';

@@ -138,7 +138,7 @@ export async function trainSongsByIds(req: Request, res: Response): Promise<void
       return;
     }
 
-    if (!['clean', 'infer'].includes(mode)) {
+    if (!['clean', 'infer', 'none'].includes(mode)) {
       sendError(res, 'Modo de entrenamiento inválido. Use "clean" o "infer".', BadRequest, null);
       return;
     }

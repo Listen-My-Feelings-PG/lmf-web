@@ -44,3 +44,5 @@ export interface FileInfo {
  * Log level types
  */
 export type LogLevel = 'info' | 'error' | 'warn' | 'debug';
+
+export type UserScore = 0 | 1 | 2 | 3 | null;

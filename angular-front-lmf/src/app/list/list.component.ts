@@ -137,7 +137,6 @@ export class ListComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   trainSingleSong(idSong: number): void {
-    console.log('Entrenando canción con ID:', idSong);
     if (this.componentMode == 'child')
       this.onTuneSong.emit(idSong);
   }

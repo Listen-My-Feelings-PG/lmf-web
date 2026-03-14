@@ -87,9 +87,9 @@
           </th>
 
           @for (header of headerGroup.headers; track header.id) {
-          @if ((header.column.id === 'modelPrediction' || header.column.id === 'tsTrainLevelGlobal' || header.column.id ===
-          'accuracy' || header.column.id === 'tune') && componentMode !== 'child'
-          || (header.column.id === 'tune' && !showTuneButton))
+          @if ((header.column.id === 'modelPrediction' || header.column.id === 'tsTrainLevelGlobal' || header.column.id
+          ==='accuracy' || header.column.id === 'tune') && componentMode !== 'child'|| (header.column.id === 'tune' &&
+          !showTuneButton))
           {
           <!-- Skip child-only columns in outlet mode -->
           } @else {
