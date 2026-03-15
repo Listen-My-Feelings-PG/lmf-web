@@ -36,10 +36,10 @@ export class HttpService {
     });
   }
 
-  rateSongByIdSong(idSong: number, score: UserScore): Promise<void> {
+  rateSongByIdSong(idSong: number, score: UserScore): Promise<Song> {
     return new Promise((resolve, reject) => {
-      this.http.post(this.apiUrl + `/songs/rate/${idSong}`, { score }).subscribe({
-        next: () => resolve(),
+      this.http.post<HttpResponseSuccess>(this.apiUrl + `/songs/rate/${idSong}`, { score }).subscribe({
+        next: (response) => resolve(response.data as Song),
         error: (error) => reject({ error, at: 'rateSongByIdSong' })
       });
     });

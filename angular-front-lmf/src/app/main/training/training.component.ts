@@ -35,7 +35,7 @@ export class TrainingComponent {
     }
     effect(async () => {
       const playlists = this.globalPlaylistService.getCurrentPlaylistList();
-      if (playlists.ok) {
+      if (playlists.ok && playlists.value?.length) {
         const defaultPlaylist = playlists.value?.find(pl => pl.isDefault);
         const songs = await this.httpService.getAllSongsByPlaylistId(defaultPlaylist?.id as number);
         this.listForTraining.list = songs;
@@ -87,18 +87,14 @@ export class TrainingComponent {
     }
   }
 
-  rateSongByUser(event: { song: Song, score: UserScore }): void {
+  async rateSongByUser(event: { song: Song, score: UserScore }): Promise<void> {
     try {
-      this.httpService.rateSongByIdSong(event.song.id as number, event.score as UserScore).then(() => {
-        const result = this.globalPlaylistService.setSongList(
-          this.listForTraining.listFiltered,
-          { emptyPlaylistList: true, clearSelectedPlaylist: true }
-        );
-        if (!result.ok)
-          console.error('Error al actualizar la lista de canciones:', result.error);
-      }).catch(error => {
-        console.error('Error al calificar canción:', error);
-      });
+      const ratedSong = await this.httpService.rateSongByIdSong(event.song.id as number, event.score as UserScore);
+      let indexInList = this.listForTraining.listFiltered.findIndex(song => song.id === event.song.id);
+      if (indexInList !== -1) {
+        this.listForTraining.listFiltered[indexInList] = ratedSong;
+        this.listForTraining.listFiltered = [...this.listForTraining.listFiltered];
+      }
     } catch (error) {
       console.error('Error al calificar canción:', error);
     }

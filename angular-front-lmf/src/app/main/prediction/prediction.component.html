@@ -24,8 +24,7 @@
 
   <!-- Lista de Canciones -->
   <div class="flex-1 min-h-0">
-    <app-list [componentMode]="'child'"
-      [list]="listForTraining.list"
+    <app-list [list]="listForTraining.list"
       (onSelectSong)="playSong($event)"
       [lockRate]="true"></app-list>
   </div>

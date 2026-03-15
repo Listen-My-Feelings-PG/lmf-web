@@ -68,8 +68,8 @@ export async function rateSongById(req: Request, res: Response): Promise<void> {
     if (isNaN(idSong) || isNaN(score) || score < 0 || score > 3)
       sendError(res, 'ID de canción o puntuación inválidos', BadRequest, null);
     else {
-      await SongModel.setSongUserScoreByIdSong(idSong, score);
-      res.status(200).json({ success: true, message: 'Puntuación actualizada correctamente' });
+      const updatedSong = await SongModel.setSongUserScoreByIdSong(idSong, score);
+      res.status(200).json({ success: true, data: updatedSong, message: 'Puntuación actualizada correctamente' });
     }
   } catch (error) {
     sendError(res, 'Error al actualizar la puntuación de la canción', InternalServerError, error instanceof Error ? error : null);

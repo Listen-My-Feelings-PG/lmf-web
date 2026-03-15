@@ -257,7 +257,7 @@ export class PlayerComponent implements OnDestroy {
     }
   }
 
-  rateSong(score: number): void {
+  async rateSong(score: number): Promise<void> {
     if (this.setup.lockRate) return;
 
     // Validar que el score sea válido
@@ -272,16 +272,12 @@ export class PlayerComponent implements OnDestroy {
       return;
     }
 
-    this.httpService.rateSongByIdSong(currentSong.id, score as UserScore).then(() => {
-      try {
-        const result = this.globalPlaylistService.rateSongPlaying(score as UserScore);
-        if (!result.ok) {
-          console.error('Error al actualizar el rating localmente:', result.error);
-        }
-      } catch (error) {
-        console.error('Error al actualizar el rating localmente:', error);
-      }
-    }).catch(error => console.error('Error al calificar la canción:', error));
+    try {
+      const songRated = await this.httpService.rateSongByIdSong(currentSong.id, score as UserScore);
+      this.globalPlaylistService.rateSongPlaying(songRated.userScore as UserScore);
+    } catch (error) {
+      console.error('Error al calificar la canción:', error);
+    }
   }
 
   ngOnDestroy(): void {

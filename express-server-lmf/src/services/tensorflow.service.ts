@@ -892,7 +892,7 @@ export async function tuneSingleSongById(songId: number): Promise<Song> {
 
   // Fine-tune: LR reducido (1/10) para no destruir el conocimiento previo
   const tuneLr = globalModel.learningRate / 10;
-  const tuneEpochs = 10;
+  const tuneEpochs = process.env.TS_CONFIG_DEFAULT_FINE_TUNE_EPOCHS as unknown as number || 50;
   compileModel(model, tuneLr);
 
   // 4. Fine-tune con la canción

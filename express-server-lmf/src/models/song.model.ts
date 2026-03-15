@@ -282,14 +282,33 @@ class SongModel {
     }
   }
 
-  static async setSongUserScoreByIdSong(idSong: number, userScore: number): Promise<{ success: boolean }> {
+  static async setSongUserScoreByIdSong(idSong: number, userScore: number): Promise<Song> {
     try {
-      await psql`
+      const [song] = await psql<any[]>`
         UPDATE public.canciones
         SET ca_calif_usuario = ${userScore}
         WHERE ca_id = ${idSong} AND ca_activo = B'1'
+        RETURNING
+          ca_id as id,
+          ca_calif_usuario as "userScore",
+          ca_filename as "fileName",
+          ca_filesize as "fileSize",
+          ca_metadata as metadata,
+          ca_ts_calif_global as "tsPrediction",
+          ca_train_level_global as "tsTrainLevelGlobal",
+          ca_ts_features_filename as "tsFeaturesFileName"
       `;
-      return { success: true };
+      if (!song) throw new Error(`Canción ${idSong} no encontrada`);
+      return new Song({
+        id: song.id,
+        userScore: song.userScore ?? null,
+        fileName: song.fileName,
+        fileSize: song.fileSize,
+        metadata: song.metadata && song.metadata.trim().startsWith('{') ? JSON.parse(song.metadata) : undefined,
+        tsPrediction: song.tsPrediction ?? null,
+        tsTrainLevelGlobal: song.tsTrainLevelGlobal ?? null,
+        tsFeaturesFileName: song.tsFeaturesFileName ?? null
+      });
     } catch (error) {
       console.error('Error al actualizar la calificación de la canción:', error);
       throw error;

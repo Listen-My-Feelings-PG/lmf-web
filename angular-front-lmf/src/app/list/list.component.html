@@ -1,53 +1,5 @@
-<!-- Playlist Container -->
-<div [ngClass]="{
-  'flex flex-col h-full bg-gray-900 text-gray-100 border-2 border-gray-700 rounded-lg shadow-2xl p-6': componentMode !== 'child',
-  'flex flex-col h-full min-h-0': componentMode === 'child'
-}">
-
-  <!-- Header Section -->
-  @if(componentMode=='outlet'){
-  <div class="mb-6">
-    <div class="flex items-center justify-between mb-4">
-      <div class="flex items-center space-x-3">
-        <div class="w-16 h-16 bg-gray-950 border-2 border-primary rounded shadow-lg overflow-hidden">
-          @if (list.length > 0 && list[0].metadata?.urlAlbumArt) {
-          <img [src]="list[0].metadata?.urlAlbumArt"
-            alt="Album Art"
-            class="w-full h-full object-cover">
-          } @else {
-          <img src="https://via.placeholder.com/65x65/8278e6/ffffff?text=Album"
-            alt="Album Art"
-            class="w-full h-full object-cover">
-          }
-        </div>
-        <div>
-          <h2 class="text-2xl font-bold text-primary">
-            <i class="fas fa-music mr-2"></i>
-            {{ currentPlaylist?.name || 'Lista de reproducción' }}
-          </h2>
-          <p class="text-gray-400 text-sm">
-            <span class="font-mono">{{ list.length }}</span> canciones en total
-          </p>
-        </div>
-      </div>
-      <div class="flex items-center space-x-4 text-sm text-gray-400">
-        <span><i class="fas fa-user mr-1"></i>Various Artists</span>
-        <span><i class="fas fa-calendar mr-1"></i>2024</span>
-        <span><i class="fas fa-compact-disc mr-1"></i>Rock Collection</span>
-        <button [disabled]="true"
-          class="ml-4 px-4 py-2 bg-primary hover:bg-opacity-80 text-white font-semibold rounded-lg transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl">
-          <i class="fas fa-plus"></i>
-          Agregar canciones a la lista
-        </button>
-      </div>
-    </div>
-  </div>
-  }
-
-
-  <!-- Controls Section -->
+<div class="flex flex-col h-full min-h-0">
   <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
-    <!-- Page Size Selector -->
     <div class="flex items-center gap-3">
       <label class="text-gray-300 font-semibold">Mostrar</label>
       <select (change)="setPageSize(+$any($event.target).value)"
@@ -88,7 +40,7 @@
 
           @for (header of headerGroup.headers; track header.id) {
           @if ((header.column.id === 'modelPrediction' || header.column.id === 'tsTrainLevelGlobal' || header.column.id
-          ==='accuracy' || header.column.id === 'tune') && componentMode !== 'child'|| (header.column.id === 'tune' &&
+          ==='accuracy' || header.column.id === 'tune') && false|| (header.column.id === 'tune' &&
           !showTuneButton))
           {
           <!-- Skip child-only columns in outlet mode -->
@@ -164,7 +116,7 @@
           @for (cell of row.getVisibleCells(); track cell.id) {
           @if ((cell.column.id === 'modelPrediction' || cell.column.id === 'tsTrainLevelGlobal' || cell.column.id === 'accuracy'
           || cell.column.id === 'tune')
-          && componentMode !== 'child'
+          && false
           || (cell.column.id === 'tune' && !showTuneButton)) {
           <!-- Skip child-only columns in outlet mode -->
           } @else if (cell.column.id === 'id') {
@@ -214,7 +166,7 @@
               }
             </div>
           </td>
-          } @else if (cell.column.id === 'modelPrediction' && componentMode === 'child') {
+          } @else if (cell.column.id === 'modelPrediction' && true) {
           <!-- Model Prediction Column -->
           <td class="px-2 py-2">
             @if (row.original.tsPrediction !== null && row.original.tsPrediction !== undefined) {
@@ -223,19 +175,19 @@
               <div class="flex flex-col gap-1">
                 <!-- Icons row: thumbs down + 3 stars -->
                 <div class="flex items-center gap-1">
-                  <i [class]="+row.original.tsPrediction < 0.85
+                  <i [class]="+row.original.tsPrediction < env.tsPredictionThreshold1
                     ? 'fas fa-thumbs-down text-red-500'
                     : 'far fa-thumbs-down text-gray-600'"
                     class="text-xs"></i>
-                  <i [class]="+row.original.tsPrediction >= 0.85
+                  <i [class]="+row.original.tsPrediction >= env.tsPredictionThreshold1
                     ? 'fas fa-star text-yellow-400'
                     : 'far fa-star text-gray-600'"
                     class="text-xs"></i>
-                  <i [class]="+row.original.tsPrediction >= 1.75
+                  <i [class]="+row.original.tsPrediction >= env.tsPredictionThreshold2
                     ? 'fas fa-star text-yellow-400'
                     : 'far fa-star text-gray-600'"
                     class="text-xs"></i>
-                  <i [class]="+row.original.tsPrediction >= 2.8
+                  <i [class]="+row.original.tsPrediction >= env.tsPredictionThreshold3
                     ? 'fas fa-star text-yellow-400'
                     : 'far fa-star text-gray-600'"
                     class="text-xs"></i>
@@ -255,12 +207,12 @@
             <span class="text-gray-600 text-xs">—</span>
             }
           </td>
-          } @else if (cell.column.id === 'tsTrainLevelGlobal' && componentMode === 'child') {
+          } @else if (cell.column.id === 'tsTrainLevelGlobal' && true) {
           <!-- Train Level Global Column -->
           <td class="px-2 py-2 text-center">
             <span class="text-xs font-mono text-gray-300">{{ row.original.tsTrainLevelGlobal }}</span>
           </td>
-          } @else if (cell.column.id === 'accuracy' && componentMode === 'child') {
+          } @else if (cell.column.id === 'accuracy' && true) {
           <!-- Accuracy Column -->
           <td class="px-2 py-2 text-center">
             @if (row.original.accuracy !== null && row.original.accuracy !== undefined) {
@@ -270,7 +222,7 @@
             <span class="text-gray-600 text-xs">—</span>
             }
           </td>
-          } @else if (cell.column.id === 'tune' && componentMode === 'child') {
+          } @else if (cell.column.id === 'tune' ) {
           <!-- Tune Button Column -->
           <td class="px-2 py-2 text-center"
             (click)="$event.stopPropagation()">

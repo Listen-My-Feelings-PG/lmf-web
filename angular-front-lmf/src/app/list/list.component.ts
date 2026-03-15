@@ -16,6 +16,7 @@ import {
   ColumnDef,
 } from '@tanstack/angular-table';
 import { UserScore } from '../_types/generals.interfaces';
+import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-list',
@@ -23,9 +24,8 @@ import { UserScore } from '../_types/generals.interfaces';
   templateUrl: './list.component.html',
   styleUrl: './list.component.scss'
 })
-export class ListComponent implements OnInit, OnDestroy, OnChanges {
+export class ListComponent implements OnDestroy, OnChanges {
   @Input('list') list: Array<Song>;
-  @Input('componentMode') componentMode: 'outlet' | 'child';
   @Input('songPlaying') songPlaying: Song | null;
   @Input('lockRate') lockRate: boolean;
   @Input('showTuneButton') showTuneButton: boolean;
@@ -48,6 +48,9 @@ export class ListComponent implements OnInit, OnDestroy, OnChanges {
 
   // Helper methods for template
   Math = Math;
+
+  // Environment thresholds
+  env = environment;
 
   // Configuración de paginación
   maxPageButtons = 7; // Número de botones de página a mostrar
@@ -90,13 +93,12 @@ export class ListComponent implements OnInit, OnDestroy, OnChanges {
     initialState: { pagination: { pageSize: 25, }, },
   }));
 
-  constructor(private globalPlaylist: GlobalPlaylistService, private httpService: HttpService) {
+  constructor(private globalPlaylist: GlobalPlaylistService) {
     this.list = [];
     this.previousPlaylistId = null;
     this.previousSongsCount = 0;
     this.currentPlaylist = null;
     this.songPlaying = null;
-    this.componentMode = 'outlet';
     this.onSelectSong = new EventEmitter<Song>();
     this.onRateSong = new EventEmitter<{ song: Song, score: UserScore }>();
     this.lockRate = false;
@@ -105,91 +107,39 @@ export class ListComponent implements OnInit, OnDestroy, OnChanges {
 
     // Effect en constructor (contexto de inyección válido)
     effect(() => {
-      if (this.componentMode == 'outlet') {
-        const selectedPlaylist = this.globalPlaylist.selectedPlaylist();
-        const currentSongs = this.globalPlaylist.songList();
-        const songPlaying = this.globalPlaylist.currentSong();
+      const songPlaying = this.globalPlaylist.currentSong();
+      if (songPlaying) {
+        const indexInList = this.list.findIndex(song => song.id === songPlaying.id);
+        if (indexInList !== -1) {
+          const isNewSong = songPlaying.id !== this.songPlaying?.id;
+          const isScoreChanged = songPlaying.userScore !== this.list[indexInList].userScore;
 
-        const currentPlaylistId = selectedPlaylist?.id || null;
-        const currentSongsCount = currentSongs.length;
-        const playlistChanged = this.previousPlaylistId !== currentPlaylistId;
-        const songsCountChanged = this.previousSongsCount !== currentSongsCount;
-
-        // Detectar cambios en el contenido (ratings) comparando por referencia o valores
-        const songsContentChanged = currentSongs.some((song, index) => {
-          this.currentPlaylist = selectedPlaylist as Playlist;
-          const existingSong = this.list[index];
-          return !existingSong || song.userScore !== existingSong.userScore;
-        });
-
-        if (playlistChanged || songsCountChanged || songsContentChanged) {
-          this.previousPlaylistId = currentPlaylistId;
-          this.previousSongsCount = currentSongsCount;
-          this.list = currentSongs;
-          this.data.set(currentSongs);
+          if (isNewSong || isScoreChanged) {
+            this.list[indexInList] = songPlaying;
+            this.data.set([...this.list]);
+          }
         }
-
-        if (songPlaying && (songPlaying.id !== this.songPlaying?.id)) {
-          this.songPlaying = songPlaying;
-        }
+        this.songPlaying = songPlaying;
       }
     });
   }
 
   trainSingleSong(idSong: number): void {
-    if (this.componentMode == 'child')
-      this.onTuneSong.emit(idSong);
+    this.onTuneSong.emit(idSong);
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['list'] && changes['list'].currentValue)
-      this.data.set(changes['list'].currentValue);
-  }
-
-  ngOnInit(): void {
-    this.data.set(this.list);
-  }
-
-  selectSong(song: Song): void {
-    try {
-      if (song) {
-        if (this.componentMode == 'outlet') {
-          const result = this.globalPlaylist.setSongPlaying(song);
-          if (!result.ok) {
-            console.error('Error al reproducir la canción:', result.error);
-          }
-        } else {
-          this.onSelectSong.emit(song);
-        }
-      }
-    } catch (error) {
-      console.error('Error al reproducir la canción:', error);
+    if (this.list.length) {
+      this.data.set(this.list);
     }
   }
 
+  selectSong(song: Song): void {
+    this.onSelectSong.emit(song);
+  }
+
   rateSong(song: Song, score: UserScore): void {
-    if (this.componentMode == 'child')
-      this.onRateSong.emit({ song, score });
-    else
-      this.httpService.rateSongByIdSong(song.id!, score).then(() => {
-        try {
-          const updatedSongList = this.list.map(s =>
-            s.id === song.id
-              ? { ...s, userScore: score }
-              : s
-          );
-
-          this.list = updatedSongList;
-          this.data.set(updatedSongList);
-
-          const result = this.globalPlaylist.setSongList(updatedSongList);
-          if (!result.ok) {
-            console.error('Error al actualizar el rating localmente:', result.error);
-          }
-        } catch (error) {
-          console.error('Error al actualizar el rating localmente después de calificar la canción:', error);
-        }
-      }).catch(error => console.error('Error al calificar la canción:', error));
+    this.onRateSong.emit({ song, score });
   }
 
   isPlaying(song: Song): boolean {
