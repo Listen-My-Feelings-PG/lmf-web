@@ -4,9 +4,10 @@ import fs from 'fs';
 import { paths } from '../main';
 import SongModel from '../models/song.model';
 import TsModelModel from '../models/tensorflow-db.model';
-import CalibrationModel from '../models/calibration.model';
+import { TrainingRecordModel, PredictionRecordModel } from '../models/calibration.model';
+import type { TrainingEntry, PredictionEntry } from '../models/calibration.model';
 import PlaylistModel from '../models/playlist.model';
-import { Song, TensorFlowModel, Calibration } from '../types/generals.models';
+import { Song, TensorFlowModel } from '../types/generals.models';
 
 // ─── Configuración por defecto ───────────────────────────────────────────────
 const DEFAULT_CONFIG = {
@@ -634,32 +635,27 @@ async function trainSingleModel(
     version: newVersion
   });
 
-  // Preparar registros de calibración (batch)
-  // En modo 'fit' no se ejecutan predicciones — los campos de predicción se reservan
-  // para cuando el modelo entre en modo predicción.
-  const now = new Date();
-  const calibrationEntries: Omit<Calibration, 'id'>[] = [];
+  // Preparar registros de entrenamiento (batch)
+
+  // Determinar cuáles canciones ya tienen predicciones previas (isFineTuning)
+  const songsWithPredictions = await TrainingRecordModel.songsWithPredictions(trainSongIds);
+
+  const trainingEntries: TrainingEntry[] = [];
 
   for (let i = 0; i < trainSongIds.length; i++) {
-
-    // En modo 'fit' las columnas de predicción (globalScore, probScore0-3) se dejan nulas.
-    // Solo se llenan cuando el modelo entra en modo predicción.
-    calibrationEntries.push({
+    trainingEntries.push({
       songId: trainSongIds[i],
+      isFineTuning: songsWithPredictions.has(trainSongIds[i]),
       modelId: tsModel.id!,
-      interactionType: 'fit',
-      interactionDate: now,
       userScore: labels[i],
-      configEpochs: epochs,
+      epochs: actualEpochs,
       loss: finalLoss,
-      accuracy: null,
-      learningRate: tsModel.learningRate,
-      batchSize
+      batchSize,
+      validationSplit: useValidation ? DEFAULT_CONFIG.validationSplit : 0,
+      mae: finalMae
     });
 
     // Actualizar resultados en la canción
-    // En modo 'fit' solo se incrementa el trainLevel. Los campos de predicción
-    // (globalScore, probScore0-3) se reservan para cuando el modelo entre en modo predicción.
     const songUpdate: Parameters<typeof SongModel.updateTrainingResults>[1] = {};
 
     if (modelType === 'global') {
@@ -673,9 +669,9 @@ async function trainSingleModel(
     await SongModel.updateTrainingResults(trainSongIds[i], songUpdate);
   }
 
-  // Insertar calibración en batch
-  await CalibrationModel.createBatch(calibrationEntries);
-  logSuccess(`${calibrationEntries.length} registros de calibración guardados`);
+  // Insertar registros de entrenamiento en batch
+  await TrainingRecordModel.createBatch(trainingEntries);
+  logSuccess(`${trainingEntries.length} registros de entrenamiento guardados`);
 
   // Limpiar tensores
   xs.dispose();
@@ -725,7 +721,7 @@ export function startPrediction(songIds: number[]): void {
 /**
  * Flujo principal de predicción.
  * Carga el modelo global, ejecuta predict sobre cada canción y
- * publica los resultados en las tablas `canciones` y `calibracion`.
+ * publica los resultados en las tablas `canciones` y `predicciones`.
  */
 async function runPrediction(songIds: number[]): Promise<void> {
   logInfo('═'.repeat(60));
@@ -762,10 +758,13 @@ async function runPrediction(songIds: number[]): Promise<void> {
   compileModel(model, globalModel.learningRate);
   logSuccess('Modelo global cargado desde disco');
 
-  // 4. Predecir cada canción
+  // 4. Obtener último entrenamiento para cada canción (necesario para pd_id_last_fit)
+  const allSongIds = songs.map(s => s.id!);
+  const lastFitMap = await TrainingRecordModel.getLastFitIdForSongs(allSongIds);
+
+  // 5. Predecir cada canción
   const featuresDir = path.resolve(paths.features);
-  const now = new Date();
-  const calibrationEntries: Omit<Calibration, 'id'>[] = [];
+  const predictionEntries: PredictionEntry[] = [];
   let predicted = 0;
   let skipped = 0;
 
@@ -781,6 +780,11 @@ async function runPrediction(songIds: number[]): Promise<void> {
       logInfo(`  Canción ${song.id}: archivo de features no encontrado (${song.tsFeaturesFileName}). Omitiendo.`);
       skipped++;
       continue;
+    }
+
+    const lastFitId = lastFitMap.get(song.id!);
+    if (!lastFitId) {
+      logInfo(`  Canción ${song.id}: sin registro de entrenamiento previo. Omitiendo registro de predicción.`);
     }
 
     try {
@@ -811,20 +815,17 @@ async function runPrediction(songIds: number[]): Promise<void> {
         globalScore
       });
 
-      // Preparar entrada de calibración
-      calibrationEntries.push({
-        songId: song.id!,
-        modelId: globalModel.id!,
-        interactionType: 'predict',
-        interactionDate: now,
-        tsPrediction: globalScore,
-        userScore,
-        configEpochs: globalModel.completedEpochs,
-        loss: globalModel.loss,
-        accuracy: predictionAccuracy,
-        learningRate: globalModel.learningRate,
-        batchSize: globalModel.batchSize
-      });
+      // Preparar entrada de predicción (solo si hay registro de entrenamiento previo)
+      if (lastFitId) {
+        predictionEntries.push({
+          songId: song.id!,
+          modelId: globalModel.id!,
+          prediction: globalScore,
+          userScore: hasUserScore ? userScore : null,
+          accuracy: predictionAccuracy,
+          lastFitId
+        });
+      }
 
       predicted++;
 
@@ -837,13 +838,13 @@ async function runPrediction(songIds: number[]): Promise<void> {
     }
   }
 
-  // 5. Insertar registros de calibración en batch
-  if (calibrationEntries.length > 0) {
-    await CalibrationModel.createBatch(calibrationEntries);
-    logSuccess(`${calibrationEntries.length} registros de calibración guardados`);
+  // 6. Insertar registros de predicción en batch
+  if (predictionEntries.length > 0) {
+    await PredictionRecordModel.createBatch(predictionEntries);
+    logSuccess(`${predictionEntries.length} registros de predicción guardados`);
   }
 
-  // 6. Limpiar modelo
+  // 7. Limpiar modelo
   model.dispose();
 
   logInfo('─'.repeat(40));
@@ -914,20 +915,20 @@ export async function tuneSingleSongById(songId: number): Promise<Song> {
   // 5. Guardar modelo
   await model.save(nodeSaveHandler(modelPath));
 
-  const now = new Date();
+  const maeArr = history.history['mae'] as number[];
+  const finalMae = maeArr ? maeArr[maeArr.length - 1] : 0;
 
-  // 6. Registro de calibración tipo 'fit' (como en startTraining)
-  await CalibrationModel.create({
+  // 6. Registro de entrenamiento (fine-tuning siempre es true)
+  const trainingId = await TrainingRecordModel.create({
     songId,
+    isFineTuning: true,
     modelId: globalModel.id!,
-    interactionType: 'fit',
-    interactionDate: now,
     userScore: song.userScore,
-    configEpochs: tuneEpochs,
+    epochs: tuneEpochs,
     loss: finalLoss,
-    accuracy: null,
-    learningRate: tuneLr,
-    batchSize: 1
+    batchSize: 1,
+    validationSplit: 0,
+    mae: finalMae
   });
 
   // 7. Predecir inmediatamente
@@ -945,19 +946,14 @@ export async function tuneSingleSongById(songId: number): Promise<Song> {
     trainLevelGlobal: (song.tsTrainLevelGlobal || 0) + 1
   });
 
-  // 9. Registro de calibración tipo 'predict' (como en startPrediction)
-  await CalibrationModel.create({
+  // 9. Registro de predicción con referencia al entrenamiento recién creado
+  await PredictionRecordModel.create({
     songId,
     modelId: globalModel.id!,
-    interactionType: 'predict',
-    interactionDate: now,
-    tsPrediction: globalScore,
+    prediction: globalScore,
     userScore: song.userScore,
-    configEpochs: globalModel.completedEpochs,
-    loss: globalModel.loss,
     accuracy: predictionAccuracy,
-    learningRate: globalModel.learningRate,
-    batchSize: globalModel.batchSize
+    lastFitId: trainingId
   });
 
   // 10. Actualizar versión del modelo

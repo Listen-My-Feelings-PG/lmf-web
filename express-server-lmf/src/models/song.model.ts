@@ -253,16 +253,16 @@ class SongModel {
           ca_metadata,
           ca_ts_prediccion,
           ca_ts_features_filename,
-          latest_cal.cl_accuracy as accuracy
+          latest_pred.pd_accuracy
       FROM rel_playlists_canciones
       left join canciones on ca_id=pr_ca_id
       LEFT JOIN LATERAL (
-        SELECT cl_accuracy
-        FROM calibracion
-        WHERE cl_id_cancion = ca_id AND cl_tipo_interaccion = 'predict'
-        ORDER BY cl_fecha_interaccion DESC
+        SELECT pd_accuracy
+        FROM predicciones
+        WHERE pd_id_cancion = ca_id
+        ORDER BY pd_fecha DESC
         LIMIT 1
-      ) latest_cal ON true
+      ) latest_pred ON true
       where pr_pl_id=${idPlaylist} AND ca_activo = B'1'`;
       return songs.map(song => new Song({
         id: song.ca_id,
@@ -274,7 +274,7 @@ class SongModel {
         tsTrainLevelGlobal: song.ca_train_level_global ?? null,
         tsFeaturesFileName: song.ca_ts_features_filename ?? null,
         idPlaylist: idPlaylist,
-        accuracy: (song.ca_calif_usuario != null && song.ca_ts_prediccion != null && song.accuracy != null) ? parseFloat(song.accuracy) : null
+        accuracy: (song.ca_calif_usuario != null && song.ca_ts_prediccion != null && song.pd_accuracy != null) ? parseFloat(song.pd_accuracy) : null
       }));
     } catch (error) {
       console.error('Error al obtener canciones por ID de playlist:', error);
@@ -328,17 +328,17 @@ class SongModel {
           ca_train_level_global as "tsTrainLevelGlobal",
           ca_ts_features_filename as "tsFeaturesFileName",
           pr_pl_id as "idPlaylist",
-          latest_cal.cl_accuracy as accuracy
+          latest_pred.pd_accuracy as "predAccuracy"
         FROM rel_playlists_canciones
         left join canciones on ca_id=pr_ca_id
         left join playlists on pr_pl_id=pl_id
         LEFT JOIN LATERAL (
-          SELECT cl_accuracy
-          FROM calibracion
-          WHERE cl_id_cancion = ca_id AND cl_tipo_interaccion = 'predict'
-          ORDER BY cl_fecha_interaccion DESC
+          SELECT pd_accuracy
+          FROM predicciones
+          WHERE pd_id_cancion = ca_id
+          ORDER BY pd_fecha DESC
           LIMIT 1
-        ) latest_cal ON true
+        ) latest_pred ON true
         where pl_is_default = B'1' AND ca_activo = B'1'`;
       return songs.map(song => new Song({
         id: song.id,
@@ -350,7 +350,7 @@ class SongModel {
         tsTrainLevelGlobal: song.tsTrainLevelGlobal ?? null,
         tsFeaturesFileName: song.tsFeaturesFileName ?? null,
         idPlaylist: song.idPlaylist,
-        accuracy: (song.userScore != null && song.tsPrediction != null && song.accuracy != null) ? parseFloat(song.accuracy) : null
+        accuracy: (song.userScore != null && song.tsPrediction != null && song.predAccuracy != null) ? parseFloat(song.predAccuracy) : null
       }));
     } catch (error) {
       console.error('Error al obtener canciones sin predicción en playlist por defecto:', error);

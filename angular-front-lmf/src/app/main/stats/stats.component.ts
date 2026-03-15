@@ -23,10 +23,10 @@ export class StatsComponent {
         const songs = await this.httpService.getAllSongsByPlaylistId(defaultPlaylist?.id as number);
         const calibrationList = await this.httpService.getAllSongsCalibrationByIdPlaylist(defaultPlaylist?.id as number);
 
-        // Agrupar calibraciones "predict" por songId
+        // Agrupar calibraciones de predicción por songId
         const calibrationMap = new Map<number, Calibration[]>();
         for (const cal of calibrationList) {
-          if (cal.interactionType === 'predict') {
+          if (cal.prediction) {
             const existing = calibrationMap.get(cal.songId) || [];
             existing.push(cal);
             calibrationMap.set(cal.songId, existing);

@@ -53,16 +53,22 @@ export interface TensorFlowModel {
 }
 
 export interface Calibration {
-  id?: number;
+  id: number;
   songId: number;
   modelId: number;
-  interactionType: 'fit' | 'predict';
+  prediction?: {
+    prediction: number;
+    accuracy: number;
+    idLastFit: number | null;
+  },
+  training?: {
+    isFineTuning: boolean;
+    epochs: number;
+    loss: number;
+    batchSize: number;
+    validationSplit: number;
+    mae: number;
+  }
   interactionDate: Date;
-  tsPrediction?: number;
-  userScore: number;
-  configEpochs: number;
-  loss?: number;
-  accuracy?: number | null;
-  learningRate?: number;
-  batchSize?: number;
+  userScore?: number;
 }

@@ -216,7 +216,7 @@ export class StatsListComponent implements AfterViewChecked {
     );
 
     const labels = stats.map((_, i) => `${i + 1}`);
-    const accuracyData = stats.map(s => s.accuracy != null ? +s.accuracy : null);
+    const accuracyData = stats.map(s => s.prediction?.accuracy != null ? +s.prediction.accuracy : null);
 
     const ctx = canvas.getContext('2d')!;
     const gradient = ctx.createLinearGradient(0, 0, 0, canvas.parentElement?.clientHeight || 26);
@@ -263,7 +263,7 @@ export class StatsListComponent implements AfterViewChecked {
     );
 
     const labels = stats.map((_, i) => `#${i + 1}`);
-    const accuracyData = stats.map(s => s.accuracy != null ? +s.accuracy : null);
+    const accuracyData = stats.map(s => s.prediction?.accuracy != null ? +s.prediction.accuracy : null);
 
     const ctx = canvas.getContext('2d')!;
     const h = canvas.parentElement?.clientHeight || 200;
@@ -322,7 +322,7 @@ export class StatsListComponent implements AfterViewChecked {
             callbacks: {
               title: (items) => {
                 const cal = stats[items[0].dataIndex];
-                return `Interacci\u00f3n #${items[0].dataIndex + 1} — ${new Date(cal.interactionDate).toLocaleString()}`;
+                return `Predicción #${items[0].dataIndex + 1} — ${new Date(cal.interactionDate).toLocaleString()}`;
               },
               label: () => '',
               afterBody: (items) => {
@@ -330,14 +330,10 @@ export class StatsListComponent implements AfterViewChecked {
                 return [
                   `ID: ${cal.id}`,
                   `Canci\u00f3n ID: ${cal.songId}  |  Modelo ID: ${cal.modelId}`,
-                  `Tipo: ${cal.interactionType}`,
-                  `Predicci\u00f3n: ${cal.tsPrediction != null ? (+cal.tsPrediction).toFixed(5) : 'N/A'}`,
-                  `Precisi\u00f3n: ${cal.accuracy != null ? (+cal.accuracy).toFixed(4) + '%' : 'N/A'}`,
-                  `User Score: ${cal.userScore}`,
-                  `\u00c9pocas: ${cal.configEpochs}`,
-                  `Loss: ${cal.loss != null ? (+cal.loss).toFixed(6) : 'N/A'}`,
-                  `Learning Rate: ${cal.learningRate ?? 'N/A'}`,
-                  `Batch Size: ${cal.batchSize ?? 'N/A'}`,
+                  `Predicción: ${cal.prediction?.prediction != null ? (+cal.prediction.prediction).toFixed(5) : 'N/A'}`,
+                  `Precisión: ${cal.prediction?.accuracy != null ? (+cal.prediction.accuracy).toFixed(4) + '%' : 'N/A'}`,
+                  `User Score: ${cal.userScore ?? 'N/A'}`,
+                  `Último Entren. ID: ${cal.prediction?.idLastFit ?? 'N/A'}`,
                 ];
               }
             }

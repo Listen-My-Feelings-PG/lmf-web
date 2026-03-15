@@ -27,15 +27,21 @@ export interface Calibration {
   id?: number;
   songId: number;
   modelId: number;
-  interactionType: 'fit' | 'predict';
-  interactionDate: string;
-  tsPrediction?: number;
-  userScore: number;
-  configEpochs: number;
-  loss?: number;
-  accuracy?: number | null;
-  learningRate?: number;
-  batchSize?: number;
+  prediction?: {
+    prediction: number;
+    accuracy: number;
+    idLastFit: number | null;
+  },
+  training?: {
+    isFineTuning: boolean;
+    epochs: number;
+    loss: number;
+    batchSize: number;
+    validationSplit: number;
+    mae: number;
+  }
+  interactionDate: Date;
+  userScore?: number;
 }
 
 export type TrainingModality = 'clean' | 'infer' | 'none';

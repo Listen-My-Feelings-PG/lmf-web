@@ -1,5 +1,13 @@
 import { Router } from 'express';
-import { rateSongById, serveSongById, getAllSongsScoredByUserInPlaylists, trainSongsByIds, getSongsForPrediction, predictSongsByIds, tuneSingleSong } from '../controllers/song.controller';
+import {
+  rateSongById,
+  serveSongById,
+  getAllSongsScoredByUserInPlaylists,
+  trainSongsByIds,
+  getSongsForPrediction,
+  predictSongsByIds,
+  tuneSingleSong
+} from '../controllers/song.controller';
 
 const router: Router = Router();
 

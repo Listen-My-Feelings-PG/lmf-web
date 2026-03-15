@@ -130,7 +130,7 @@ export async function trainSongsByIds(req: Request, res: Response): Promise<void
       return;
     }
 
-    const mode = req.body.mode || 'clean';
+    const mode = req.body.mode;
     const includeLocalTraining = req.body.includeLocalTraining === 'true' || req.body.includeLocalTraining === true;
 
     if (!songIds || !Array.isArray(songIds) || songIds.length === 0) {
