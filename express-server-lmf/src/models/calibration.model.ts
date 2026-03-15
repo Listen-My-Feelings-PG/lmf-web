@@ -14,7 +14,7 @@ export default class CalibrationModel {
           cl_id_modelo,
           cl_tipo_interaccion,
           cl_fecha_interaccion,
-          cl_ts_calif_global,
+          cl_ts_prediccion,
           cl_user_score,
           cl_ts_config_epocas,
           cl_loss,
@@ -52,7 +52,7 @@ export default class CalibrationModel {
         cl_id_modelo: e.modelId,
         cl_tipo_interaccion: e.interactionType,
         cl_fecha_interaccion: e.interactionDate,
-        cl_ts_calif_global: e.tsPrediction ?? null,
+        cl_ts_prediccion: e.tsPrediction ?? null,
         cl_user_score: e.userScore,
         cl_ts_config_epocas: e.configEpochs,
         cl_loss: e.loss ?? null,
@@ -64,7 +64,7 @@ export default class CalibrationModel {
       await psql`
         INSERT INTO public.calibracion ${psql(rows,
         'cl_id_cancion', 'cl_id_modelo', 'cl_tipo_interaccion',
-        'cl_fecha_interaccion', 'cl_ts_calif_global', 'cl_user_score',
+        'cl_fecha_interaccion', 'cl_ts_prediccion', 'cl_user_score',
         'cl_ts_config_epocas', 'cl_loss', 'cl_accuracy',
         'cl_learning_rate', 'cl_batch_size'
       )}

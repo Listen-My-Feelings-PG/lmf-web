@@ -41,7 +41,7 @@ class SongModel {
       if (songData.metadata !== undefined)
         updates.push('ca_metadata = ' + psql([songData.metadata ? JSON.stringify(songData.metadata) : null]));
       if (songData.tsPrediction !== undefined)
-        updates.push('ca_ts_calif_global = ' + psql([songData.tsPrediction]));
+        updates.push('ca_ts_prediccion = ' + psql([songData.tsPrediction]));
       if (songData.tsTrainLevelGlobal !== undefined)
         updates.push('ca_train_level_global = ' + psql([songData.tsTrainLevelGlobal]));
       if (updates.length === 0)
@@ -52,7 +52,7 @@ class SongModel {
           ${songData.fileName !== undefined ? psql`ca_filename = ${songData.fileName}` : psql``}
           ${songData.userScore !== undefined ? psql`, ca_calif_usuario = ${songData.userScore}` : psql``}
           ${songData.metadata !== undefined ? psql`, ca_metadata = ${songData.metadata ? JSON.stringify(songData.metadata) : null}` : psql``}
-          ${songData.tsPrediction !== undefined ? psql`, ca_ts_calif_global = ${songData.tsPrediction}` : psql``}
+          ${songData.tsPrediction !== undefined ? psql`, ca_ts_prediccion = ${songData.tsPrediction}` : psql``}
           ${songData.tsTrainLevelGlobal !== undefined ? psql`, ca_train_level_global = ${songData.tsTrainLevelGlobal}` : psql``}
           ${songData.tsFeaturesFileName !== undefined ? psql`, ca_ts_features_filename = ${songData.tsFeaturesFileName}` : psql``}
         WHERE ca_id = ${id}
@@ -124,7 +124,7 @@ class SongModel {
           ca_filesize as "fileSize",
           ca_id_tipodato,
           ca_metadata as metadata,
-          ca_ts_calif_global as "tsPrediction",
+          ca_ts_prediccion as "tsPrediction",
           ca_train_level_global as "tsTrainLevelGlobal",
           ca_ts_features_filename as "tsFeaturesFileName"
         FROM public.canciones
@@ -155,7 +155,7 @@ class SongModel {
           ca_filesize as "fileSize",
           ca_id_tipodato,
           ca_metadata as metadata,
-          ca_ts_calif_global as "tsPrediction",
+          ca_ts_prediccion as "tsPrediction",
           ca_train_level_global as "tsTrainLevelGlobal",
           ca_ts_features_filename as "tsFeaturesFileName"
         FROM public.canciones
@@ -186,7 +186,7 @@ class SongModel {
           ca_filesize as "fileSize",
           ca_id_tipodato,
           ca_metadata as metadata,
-          ca_ts_calif_global as "tsPrediction",
+          ca_ts_prediccion as "tsPrediction",
           ca_train_level_global as "tsTrainLevelGlobal",
           ca_ts_features_filename as "tsFeaturesFileName"
         FROM public.canciones
@@ -218,7 +218,7 @@ class SongModel {
           ca_filesize as "fileSize",
           ca_id_tipodato,
           ca_metadata as metadata,
-          ca_ts_calif_global as "tsPrediction",
+          ca_ts_prediccion as "tsPrediction",
           ca_train_level_global as "tsTrainLevelGlobal",
           ca_ts_features_filename as "tsFeaturesFileName"
         FROM public.canciones
@@ -251,7 +251,7 @@ class SongModel {
           ca_train_level_global,
           ca_id_tipodato,
           ca_metadata,
-          ca_ts_calif_global,
+          ca_ts_prediccion,
           ca_ts_features_filename,
           latest_cal.cl_accuracy as accuracy
       FROM rel_playlists_canciones
@@ -270,11 +270,11 @@ class SongModel {
         fileName: song.ca_filename,
         fileSize: song.ca_filesize,
         metadata: song.ca_metadata && song.ca_metadata.trim().startsWith('{') ? JSON.parse(song.ca_metadata) : undefined,
-        tsPrediction: song.ca_ts_calif_global ?? null,
+        tsPrediction: song.ca_ts_prediccion ?? null,
         tsTrainLevelGlobal: song.ca_train_level_global ?? null,
         tsFeaturesFileName: song.ca_ts_features_filename ?? null,
         idPlaylist: idPlaylist,
-        accuracy: (song.ca_calif_usuario != null && song.ca_ts_calif_global != null && song.accuracy != null) ? parseFloat(song.accuracy) : null
+        accuracy: (song.ca_calif_usuario != null && song.ca_ts_prediccion != null && song.accuracy != null) ? parseFloat(song.accuracy) : null
       }));
     } catch (error) {
       console.error('Error al obtener canciones por ID de playlist:', error);
@@ -294,7 +294,7 @@ class SongModel {
           ca_filename as "fileName",
           ca_filesize as "fileSize",
           ca_metadata as metadata,
-          ca_ts_calif_global as "tsPrediction",
+          ca_ts_prediccion as "tsPrediction",
           ca_train_level_global as "tsTrainLevelGlobal",
           ca_ts_features_filename as "tsFeaturesFileName"
       `;
@@ -324,7 +324,7 @@ class SongModel {
           ca_filesize as "fileSize",
           ca_id_tipodato,
           ca_metadata as metadata,
-          ca_ts_calif_global as "tsPrediction",
+          ca_ts_prediccion as "tsPrediction",
           ca_train_level_global as "tsTrainLevelGlobal",
           ca_ts_features_filename as "tsFeaturesFileName",
           pr_pl_id as "idPlaylist",
@@ -368,7 +368,7 @@ class SongModel {
           ca_train_level_global,
           ca_id_tipodato,
           ca_metadata,
-          ca_ts_calif_global,
+          ca_ts_prediccion,
           ca_ts_features_filename,
           pr_pl_id as "idPlaylist"
       FROM rel_playlists_canciones
@@ -381,7 +381,7 @@ class SongModel {
         fileName: song.ca_filename,
         fileSize: song.ca_filesize,
         metadata: song.ca_metadata && song.ca_metadata.trim().startsWith('{') ? JSON.parse(song.ca_metadata) : undefined,
-        tsPrediction: song.ca_ts_calif_global ?? null,
+        tsPrediction: song.ca_ts_prediccion ?? null,
         tsTrainLevelGlobal: song.ca_train_level_global ?? null,
         tsFeaturesFileName: song.ca_ts_features_filename ?? null,
         idPlaylist: song.idPlaylist
@@ -405,7 +405,7 @@ class SongModel {
           ca_filesize as "fileSize",
           ca_id_tipodato,
           ca_metadata as metadata,
-          ca_ts_calif_global as "tsPrediction",
+          ca_ts_prediccion as "tsPrediction",
           ca_train_level_global as "tsTrainLevelGlobal",
           ca_ts_features_filename as "tsFeaturesFileName"
         FROM public.canciones
@@ -456,7 +456,7 @@ class SongModel {
         UPDATE public.canciones
         SET
           ca_train_level_global = COALESCE(${data.trainLevelGlobal ?? null}, ca_train_level_global),
-          ca_ts_calif_global = COALESCE(${data.globalScore ?? null}, ca_ts_calif_global)
+          ca_ts_prediccion = COALESCE(${data.globalScore ?? null}, ca_ts_prediccion)
         WHERE ca_id = ${songId} AND ca_activo = B'1'
       `;
     } catch (error) {

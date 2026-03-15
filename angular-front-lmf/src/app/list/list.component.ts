@@ -124,7 +124,7 @@ export class ListComponent implements OnDestroy, OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (this.list.length) {
+    if (changes['list'] && changes['list'].currentValue) {
       this.data.set(this.list);
     }
   }

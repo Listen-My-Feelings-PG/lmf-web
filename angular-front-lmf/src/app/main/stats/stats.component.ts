@@ -38,7 +38,6 @@ export class StatsComponent {
           song.stats = calibrationMap.get(song.id!) || [];
           return song;
         });
-        console.log('Lista de canciones con stats actualizada:', this.songList);
       }
     });
   }

@@ -55,13 +55,10 @@ export class TrainingComponent {
 
   private applyFiltersToList(): void {
     let filteredList: Array<Song> = JSON.parse(JSON.stringify(this.listForTraining.list));
-    switch (this.selectedMode) {
-      case 'clean':
-        filteredList = filteredList.filter(song => song.tsTrainLevelGlobal === 0);
-        break;
-      case 'infer':
-        filteredList = filteredList.filter(song => song.tsTrainLevelGlobal > 0);
-        break;
+    if (this.selectedMode === 'clean') {
+      filteredList = filteredList.filter(song => song.tsTrainLevelGlobal == 0);
+    } else if (this.selectedMode === 'infer') {
+      filteredList = filteredList.filter(song => song.tsTrainLevelGlobal > 0);
     }
     const ratingsSelected = Array.from(this.selectedRatings);
     if (ratingsSelected.length > 0)

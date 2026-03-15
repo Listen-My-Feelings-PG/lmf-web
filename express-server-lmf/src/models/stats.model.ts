@@ -11,7 +11,7 @@ class StatsModel {
           c.cl_id_modelo AS "modelId",
           c.cl_tipo_interaccion AS "interactionType",
           c.cl_fecha_interaccion AS "interactionDate",
-          c.cl_ts_calif_global AS "tsPrediction",
+          c.cl_ts_prediccion AS "tsPrediction",
           c.cl_user_score AS "userScore",
           c.cl_ts_config_epocas AS "configEpochs",
           c.cl_loss AS loss,

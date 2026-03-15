@@ -16,6 +16,7 @@ const DEFAULT_CONFIG = {
   numClasses: parseInt(process.env.TS_CONFIG_DEAFULT_NUM_CLASSES || '4'),
   inputDim: parseInt(process.env.TS_CONFIG_DEAFULT_INPUT_DIM || '128'), // VGGish embedding dimension
   validationSplit: parseFloat(process.env.TS_CONFIG_DEAFULT_VALIDATION_SPLIT || '0.2'),
+  fineTuningEpochs: parseInt(process.env.TS_CONFIG_DEAFULT_FINE_TUNING_EPOCHS || '50'),
 };
 
 const ARCHITECTURE_JSON = JSON.stringify({
@@ -98,13 +99,13 @@ function readNpy(filePath: string): { data: Float32Array; shape: number[] } {
   new Uint8Array(aligned).set(dataBuffer);
 
   let data: Float32Array;
-  if (dtype.includes('f4')) {
+  if (dtype.includes('f4'))
     data = new Float32Array(aligned);
-  } else if (dtype.includes('f8')) {
+  else if (dtype.includes('f8'))
     data = Float32Array.from(new Float64Array(aligned));
-  } else {
+  else
     throw new Error(`Dtype no soportado: ${dtype}`);
-  }
+
 
   // Transponer de Fortran order (column-major) a C order (row-major) si es necesario.
   // Fortran almacena los datos columna por columna: el elemento [i,j] está en índice j*rows + i.
@@ -800,7 +801,7 @@ async function runPrediction(songIds: number[]): Promise<void> {
       const hasUserScore = song.userScore !== undefined && song.userScore !== null;
       const userScore = song.userScore ?? 0;
       const predictionAccuracy = hasUserScore
-        ? Math.max(0, 100 - (Math.abs(globalScore - userScore) / 3) * 100)
+        ? Math.min(99.9999, Math.max(0, 100 - (Math.abs(globalScore - userScore) / 3) * 100))
         : null;
 
       logInfo(`  Canción ${song.id}: predicción=${globalScore.toFixed(4)} | usuario=${hasUserScore ? userScore : 'N/A'} | precisión=${predictionAccuracy !== null ? predictionAccuracy.toFixed(1) + '%' : 'N/A'}`);
@@ -892,7 +893,7 @@ export async function tuneSingleSongById(songId: number): Promise<Song> {
 
   // Fine-tune: LR reducido (1/10) para no destruir el conocimiento previo
   const tuneLr = globalModel.learningRate / 10;
-  const tuneEpochs = process.env.TS_CONFIG_DEFAULT_FINE_TUNE_EPOCHS as unknown as number || 50;
+  const tuneEpochs = DEFAULT_CONFIG.fineTuningEpochs;
   compileModel(model, tuneLr);
 
   // 4. Fine-tune con la canción
@@ -934,7 +935,7 @@ export async function tuneSingleSongById(songId: number): Promise<Song> {
   const prediction = model.predict(input) as tf.Tensor;
   const rawOutput = await prediction.data();
   const globalScore = rawOutput[0] * 3;
-  const predictionAccuracy = Math.max(0, 100 - (Math.abs(globalScore - song.userScore) / 3) * 100);
+  const predictionAccuracy = Math.min(99.9999, Math.max(0, 100 - (Math.abs(globalScore - song.userScore) / 3) * 100));
 
   logSuccess(`  Canción ${songId}: predicción=${globalScore.toFixed(4)} | usuario=${song.userScore} | precisión=${predictionAccuracy.toFixed(1)}%`);
 
