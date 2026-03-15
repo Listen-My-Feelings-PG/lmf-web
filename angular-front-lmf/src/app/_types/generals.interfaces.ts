@@ -24,15 +24,18 @@ export interface GlobalPlaylistSetup {
 }
 
 export interface Calibration {
-  userScore: UserScore;
-  tsPredictionGlobal: number | null;
-  tsPredictionLocal: number | null;
-  epochsTrainedGlobal: number;
-  epochsTrainedLocal: number;
-  accuracyGlobal: number | null;
-  accuracyLocal: number | null;
-  learningRateGlobal: number | null;
-  learningRateLocal: number | null;
+  id?: number;
+  songId: number;
+  modelId: number;
+  interactionType: 'fit' | 'predict';
+  interactionDate: string;
+  tsPrediction?: number;
+  userScore: number;
+  configEpochs: number;
+  loss?: number;
+  accuracy?: number | null;
+  learningRate?: number;
+  batchSize?: number;
 }
 
 export type TrainingModality = 'clean' | 'infer' | 'none';
