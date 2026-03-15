@@ -41,7 +41,7 @@ export class MainComponent implements OnInit {
     }
   }
 
-  navigateTo(view: 'training' | 'prediction'): void {
+  navigateTo(view: 'training' | 'prediction' | 'stats'): void {
     this.router.navigate([`/main/${view}`]).catch(error => console.error(`Error al navegar a ${view}:`, error));
   }
 

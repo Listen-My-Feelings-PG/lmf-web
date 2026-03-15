@@ -40,7 +40,7 @@
           @for (header of headerGroup.headers; track header.id) {
           @if ((header.column.id === 'modelPrediction' || header.column.id === 'tsTrainLevelGlobal' || header.column.id
           ==='accuracy' || header.column.id === 'tune') && false|| (header.column.id === 'tune' &&
-          !showTuneButton))
+          !false))
           {
           <!-- Skip child-only columns in outlet mode -->
           } @else {
@@ -116,7 +116,7 @@
           @if ((cell.column.id === 'modelPrediction' || cell.column.id === 'tsTrainLevelGlobal' || cell.column.id === 'accuracy'
           || cell.column.id === 'tune')
           && false
-          || (cell.column.id === 'tune' && !showTuneButton)) {
+          || (cell.column.id === 'tune' && !false)) {
           <!-- Skip child-only columns in outlet mode -->
           } @else if (cell.column.id === 'id') {
           <!-- ID Column -->
@@ -147,22 +147,6 @@
             (click)="$event.stopPropagation()">
             <div class="flex justify-center items-center gap-1">
               <!-- Thumbs Down (Score 0) -->
-              <button (click)="rateSong(row.original, 0)"
-                [disabled]="lockRate"
-                [class]="'p-1 transition-transform ' + (lockRate ? 'opacity-50 cursor-not-allowed' : 'hover:scale-125')">
-                <i
-                  [class]="row.original.userScore === 0 ? 'fas fa-thumbs-down text-red-500' : 'far fa-thumbs-down text-gray-600'"></i>
-              </button>
-
-              <!-- Stars (Score 1-3) -->
-              @for (star of [1, 2, 3]; track star) {
-              <button (click)="rateSong(row.original, $any(star))"
-                [disabled]="lockRate"
-                [class]="'p-1 transition-transform ' + (lockRate ? 'opacity-50 cursor-not-allowed' : 'hover:scale-125')">
-                <i
-                  [class]="(row.original.userScore ?? 0) >= star ? 'fas fa-star text-yellow-400' : 'far fa-star text-gray-600'"></i>
-              </button>
-              }
             </div>
           </td>
           } @else if (cell.column.id === 'modelPrediction' && true) {
@@ -225,12 +209,6 @@
           <!-- Tune Button Column -->
           <td class="px-2 py-2 text-center"
             (click)="$event.stopPropagation()">
-            <button (click)="trainSingleSong(row.original.id!)"
-              [disabled]="row.original.userScore == null || row.original.tsPrediction == null"
-              class="w-7 h-7 flex items-center justify-center rounded border border-gray-600 text-gray-400 hover:text-primary hover:border-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-gray-400 disabled:hover:border-gray-600"
-              title="Fine-tune esta canción">
-              <i class="fas fa-bullseye text-sm"></i>
-            </button>
           </td>
           } @else if (cell.column.id === 'fileName') {
           <!-- FileName Column -->

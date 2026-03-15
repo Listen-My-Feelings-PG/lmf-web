@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Song } from '../_types/generals.models';
-import { HttpResponseSuccess, Playlist, TrainingModality, UserScore } from '../_types/generals.interfaces';
+import { Calibration, HttpResponseSuccess, Playlist, TrainingModality, UserScore } from '../_types/generals.interfaces';
 
 @Injectable({
   providedIn: 'root'
@@ -86,6 +86,15 @@ export class HttpService {
       this.http.post<Array<{ success: boolean, message: string }>>(this.apiUrl + `/songs/predict-songs-by-ids`, { songIds: JSON.stringify(songIds) }).subscribe({
         next: (response) => resolve(response),
         error: (error) => reject({ error, at: 'predictSongsByIds' })
+      });
+    });
+  }
+
+  getAllSongsCalibrationByIdPlaylist(idPlaylist: number): Promise<Array<Calibration>> {
+    return new Promise((resolve, reject) => {
+      this.http.get<HttpResponseSuccess>(this.apiUrl + `/stats/songs-in-playlist/${idPlaylist}`).subscribe({
+        next: (response) => resolve(response.data as Array<Calibration>),
+        error: (error) => reject({ error, at: 'getAllSongsCalibrationByIdPlaylist' })
       });
     });
   }

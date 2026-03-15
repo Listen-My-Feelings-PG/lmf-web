@@ -58,7 +58,7 @@ export interface Calibration {
   modelId: number;
   interactionType: 'fit' | 'predict';
   interactionDate: Date;
-  globalScore?: number;
+  tsPrediction?: number;
   userScore: number;
   configEpochs: number;
   loss?: number;

@@ -4,6 +4,7 @@ import { HomeComponent } from './main/home/home.component';
 import { ListComponent } from './list/list.component';
 import { TrainingComponent } from './main/training/training.component';
 import { PredictionComponent } from './main/prediction/prediction.component';
+import { StatsComponent } from './main/stats/stats.component';
 
 export const routes: Routes = [
   {
@@ -12,6 +13,7 @@ export const routes: Routes = [
       { path: 'list', component: ListComponent },
       { path: 'training', component: TrainingComponent },
       { path: 'prediction', component: PredictionComponent },
+      { path: 'stats', component: StatsComponent },
       { path: '', redirectTo: 'list', pathMatch: 'full' }
     ]
   },

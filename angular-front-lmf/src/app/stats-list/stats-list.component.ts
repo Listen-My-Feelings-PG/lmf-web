@@ -1,36 +1,19 @@
-import {
-  Component, OnDestroy, OnChanges, SimpleChanges,
-  Input, signal, Output, EventEmitter, effect
-} from '@angular/core';
-import { Playlist, Song } from '../_types/generals.models';
-import { GlobalPlaylistService } from '../_services/global-playlist.service';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import {
-  createAngularTable,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  ColumnDef,
-} from '@tanstack/angular-table';
-import { UserScore } from '../_types/generals.interfaces';
+import { Component, effect, EventEmitter, Input, Output, signal, SimpleChanges } from '@angular/core';
+import { Playlist } from '../_types/generals.interfaces';
+import { Song } from '../_types/generals.models';
 import { environment } from '../../environments/environment';
+import { ColumnDef, createAngularTable, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel } from '@tanstack/angular-table';
+import { GlobalPlaylistService } from '../_services/global-playlist.service';
 
 @Component({
-  selector: 'app-list',
-  imports: [CommonModule, FormsModule],
-  templateUrl: './list.component.html',
-  styleUrl: './list.component.scss'
+  selector: 'app-stats-list',
+  imports: [],
+  templateUrl: './stats-list.component.html',
+  styleUrl: './stats-list.component.scss'
 })
-export class ListComponent implements OnDestroy, OnChanges {
+export class StatsListComponent {
   @Input('list') list: Array<Song>;
-  @Input('lockRate') lockRate: boolean;
-  @Input('showTuneButton') showTuneButton: boolean;
   @Output('onSelectSong') onSelectSong: EventEmitter<Song>;
-  @Output('onRateSong') onRateSong: EventEmitter<{ song: Song, score: UserScore }>;
-  @Output('onTuneSong') onTuneSong: EventEmitter<number>;
-
   songPlaying: Song | null;
   currentPlaylist: Playlist | null;
 
@@ -95,11 +78,6 @@ export class ListComponent implements OnDestroy, OnChanges {
     this.currentPlaylist = null;
     this.songPlaying = null;
     this.onSelectSong = new EventEmitter<Song>();
-    this.onRateSong = new EventEmitter<{ song: Song, score: UserScore }>();
-    this.lockRate = false;
-    this.showTuneButton = false;
-    this.onTuneSong = new EventEmitter<number>();
-
     // Effect en constructor (contexto de inyección válido)
     effect(() => {
       const songPlaying = this.globalPlaylist.currentSong();
@@ -119,9 +97,7 @@ export class ListComponent implements OnDestroy, OnChanges {
     });
   }
 
-  trainSingleSong(idSong: number): void {
-    this.onTuneSong.emit(idSong);
-  }
+
 
   ngOnChanges(changes: SimpleChanges): void {
     if (this.list.length) {
@@ -131,10 +107,6 @@ export class ListComponent implements OnDestroy, OnChanges {
 
   selectSong(song: Song): void {
     this.onSelectSong.emit(song);
-  }
-
-  rateSong(song: Song, score: UserScore): void {
-    this.onRateSong.emit({ song, score });
   }
 
   isPlaying(song: Song): boolean {
@@ -204,16 +176,5 @@ export class ListComponent implements OnDestroy, OnChanges {
     }
 
     return pages;
-  }
-
-  getCircularProgressStyle(value: number | null): string {
-    if (value === null) return 'conic-gradient(#4b5563 360deg, #4b5563 0deg)';
-    const percentage = Math.round(value);
-    const degrees = (percentage / 100) * 360;
-    return `conic-gradient(#46f0be ${degrees}deg, #374151 ${degrees}deg)`;
-  }
-
-  ngOnDestroy(): void {
-    // Los effects se limpian automáticamente
   }
 }
