@@ -17,7 +17,7 @@ const DEFAULT_CONFIG = {
   numClasses: parseInt(process.env.TS_CONFIG_DEAFULT_NUM_CLASSES || '4'),
   inputDim: parseInt(process.env.TS_CONFIG_DEAFULT_INPUT_DIM || '128'), // VGGish embedding dimension
   validationSplit: parseFloat(process.env.TS_CONFIG_DEAFULT_VALIDATION_SPLIT || '0.2'),
-  fineTuningEpochs: parseInt(process.env.TS_CONFIG_DEAFULT_FINE_TUNING_EPOCHS || '50'),
+  fineTuningEpochs: parseInt(process.env.TS_CONFIG_DEAFULT_FINE_TUNING_EPOCHS || '5'),
 };
 
 const ARCHITECTURE_JSON = JSON.stringify({
@@ -34,6 +34,39 @@ const ARCHITECTURE_JSON = JSON.stringify({
 // ─── Locks globales ──────────────────────────────────────────────────────────
 let trainingInProgress = false;
 let predictionInProgress = false;
+
+// ─── Caché de features en memoria ────────────────────────────────────────────
+// Evita releer .npy de disco en cada fine-tune. Clave: songId, valor: Float32Array normalizado (128-dim).
+const featureCache = new Map<number, Float32Array>();
+
+/**
+ * Obtiene el feature vector normalizado de una canción, usando caché si existe.
+ */
+function getCachedFeature(songId: number, featuresFileName: string, featuresDir: string): Float32Array | null {
+  const cached = featureCache.get(songId);
+  if (cached) return cached;
+
+  const featurePath = path.join(featuresDir, featuresFileName);
+  if (!fs.existsSync(featurePath)) return null;
+
+  try {
+    const npy = readNpy(featurePath);
+    const pooled = meanPoolEmbeddings(npy.data, npy.shape);
+    const normalized = normalizeEmbedding(pooled);
+    featureCache.set(songId, normalized);
+    return normalized;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Invalida la entrada de caché para una canción (si se re-extraen features).
+ */
+export function invalidateFeatureCache(songId?: number): void {
+  if (songId !== undefined) featureCache.delete(songId);
+  else featureCache.clear();
+}
 
 // ─── Helpers de consola ──────────────────────────────────────────────────────
 const TAG = '[TensorFlow]';
@@ -347,25 +380,18 @@ function prepareSongsForTraining(
     // Debe tener archivo de features
     if (!song.tsFeaturesFileName) continue;
 
-    const featurePath = path.join(featuresDir, song.tsFeaturesFileName);
-    if (!fs.existsSync(featurePath)) continue;
-
     // En modo 'clean', solo canciones nunca entrenadas
     if (mode === 'clean') {
       const trainLevel = modelType === 'global' ? song.tsTrainLevelGlobal : song.tsTrainLevelLocal;
       if (trainLevel && trainLevel > 0) continue;
     }
 
-    try {
-      const npy = readNpy(featurePath);
-      const pooled = meanPoolEmbeddings(npy.data, npy.shape);
-      const normalized = normalizeEmbedding(pooled);
-      features.push(normalized);
-      labels.push(song.userScore);
-      songIds.push(song.id!);
-    } catch (err) {
-      logError(`Error leyendo features de canción ${song.id}: ${err}`);
-    }
+    const normalized = getCachedFeature(song.id!, song.tsFeaturesFileName, featuresDir);
+    if (!normalized) continue;
+
+    features.push(normalized);
+    labels.push(song.userScore);
+    songIds.push(song.id!);
   }
 
   return { features, labels, songIds };
@@ -775,9 +801,9 @@ async function runPrediction(songIds: number[]): Promise<void> {
       continue;
     }
 
-    const featurePath = path.join(featuresDir, song.tsFeaturesFileName);
-    if (!fs.existsSync(featurePath)) {
-      logInfo(`  Canción ${song.id}: archivo de features no encontrado (${song.tsFeaturesFileName}). Omitiendo.`);
+    const normalized = getCachedFeature(song.id!, song.tsFeaturesFileName, featuresDir);
+    if (!normalized) {
+      logInfo(`  Canción ${song.id}: archivo de features no encontrado o inválido. Omitiendo.`);
       skipped++;
       continue;
     }
@@ -788,11 +814,6 @@ async function runPrediction(songIds: number[]): Promise<void> {
     }
 
     try {
-      // Leer y procesar features
-      const npy = readNpy(featurePath);
-      const pooled = meanPoolEmbeddings(npy.data, npy.shape);
-      const normalized = normalizeEmbedding(pooled);
-
       // Crear tensor de entrada (1, 128)
       const input = tf.tensor2d([Array.from(normalized)], [1, DEFAULT_CONFIG.inputDim]);
       const prediction = model.predict(input) as tf.Tensor;
@@ -870,15 +891,11 @@ export async function tuneSingleSongById(songId: number): Promise<Song> {
   if (!song.tsFeaturesFileName)
     throw new Error(`Canción ${songId} no tiene archivo de features`);
 
-  // 2. Cargar features
+  // 2. Cargar features (con caché)
   const featuresDir = path.resolve(paths.features);
-  const featurePath = path.join(featuresDir, song.tsFeaturesFileName);
-  if (!fs.existsSync(featurePath))
-    throw new Error(`Archivo de features no encontrado: ${featurePath}`);
-
-  const npy = readNpy(featurePath);
-  const pooled = meanPoolEmbeddings(npy.data, npy.shape);
-  const normalized = normalizeEmbedding(pooled);
+  const normalized = getCachedFeature(songId, song.tsFeaturesFileName, featuresDir);
+  if (!normalized)
+    throw new Error(`Archivo de features no encontrado o inválido: ${song.tsFeaturesFileName}`);
 
   // 3. Obtener modelo global
   const globalModel = await TsModelModel.getGlobalModel();
@@ -893,19 +910,51 @@ export async function tuneSingleSongById(songId: number): Promise<Song> {
   const model = await tf.loadLayersModel(nodeLoadHandler(modelPath));
 
   // Fine-tune: LR reducido (1/10) para no destruir el conocimiento previo
-  const tuneLr = globalModel.learningRate / 10;
+  const tuneLr = globalModel.learningRate / 5;
   const tuneEpochs = DEFAULT_CONFIG.fineTuningEpochs;
   compileModel(model, tuneLr);
 
-  // 4. Fine-tune con la canción
-  const featureArray = Array.from(normalized);
-  const xs = tf.tensor2d([featureArray], [1, DEFAULT_CONFIG.inputDim]);
-  const ys = tf.tensor1d([song.userScore / 3], 'float32');
+  // ─── Mini-retrain homogéneo: cargar TODAS las canciones calificadas ───
+  // Usa el mismo dataset que clean training, pero con la canción objetivo
+  // duplicada TARGET_WEIGHT veces para sesgar el gradiente hacia ella.
+  // TARGET_WEIGHT escala con el dataset para mantener ~10% de presencia.
+  const allScoredSongs = await SongModel.getAllSongsScoredByUserInDefaultPlaylist();
+  const otherSongsCount = allScoredSongs.filter(s => s.id !== songId && s.tsFeaturesFileName && s.userScore !== undefined && s.userScore !== null).length;
+  const TARGET_WEIGHT = Math.max(20, Math.round(otherSongsCount * 0.1));
+
+  const allFeatures: Float32Array[] = [];
+  const allLabels: number[] = [];
+
+  // Agregar canción objetivo con peso TARGET_WEIGHT
+  const targetFeatureArray = Array.from(normalized);
+  for (let i = 0; i < TARGET_WEIGHT; i++) {
+    allFeatures.push(normalized);
+    allLabels.push(song.userScore / 3);
+  }
+
+  // Agregar TODAS las demás canciones calificadas (igual que clean training)
+  for (const s of allScoredSongs) {
+    if (s.id === songId) continue;
+    if (!s.tsFeaturesFileName || s.userScore === undefined || s.userScore === null) continue;
+    const sNormalized = getCachedFeature(s.id!, s.tsFeaturesFileName, featuresDir);
+    if (!sNormalized) continue;
+    allFeatures.push(sNormalized);
+    allLabels.push(s.userScore / 3);
+  }
+
+  logInfo(`  Mini-retrain: ${allFeatures.length} muestras (target x${TARGET_WEIGHT} + ${allFeatures.length - TARGET_WEIGHT} canciones)`);
+
+  // Construir tensores
+  const xData = new Float32Array(allFeatures.length * DEFAULT_CONFIG.inputDim);
+  allFeatures.forEach((feat, i) => xData.set(feat, i * DEFAULT_CONFIG.inputDim));
+
+  const xs = tf.tensor2d(xData, [allFeatures.length, DEFAULT_CONFIG.inputDim]);
+  const ys = tf.tensor1d(allLabels, 'float32');
 
   const history = await (model as tf.LayersModel).fit(xs, ys, {
     epochs: tuneEpochs,
-    batchSize: 1,
-    shuffle: false,
+    batchSize: DEFAULT_CONFIG.batchSize,
+    shuffle: true,
   });
 
   const lossArr = history.history['loss'] as number[];
@@ -926,13 +975,13 @@ export async function tuneSingleSongById(songId: number): Promise<Song> {
     userScore: song.userScore,
     epochs: tuneEpochs,
     loss: finalLoss,
-    batchSize: 1,
+    batchSize: DEFAULT_CONFIG.batchSize,
     validationSplit: 0,
     mae: finalMae
   });
 
   // 7. Predecir inmediatamente
-  const input = tf.tensor2d([featureArray], [1, DEFAULT_CONFIG.inputDim]);
+  const input = tf.tensor2d([targetFeatureArray], [1, DEFAULT_CONFIG.inputDim]);
   const prediction = model.predict(input) as tf.Tensor;
   const rawOutput = await prediction.data();
   const globalScore = rawOutput[0] * 3;

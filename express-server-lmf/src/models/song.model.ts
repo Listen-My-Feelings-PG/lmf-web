@@ -466,6 +466,38 @@ class SongModel {
   }
 
   /**
+   * Obtener N canciones aleatorias calificadas con features (para replay buffer en fine-tuning).
+   * Excluye la canción indicada en excludeSongId.
+   */
+  static async getRandomScoredSongsWithFeatures(limit: number, excludeSongId: number): Promise<Array<Song>> {
+    try {
+      const songs = await psql<any[]>`
+        SELECT ca_id, ca_calif_usuario, ca_filename, ca_filesize, ca_metadata,
+               ca_ts_prediccion, ca_train_level_global, ca_ts_features_filename
+        FROM canciones
+        WHERE ca_calif_usuario IS NOT NULL
+          AND ca_ts_features_filename IS NOT NULL
+          AND ca_activo = B'1'
+          AND ca_id != ${excludeSongId}
+        ORDER BY random()
+        LIMIT ${limit}`;
+      return songs.map(song => new Song({
+        id: song.ca_id,
+        userScore: song.ca_calif_usuario ?? null,
+        fileName: song.ca_filename,
+        fileSize: song.ca_filesize,
+        metadata: song.ca_metadata && song.ca_metadata.trim().startsWith('{') ? JSON.parse(song.ca_metadata) : undefined,
+        tsPrediction: song.ca_ts_prediccion ?? null,
+        tsTrainLevelGlobal: song.ca_train_level_global ?? null,
+        tsFeaturesFileName: song.ca_ts_features_filename ?? null,
+      }));
+    } catch (error) {
+      console.error('Error al obtener canciones aleatorias para replay:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Obtener las relaciones playlist-canción para un conjunto de IDs de canciones
    */
   static async getPlaylistRelations(songIds: number[]): Promise<Array<{ songId: number; playlistId: number }>> {
