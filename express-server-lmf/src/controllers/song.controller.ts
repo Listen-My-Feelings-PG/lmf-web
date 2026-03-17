@@ -30,33 +30,35 @@ export async function tuneSingleSong(req: Request, res: Response): Promise<void>
 export async function serveSongById(req: Request, res: Response): Promise<void> {
   try {
     const idSong = parseInt(req.params.idSong, 10);
-    if (isNaN(idSong))
+    if (isNaN(idSong)) {
       sendError(res, 'ID de canción inválido', BadRequest, null);
-    else {
-      const song = await SongModel.getSongById(idSong);
-      if (song) {
-        const filePath = path.resolve(paths.audio, song.fileName);
-
-        // Verificar que el archivo existe
-        if (!fs.existsSync(filePath)) {
-          sendError(res, 'Archivo de audio no encontrado', NotFound, null);
-          return;
-        }
-
-        // Enviar el archivo
-        res.sendFile(filePath, (err) => {
-          if (err) {
-            console.error('Error al enviar archivo:', err);
-            if (!res.headersSent)
-              sendError(res, 'Error al enviar el archivo de audio', InternalServerError, err);
-          }
-        });
-      } else {
-        sendError(res, 'Canción no encontrada', NotFound, null);
-      }
+      return;
     }
+
+    const song = await SongModel.getSongById(idSong);
+    if (!song) {
+      sendError(res, 'Canción no encontrada', NotFound, null);
+      return;
+    }
+
+    const filePath = path.resolve(paths.audio, song.fileName);
+
+    if (!fs.existsSync(filePath)) {
+      sendError(res, 'Archivo de audio no encontrado', NotFound, null);
+      return;
+    }
+
+    res.sendFile(filePath, (err) => {
+      if (err) {
+        console.error('Error al enviar archivo:', err);
+        if (!res.headersSent)
+          sendError(res, 'Error al enviar el archivo de audio', InternalServerError, err);
+      }
+    });
+
   } catch (error) {
     sendError(res, 'Error al obtener las playlists', InternalServerError, error instanceof Error ? error : null);
+    return;
   }
 }
 
@@ -65,30 +67,16 @@ export async function rateSongById(req: Request, res: Response): Promise<void> {
     const idSong = parseInt(req.params.idSong, 10);
     const score = parseInt(req.body.score, 10);
 
-    if (isNaN(idSong) || isNaN(score) || score < 0 || score > 3)
+    if (isNaN(idSong) || isNaN(score) || score < 0 || score > 3) {
       sendError(res, 'ID de canción o puntuación inválidos', BadRequest, null);
-    else {
-      const updatedSong = await SongModel.setSongUserScoreByIdSong(idSong, score);
-      res.status(200).json({ success: true, data: updatedSong, message: 'Puntuación actualizada correctamente' });
+      return;
     }
+
+    const updatedSong = await SongModel.setSongUserScoreByIdSong(idSong, score);
+    res.status(200).json({ success: true, data: updatedSong, message: 'Puntuación actualizada correctamente' });
   } catch (error) {
     sendError(res, 'Error al actualizar la puntuación de la canción', InternalServerError, error instanceof Error ? error : null);
-  }
-}
-
-export async function getAllSongsScoredByUserInPlaylists(req: Request, res: Response): Promise<void> {
-  try {
-    const playlistsIds = req.params.playlistsIds ? JSON.parse(req.params.playlistsIds) : null;
-    if (playlistsIds) {
-      sendError(res, 'Funcionalidad no implementada', NotImplemented, null);
-      return;
-    } else {
-      const songs = await SongModel.getAllSongsScoredByUserInDefaultPlaylist();
-      res.status(200).json({ success: true, data: songs, message: 'Canciones puntuadas por el usuario obtenidas correctamente' });
-    }
-
-  } catch (error) {
-    sendError(res, 'Error al obtener las canciones puntuadas por el usuario', InternalServerError, error instanceof Error ? error : null);
+    return;
   }
 }
 

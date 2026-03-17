@@ -500,11 +500,11 @@ class SongModel {
   /**
    * Obtener las relaciones playlist-canción para un conjunto de IDs de canciones
    */
-  static async getPlaylistRelations(songIds: number[]): Promise<Array<{ songId: number; playlistId: number }>> {
+  static async getPlaylistRelations(songIds: number[]): Promise<Array<{ songId: number; idPlaylist: number }>> {
     try {
       if (songIds.length === 0) return [];
       const rows = await psql<any[]>`
-        SELECT pr_ca_id as "songId", pr_pl_id as "playlistId"
+        SELECT pr_ca_id as "songId", pr_pl_id as "idPlaylist"
         FROM public.rel_playlists_canciones
         WHERE pr_ca_id = ANY(${songIds})
       `;

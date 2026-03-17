@@ -465,11 +465,11 @@ async function runTraining(
 
     const playlistSongMap = await getPlaylistSongMap(songIds);
 
-    for (const [playlistId, plSongIds] of playlistSongMap.entries()) {
+    for (const [idPlaylist, plSongIds] of playlistSongMap.entries()) {
       // La playlist default ya se entrenó como modelo global
-      if (playlistId === defaultPlaylist.id) continue;
+      if (idPlaylist === defaultPlaylist.id) continue;
 
-      const playlist = await PlaylistModel.getById(playlistId);
+      const playlist = await PlaylistModel.getById(idPlaylist);
       if (!playlist) continue;
 
       let localModel: TensorFlowModel | null = null;
@@ -479,9 +479,9 @@ async function runTraining(
       }
 
       if (!localModel) {
-        logInfo(`Creando modelo local para playlist "${playlist.name}" (ID: ${playlistId})...`);
-        localModel = await createAndRegisterModel(false, `model_local_pl_${playlistId}`);
-        await PlaylistModel.updateModelId(playlistId, localModel.id!);
+        logInfo(`Creando modelo local para playlist "${playlist.name}" (ID: ${idPlaylist})...`);
+        localModel = await createAndRegisterModel(false, `model_local_pl_${idPlaylist}`);
+        await PlaylistModel.updateModelId(idPlaylist, localModel.id!);
         logSuccess(`Modelo local creado (ID: ${localModel.id}) → playlist "${playlist.name}"`);
       } else {
         logInfo(`Modelo local existente: ID=${localModel.id}, playlist "${playlist.name}"`);
@@ -707,17 +707,17 @@ async function trainSingleModel(
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 /**
- * Obtiene un mapa de playlistId → songIds para las canciones dadas
+ * Obtiene un mapa de idPlaylist → songIds para las canciones dadas
  */
 async function getPlaylistSongMap(songIds: number[]): Promise<Map<number, number[]>> {
   const relations = await SongModel.getPlaylistRelations(songIds);
   const map = new Map<number, number[]>();
 
   for (const rel of relations) {
-    if (!map.has(rel.playlistId)) {
-      map.set(rel.playlistId, []);
+    if (!map.has(rel.idPlaylist)) {
+      map.set(rel.idPlaylist, []);
     }
-    map.get(rel.playlistId)!.push(rel.songId);
+    map.get(rel.idPlaylist)!.push(rel.songId);
   }
 
   return map;

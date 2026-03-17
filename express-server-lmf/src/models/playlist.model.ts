@@ -45,12 +45,12 @@ export default class PlaylistModel {
     }
   }
 
-  static async addSongToPlaylist(playlistId: number, songId: number): Promise<{ success: boolean }> {
+  static async addSongToPlaylist(idPlaylist: number, songId: number): Promise<{ success: boolean }> {
     try {
       // Verificar si la relación ya existe
       const [existing] = await psql<{ pc_id: number }[]>`
         SELECT pc_id FROM public.rel_playlists_canciones
-        WHERE pr_pl_id = ${playlistId} AND pr_ca_id = ${songId}
+        WHERE pr_pl_id = ${idPlaylist} AND pr_ca_id = ${songId}
       `;
 
       if (existing) {
@@ -59,7 +59,7 @@ export default class PlaylistModel {
 
       await psql`
         INSERT INTO public.rel_playlists_canciones (pr_pl_id, pr_ca_id)
-        VALUES (${playlistId}, ${songId})
+        VALUES (${idPlaylist}, ${songId})
       `;
       return { success: true };
     } catch (error) {
@@ -68,11 +68,11 @@ export default class PlaylistModel {
     }
   }
 
-  static async removeSongFromPlaylist(playlistId: number, songId: number): Promise<{ success: boolean }> {
+  static async removeSongFromPlaylist(idPlaylist: number, songId: number): Promise<{ success: boolean }> {
     try {
       await psql`
         DELETE FROM public.rel_playlists_canciones
-        WHERE pr_pl_id = ${playlistId} AND pr_ca_id = ${songId}
+        WHERE pr_pl_id = ${idPlaylist} AND pr_ca_id = ${songId}
       `;
       return { success: true };
     } catch (error) {
@@ -101,7 +101,7 @@ export default class PlaylistModel {
     }
   }
 
-  static async getById(playlistId: number): Promise<Playlist | null> {
+  static async getById(idPlaylist: number): Promise<Playlist | null> {
     try {
       const [playlist] = await psql<any[]>`
         SELECT 
@@ -111,7 +111,7 @@ export default class PlaylistModel {
           pl_is_default = B'1' as "isDefault",
           pl_id_ts_modelo as "modelId"
         FROM public.playlists
-        WHERE pl_id = ${playlistId} AND pl_activo = B'1'
+        WHERE pl_id = ${idPlaylist} AND pl_activo = B'1'
       `;
       return playlist || null;
     } catch (error) {
@@ -120,15 +120,12 @@ export default class PlaylistModel {
     }
   }
 
-  /**
-   * Asociar un modelo TensorFlow a una playlist
-   */
-  static async updateModelId(playlistId: number, modelId: number): Promise<void> {
+  static async updateModelId(idPlaylist: number, modelId: number): Promise<void> {
     try {
       await psql`
         UPDATE public.playlists
         SET pl_id_ts_modelo = ${modelId}
-        WHERE pl_id = ${playlistId}
+        WHERE pl_id = ${idPlaylist}
       `;
     } catch (error) {
       console.error('Error al asociar modelo a playlist:', error);

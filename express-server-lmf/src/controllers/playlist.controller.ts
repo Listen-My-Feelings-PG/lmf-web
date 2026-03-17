@@ -14,11 +14,11 @@ export async function getAllPlaylists(_req: Request, res: Response): Promise<voi
 
 export async function getPlaylistContentById(req: Request, res: Response): Promise<void> {
   try {
-    const playlistId = parseInt(req.params.idPlaylist, 10);
-    if (isNaN(playlistId))
+    const idPlaylist = parseInt(req.params.idPlaylist, 10);
+    if (isNaN(idPlaylist))
       sendError(res, 'ID de playlist inválido', BadRequest, null);
     else {
-      const songs = await SongModel.getAllSongsByPlaylistId(playlistId);
+      const songs = await SongModel.getAllSongsByPlaylistId(idPlaylist);
       sendResponse(res, true, songs, 'Contenido de la playlist obtenido correctamente');
     }
   } catch (error) {
