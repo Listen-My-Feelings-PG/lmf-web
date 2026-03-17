@@ -38,7 +38,7 @@ export class ListComponent implements OnDestroy, OnChanges {
   data = signal<Song[]>([]);
   globalFilter = signal('');
   columnOrder = signal<string[]>([
-    'id', 'title', 'artist', 'album', 'userScore', 'modelPrediction', 'accuracy', 'tsTrainLevelGlobal', 'tune', 'fileName'
+    'id', 'title', 'artist', 'album', 'userScore', 'modelPrediction', 'accuracy', 'tsTrainLevelGlobal', 'fileName'
   ]);
   selectedRows = signal<Set<number>>(new Set());
   hoveredRow = signal<number | null>(null);
@@ -53,7 +53,7 @@ export class ListComponent implements OnDestroy, OnChanges {
   maxPageButtons = 7; // Número de botones de página a mostrar
 
   // Define columns for TanStack Table
-  columns: ColumnDef<Song>[] = [
+  allColumns: ColumnDef<Song>[] = [
     { accessorKey: 'id', id: 'id', header: '#', cell: info => info.getValue(), size: 60, minSize: 60, maxSize: 80, },
     { accessorFn: row => row.metadata?.title, id: 'title', header: 'Título', cell: info => info.getValue() || '-', size: 200, minSize: 150, },
     { accessorFn: row => row.metadata?.artist, id: 'artist', header: 'Artista', cell: info => info.getValue() || '-', size: 150, minSize: 120, },
@@ -65,10 +65,11 @@ export class ListComponent implements OnDestroy, OnChanges {
     { id: 'tune', header: '', cell: () => null, enableSorting: false, enableResizing: false, size: 50, minSize: 50, maxSize: 50, },
     { accessorKey: 'fileName', id: 'fileName', header: 'Nombre de archivo', cell: info => info.getValue(), minSize: 200, },
   ];
+  columns = signal<ColumnDef<Song>[]>(this.allColumns.filter(c => c.id !== 'tune'));
 
   // Create TanStack Table instance
   table = createAngularTable(() => ({
-    data: this.data(), columns: this.columns, columnOrder: this.columnOrder(),
+    data: this.data(), columns: this.columns(), columnOrder: this.columnOrder(),
     state: {
       globalFilter: this.globalFilter(),
       columnOrder: this.columnOrder(),
@@ -126,6 +127,19 @@ export class ListComponent implements OnDestroy, OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['list'] && changes['list'].currentValue) {
       this.data.set(this.list);
+    }
+    if (changes['showTuneButton']) {
+      if (this.showTuneButton) {
+        this.columns.set(this.allColumns);
+        this.columnOrder.set([
+          'id', 'title', 'artist', 'album', 'userScore', 'modelPrediction', 'accuracy', 'tsTrainLevelGlobal', 'tune', 'fileName'
+        ]);
+      } else {
+        this.columns.set(this.allColumns.filter(c => c.id !== 'tune'));
+        this.columnOrder.set([
+          'id', 'title', 'artist', 'album', 'userScore', 'modelPrediction', 'accuracy', 'tsTrainLevelGlobal', 'fileName'
+        ]);
+      }
     }
   }
 
