@@ -8,7 +8,7 @@ import multer from 'multer';
 import fs from 'fs';
 import dotenv from 'dotenv';
 import { AppConfig, AppPaths } from './types/generals.types';
-import { checkEnv } from './services/environment.service';
+import { checkEnv } from './utils/env-validator';
 
 dotenv.config();
 checkEnv();

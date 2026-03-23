@@ -1,6 +1,24 @@
 import fs from 'fs';
 import path from 'path';
 
+export function logger(level: 'info' | 'warn' | 'error', msg: string, data?: any): void {
+  setImmediate(() => {
+    process.nextTick(() => {
+      switch (level) {
+        case 'info':
+          console.info(msg, data || '');
+          break;
+        case 'error':
+          console.error(msg, data || '');
+          break;
+        case 'warn':
+          console.warn(msg, data || '');
+          break;
+      }
+    });
+  });
+}
+
 export function checkEnv() {
   const envExamplePath = path.join('.env.example');
   const envExampleContent = fs.readFileSync(envExamplePath, 'utf-8');
@@ -20,3 +38,4 @@ export function checkEnv() {
     process.exit(1);
   }
 }
+

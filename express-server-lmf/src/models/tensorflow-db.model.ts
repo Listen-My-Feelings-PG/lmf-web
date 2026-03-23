@@ -7,10 +7,8 @@ import { TensorFlowModel } from "../types/generals.models";
 function mapRow(row: any): TensorFlowModel {
   return {
     id: row.ts_id,
-    active: row.active ?? true,
     trainedSongs: row.ts_canciones_entrenadas,
     completedEpochs: row.ts_epocas_completadas,
-    createdDate: row.ts_fechacreacion,
     registeredDate: row.ts_fecharegistro,
     filename: row.ts_filename,
     loss: parseFloat(row.ts_perdida) || 0,
@@ -30,7 +28,6 @@ const SELECT_FIELDS = psql`
   ts_activo = B'1' as "active",
   ts_canciones_entrenadas,
   ts_epocas_completadas,
-  ts_fechacreacion,
   ts_fecharegistro,
   ts_filename,
   ts_perdida,
@@ -91,7 +88,6 @@ export default class TsModelModel {
         INSERT INTO public.ts_modelos (
           ts_canciones_entrenadas,
           ts_epocas_completadas,
-          ts_fechacreacion,
           ts_filename,
           ts_perdida,
           ts_precision,
@@ -105,7 +101,6 @@ export default class TsModelModel {
         ) VALUES (
           ${data.trainedSongs},
           ${data.completedEpochs},
-          NOW(),
           ${data.filename},
           ${data.loss},
           ${data.accuracy},

@@ -35,11 +35,9 @@ export interface Playlist {
 
 export interface TensorFlowModel {
   id?: number;
-  active?: boolean;
   trainedSongs: number;
   completedEpochs: number;
-  createdDate?: Date;
-  registeredDate?: Date;
+  registeredDate: Date;
   filename: string;
   loss: number;
   accuracy: number;
@@ -49,7 +47,7 @@ export interface TensorFlowModel {
   batchSize: number;
   numClasses: number;
   inputDim: number;
-  architecture?: string;
+  architecture: string;
 }
 
 export interface Calibration {
@@ -69,6 +67,6 @@ export interface Calibration {
     validationSplit: number;
     mae: number;
   }
-  interactionDate: Date;
   userScore?: number;
+  interactionDate: Date;
 }

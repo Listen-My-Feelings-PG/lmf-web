@@ -6,6 +6,10 @@ import fs from "fs";
 import { paths } from "../main";
 import { isExtractionActive } from "../services/feature-extraction.service";
 import { isTrainingActive, startTraining, isPredictionActive, startPrediction, tuneSingleSongById } from "../services/tensorflow.service";
+import TsModelModel from "../models/tensorflow-db.model";
+import { logger } from "../utils/env-validator";
+import { createAndStorageTsModel } from "../services/tensorflow-refactor.service";
+import PlaylistModel from "../models/playlist.model";
 
 export async function tuneSingleSong(req: Request, res: Response): Promise<void> {
   const idSong = parseInt(req.params.idSong, 10);
@@ -36,6 +40,7 @@ export async function serveSongById(req: Request, res: Response): Promise<void> 
     }
 
     const song = await SongModel.getSongById(idSong);
+
     if (!song) {
       sendError(res, 'Canción no encontrada', NotFound, null);
       return;
@@ -94,6 +99,32 @@ export async function getSongsForPrediction(req: Request, res: Response): Promis
     sendError(res, 'Error al obtener las canciones para predicción', InternalServerError, error instanceof Error ? error : null);
     return;
   }
+}
+
+export async function trainSongsByIdsRefactor(req: Request, res: Response): Promise<void> {
+  //NOTA: esta función no será fire-and-forget
+  //1. Obtención y validación de ids
+
+  let songIds: number[];
+  try {
+    songIds = JSON.parse(req.body.songIds);
+    //Verificar que sea un array de números
+    if (!Array.isArray(songIds) || !songIds.every(id => typeof id === 'number')) {
+      sendError(res, 'songIds debe ser un array de números', BadRequest, null);
+      return;
+    }
+  } catch {
+    sendError(res, 'Error al parsear songIds. Envíe un JSON válido.', BadRequest, null);
+    return;
+  }
+  const npyFeaturesPath = process.env.FEATURES_PATH || '';
+  let globalTsModel = await TsModelModel.getGlobalModel();
+  if (!globalTsModel) {
+    logger('warn', 'No hay modelo global Se procede a crear el modelo global ahora');
+    globalTsModel = await createAndStorageTsModel(true);
+    //await PlaylistModel.updateModelId(defaultPlaylist.id!, globalModel.id!);
+  }
+  //2. Obtención de las canciones como Array<Song>
 }
 
 export async function trainSongsByIds(req: Request, res: Response): Promise<void> {
