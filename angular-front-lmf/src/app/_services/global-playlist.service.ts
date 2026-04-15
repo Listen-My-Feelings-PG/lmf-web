@@ -1,4 +1,4 @@
-import { computed, Injectable, signal, Signal, WritableSignal } from '@angular/core';
+import { computed, Injectable, signal, WritableSignal } from '@angular/core';
 import { Song } from '../_types/generals.models';
 import { Playlist, GlobalPlaylistSetup, UserScore } from '../_types/generals.interfaces';
 type Result<T> = { ok: true, value?: T } | { ok: false, error: string };

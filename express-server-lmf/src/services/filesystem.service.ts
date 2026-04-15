@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import * as tf from '@tensorflow/tfjs';
 import SongModel from '../models/song.model';
 import PlaylistModel from '../models/playlist.model';
 import { Song } from '../types/generals.models';
@@ -171,4 +172,170 @@ export async function initializeStoragedSongs(audioPath: string): Promise<void> 
     // No lanzamos el error para permitir que el servidor arranque
     // incluso si falla la sincronización
   }
+}
+
+// ─── IOHandlers para modelos TF.js (filesystem, sin tfjs-node) ──────────────
+
+// ─── Lector de archivos .npy ─────────────────────────────────────────────────
+/**
+ * Lee un archivo .npy (NumPy binary) y retorna Float32Array + shape.
+ * Soporta float32 (<f4) y float64 (<f8, convertido a f32).
+ */
+export function readNpy(filePath: string): { data: Float32Array; shape: number[] } {
+  const buf = fs.readFileSync(filePath);
+
+  // Magic: \x93NUMPY
+  if (buf[0] !== 0x93 || buf.toString('ascii', 1, 6) !== 'NUMPY') {
+    throw new Error(`Archivo .npy inválido: ${filePath}`);
+  }
+
+  const majorVersion = buf[6];
+  let headerLen: number;
+  let dataStart: number;
+
+  if (majorVersion === 1) {
+    headerLen = buf.readUInt16LE(8);
+    dataStart = 10 + headerLen;
+  } else {
+    headerLen = buf.readUInt32LE(8);
+    dataStart = 12 + headerLen;
+  }
+
+  const headerStr = buf.toString('ascii', majorVersion === 1 ? 10 : 12, dataStart);
+
+  // Detectar Fortran order (column-major)
+  const isFortran = headerStr.includes("'fortran_order': True");
+
+  // Parsear shape: 'shape': (N, 128,)
+  const shapeMatch = headerStr.match(/'shape':\s*\(([^)]+)\)/);
+  if (!shapeMatch) throw new Error(`No se puede parsear shape del header .npy: ${filePath}`);
+  const shape = shapeMatch[1].split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+
+  // Parsear dtype
+  const dtypeMatch = headerStr.match(/'descr':\s*'([^']+)'/);
+  const dtype = dtypeMatch ? dtypeMatch[1] : '<f4';
+
+  // Extraer datos binarios (copia alineada)
+  const dataBuffer = buf.subarray(dataStart);
+  const aligned = new ArrayBuffer(dataBuffer.length);
+  new Uint8Array(aligned).set(dataBuffer);
+
+  let data: Float32Array;
+  if (dtype.includes('f4'))
+    data = new Float32Array(aligned);
+  else if (dtype.includes('f8'))
+    data = Float32Array.from(new Float64Array(aligned));
+  else
+    throw new Error(`Dtype no soportado: ${dtype}`);
+
+  // Transponer de Fortran order (column-major) a C order (row-major) si es necesario.
+  if (isFortran && shape.length === 2) {
+    const [rows, cols] = shape;
+    const transposed = new Float32Array(rows * cols);
+    for (let i = 0; i < rows; i++) {
+      for (let j = 0; j < cols; j++) {
+        transposed[i * cols + j] = data[j * rows + i];
+      }
+    }
+    data = transposed;
+  }
+
+  return { data, shape };
+}
+
+/**
+ * Verifica si un archivo existe en disco.
+ */
+export function fileExists(filePath: string): boolean {
+  return fs.existsSync(filePath);
+}
+
+/**
+ * IOHandler para guardar modelos TF.js al filesystem.
+ * Escribe model.json + weights.bin en el directorio indicado.
+ */
+export function nodeSaveHandler(dirPath: string): tf.io.IOHandler {
+  return {
+    async save(modelArtifacts: tf.io.ModelArtifacts): Promise<tf.io.SaveResult> {
+      if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
+
+      const weightsPath = path.join(dirPath, 'weights.bin');
+      const modelJsonPath = path.join(dirPath, 'model.json');
+
+      // Guardar pesos binarios
+      if (modelArtifacts.weightData) {
+        const weightBuffer = Buffer.from(
+          modelArtifacts.weightData instanceof ArrayBuffer
+            ? modelArtifacts.weightData
+            : (modelArtifacts.weightData as ArrayBuffer[])[0]
+        );
+        fs.writeFileSync(weightsPath, weightBuffer);
+      }
+
+      // Construir model.json
+      const modelJSON: any = {
+        modelTopology: modelArtifacts.modelTopology,
+        format: modelArtifacts.format,
+        generatedBy: modelArtifacts.generatedBy,
+        convertedBy: modelArtifacts.convertedBy,
+        weightsManifest: [{
+          paths: ['weights.bin'],
+          weights: modelArtifacts.weightSpecs || []
+        }]
+      };
+
+      if (modelArtifacts.trainingConfig) {
+        modelJSON.trainingConfig = modelArtifacts.trainingConfig;
+      }
+
+      fs.writeFileSync(modelJsonPath, JSON.stringify(modelJSON), 'utf-8');
+
+      return {
+        modelArtifactsInfo: {
+          dateSaved: new Date(),
+          modelTopologyType: 'JSON'
+        }
+      };
+    }
+  };
+}
+
+/**
+ * IOHandler para cargar modelos TF.js desde filesystem.
+ * Lee model.json + weights.bin del directorio indicado.
+ */
+export function nodeLoadHandler(dirPath: string): tf.io.IOHandler {
+  return {
+    async load(): Promise<tf.io.ModelArtifacts> {
+      const modelJsonPath = path.join(dirPath, 'model.json');
+      const modelJSON = JSON.parse(fs.readFileSync(modelJsonPath, 'utf-8'));
+
+      const artifacts: tf.io.ModelArtifacts = {
+        modelTopology: modelJSON.modelTopology,
+        format: modelJSON.format,
+        generatedBy: modelJSON.generatedBy,
+        convertedBy: modelJSON.convertedBy,
+        weightSpecs: modelJSON.weightsManifest?.[0]?.weights || [],
+        trainingConfig: modelJSON.trainingConfig
+      };
+
+      // Cargar pesos binarios
+      const weightPaths: string[] = modelJSON.weightsManifest?.[0]?.paths || [];
+      if (weightPaths.length > 0) {
+        const buffers: Buffer[] = weightPaths.map((p: string) =>
+          fs.readFileSync(path.join(dirPath, p))
+        );
+        const totalLen = buffers.reduce((sum, b) => sum + b.length, 0);
+        const combined = new Uint8Array(totalLen);
+        let offset = 0;
+        for (const buf of buffers) {
+          combined.set(buf, offset);
+          offset += buf.length;
+        }
+        artifacts.weightData = combined.buffer;
+      }
+
+      return artifacts;
+    }
+  };
 }

@@ -5,11 +5,10 @@ import path from "path";
 import fs from "fs";
 import { paths } from "../main";
 import { isExtractionActive } from "../services/feature-extraction.service";
-import { isTrainingActive, startTraining, isPredictionActive, startPrediction, tuneSingleSongById } from "../services/tensorflow.service";
+import { startTraining, startPrediction, tuneSingleSongById, createAndRegisterModel } from "../services/tensorflow.service";
+import { isTrainingActive, isPredictionActive } from "../subprocess/locks.process";
 import TsModelModel from "../models/tensorflow-db.model";
 import { logger } from "../utils/env-validator";
-import { createAndStorageTsModel } from "../services/tensorflow-refactor.service";
-import PlaylistModel from "../models/playlist.model";
 
 export async function tuneSingleSong(req: Request, res: Response): Promise<void> {
   const idSong = parseInt(req.params.idSong, 10);
@@ -117,11 +116,11 @@ export async function trainSongsByIdsRefactor(req: Request, res: Response): Prom
     sendError(res, 'Error al parsear songIds. Envíe un JSON válido.', BadRequest, null);
     return;
   }
-  const npyFeaturesPath = process.env.FEATURES_PATH || '';
+
   let globalTsModel = await TsModelModel.getGlobalModel();
   if (!globalTsModel) {
     logger('warn', 'No hay modelo global Se procede a crear el modelo global ahora');
-    globalTsModel = await createAndStorageTsModel(true);
+    globalTsModel = await createAndRegisterModel(true, 'model_global');
     //await PlaylistModel.updateModelId(defaultPlaylist.id!, globalModel.id!);
   }
   //2. Obtención de las canciones como Array<Song>

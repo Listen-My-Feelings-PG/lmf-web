@@ -98,7 +98,7 @@ httpServer.listen(port, async (error?: Error) => {
   console.info('='.repeat(50));
 
   // Inicializar sincronización de canciones almacenadas
-  const { initializeStoragedSongs } = await import('./services/songs-storaged-initializer');
+  const { initializeStoragedSongs } = await import('./services/filesystem.service');
   await initializeStoragedSongs(directories[0]);
 
   // Inicializar extracción de features (solo canciones sin features)

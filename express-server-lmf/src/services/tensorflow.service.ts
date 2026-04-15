@@ -8,6 +8,9 @@ import { TrainingRecordModel, PredictionRecordModel } from '../models/calibratio
 import type { TrainingEntry, PredictionEntry } from '../models/calibration.model';
 import PlaylistModel from '../models/playlist.model';
 import { Song, TensorFlowModel } from '../types/generals.models';
+import { setTrainingLock, setPredictionLock } from '../subprocess/locks.process';
+import { getCachedFeature } from '../subprocess/feature-cache.process';
+import { nodeSaveHandler, nodeLoadHandler } from './filesystem.service';
 
 // ─── Configuración por defecto ───────────────────────────────────────────────
 const DEFAULT_CONFIG = {
@@ -31,166 +34,11 @@ const ARCHITECTURE_JSON = JSON.stringify({
   ]
 });
 
-// ─── Locks globales ──────────────────────────────────────────────────────────
-let trainingInProgress = false;
-let predictionInProgress = false;
-
-// ─── Caché de features en memoria ────────────────────────────────────────────
-// Evita releer .npy de disco en cada fine-tune. Clave: songId, valor: Float32Array normalizado (128-dim).
-const featureCache = new Map<number, Float32Array>();
-
-/**
- * Obtiene el feature vector normalizado de una canción, usando caché si existe.
- */
-function getCachedFeature(songId: number, featuresFileName: string, featuresDir: string): Float32Array | null {
-  const cached = featureCache.get(songId);
-  if (cached) return cached;
-
-  const featurePath = path.join(featuresDir, featuresFileName);
-  if (!fs.existsSync(featurePath)) return null;
-
-  try {
-    const npy = readNpy(featurePath);
-    const pooled = meanPoolEmbeddings(npy.data, npy.shape);
-    const normalized = normalizeEmbedding(pooled);
-    featureCache.set(songId, normalized);
-    return normalized;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Invalida la entrada de caché para una canción (si se re-extraen features).
- */
-export function invalidateFeatureCache(songId?: number): void {
-  if (songId !== undefined) featureCache.delete(songId);
-  else featureCache.clear();
-}
-
 // ─── Helpers de consola ──────────────────────────────────────────────────────
 const TAG = '[TensorFlow]';
 function logInfo(msg: string): void { console.info(`${TAG} ${msg}`); }
 function logSuccess(msg: string): void { console.info(`${TAG} ✓ ${msg}`); }
 function logError(msg: string): void { console.error(`${TAG} ✗ ${msg}`); }
-
-/**
- * Indica si hay un proceso de entrenamiento activo
- */
-export function isTrainingActive(): boolean {
-  return trainingInProgress;
-}
-
-/**
- * Indica si hay un proceso de predicción activo
- */
-export function isPredictionActive(): boolean {
-  return predictionInProgress;
-}
-
-// ─── Lector de archivos .npy ─────────────────────────────────────────────────
-/**
- * Lee un archivo .npy (NumPy binary) y retorna Float32Array + shape.
- * Soporta float32 (<f4) y float64 (<f8, convertido a f32).
- */
-function readNpy(filePath: string): { data: Float32Array; shape: number[] } {
-  const buf = fs.readFileSync(filePath);
-
-  // Magic: \x93NUMPY
-  if (buf[0] !== 0x93 || buf.toString('ascii', 1, 6) !== 'NUMPY') {
-    throw new Error(`Archivo .npy inválido: ${filePath}`);
-  }
-
-  const majorVersion = buf[6];
-  let headerLen: number;
-  let dataStart: number;
-
-  if (majorVersion === 1) {
-    headerLen = buf.readUInt16LE(8);
-    dataStart = 10 + headerLen;
-  } else {
-    headerLen = buf.readUInt32LE(8);
-    dataStart = 12 + headerLen;
-  }
-
-  const headerStr = buf.toString('ascii', majorVersion === 1 ? 10 : 12, dataStart);
-
-  // Detectar Fortran order (column-major)
-  const isFortran = headerStr.includes("'fortran_order': True");
-
-  // Parsear shape: 'shape': (N, 128,)
-  const shapeMatch = headerStr.match(/'shape':\s*\(([^)]+)\)/);
-  if (!shapeMatch) throw new Error(`No se puede parsear shape del header .npy: ${filePath}`);
-  const shape = shapeMatch[1].split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
-
-  // Parsear dtype
-  const dtypeMatch = headerStr.match(/'descr':\s*'([^']+)'/);
-  const dtype = dtypeMatch ? dtypeMatch[1] : '<f4';
-
-  // Extraer datos binarios (copia alineada)
-  const dataBuffer = buf.subarray(dataStart);
-  const aligned = new ArrayBuffer(dataBuffer.length);
-  new Uint8Array(aligned).set(dataBuffer);
-
-  let data: Float32Array;
-  if (dtype.includes('f4'))
-    data = new Float32Array(aligned);
-  else if (dtype.includes('f8'))
-    data = Float32Array.from(new Float64Array(aligned));
-  else
-    throw new Error(`Dtype no soportado: ${dtype}`);
-
-
-  // Transponer de Fortran order (column-major) a C order (row-major) si es necesario.
-  // Fortran almacena los datos columna por columna: el elemento [i,j] está en índice j*rows + i.
-  // C order los almacena fila por fila: el elemento [i,j] está en índice i*cols + j.
-  // Para shape (rows, cols) hacemos la transposición en memoria.
-  if (isFortran && shape.length === 2) {
-    const [rows, cols] = shape;
-    const transposed = new Float32Array(rows * cols);
-    for (let i = 0; i < rows; i++) {
-      for (let j = 0; j < cols; j++) {
-        transposed[i * cols + j] = data[j * rows + i];
-      }
-    }
-    data = transposed;
-  }
-
-  return { data, shape };
-}
-
-// ─── Helpers de features ─────────────────────────────────────────────────────
-/**
- * Mean-pool de embeddings VGGish: (N, 128) → (128,)
- * Promedia los embeddings a través del tiempo para obtener un vector fijo.
- */
-function meanPoolEmbeddings(data: Float32Array, shape: number[]): Float32Array {
-  const [numFrames, embDim] = shape;
-  const result = new Float32Array(embDim);
-
-  for (let j = 0; j < embDim; j++) {
-    let sum = 0;
-    for (let i = 0; i < numFrames; i++) {
-      sum += data[i * embDim + j];
-    }
-    result[j] = sum / numFrames;
-  }
-
-  return result;
-}
-
-/**
- * Normaliza un embedding VGGish dividiendo entre 255.
- * VGGish produce embeddings cuantizados en rango [0, 255].
- * Sin normalizar, la magnitud causa saturación de softmax y gradientes zero → mode collapse.
- */
-function normalizeEmbedding(data: Float32Array): Float32Array {
-  const normalized = new Float32Array(data.length);
-  for (let i = 0; i < data.length; i++) {
-    normalized[i] = data[i] / 255.0;
-  }
-  return normalized;
-}
 
 // ─── Creación de modelo ──────────────────────────────────────────────────────
 /**
@@ -269,96 +117,6 @@ function compileModel(model: tf.LayersModel, learningRate: number = DEFAULT_CONF
   });
 }
 
-/**
- * IOHandler para guardar modelos TF.js al filesystem (sin tfjs-node).
- * Escribe model.json + weights.bin en el directorio indicado.
- */
-function nodeSaveHandler(dirPath: string): tf.io.IOHandler {
-  return {
-    async save(modelArtifacts: tf.io.ModelArtifacts): Promise<tf.io.SaveResult> {
-      if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
-
-      const weightsPath = path.join(dirPath, 'weights.bin');
-      const modelJsonPath = path.join(dirPath, 'model.json');
-
-      // Guardar pesos binarios
-      if (modelArtifacts.weightData) {
-        const weightBuffer = Buffer.from(
-          modelArtifacts.weightData instanceof ArrayBuffer
-            ? modelArtifacts.weightData
-            : (modelArtifacts.weightData as ArrayBuffer[])[0]
-        );
-        fs.writeFileSync(weightsPath, weightBuffer);
-      }
-
-      // Construir model.json
-      const modelJSON: any = {
-        modelTopology: modelArtifacts.modelTopology,
-        format: modelArtifacts.format,
-        generatedBy: modelArtifacts.generatedBy,
-        convertedBy: modelArtifacts.convertedBy,
-        weightsManifest: [{
-          paths: ['weights.bin'],
-          weights: modelArtifacts.weightSpecs || []
-        }]
-      };
-
-      if (modelArtifacts.trainingConfig) {
-        modelJSON.trainingConfig = modelArtifacts.trainingConfig;
-      }
-
-      fs.writeFileSync(modelJsonPath, JSON.stringify(modelJSON), 'utf-8');
-
-      return {
-        modelArtifactsInfo: {
-          dateSaved: new Date(),
-          modelTopologyType: 'JSON'
-        }
-      };
-    }
-  };
-}
-
-/**
- * IOHandler para cargar modelos TF.js desde filesystem (sin tfjs-node).
- * Lee model.json + weights.bin del directorio indicado.
- */
-function nodeLoadHandler(dirPath: string): tf.io.IOHandler {
-  return {
-    async load(): Promise<tf.io.ModelArtifacts> {
-      const modelJsonPath = path.join(dirPath, 'model.json');
-      const modelJSON = JSON.parse(fs.readFileSync(modelJsonPath, 'utf-8'));
-
-      const artifacts: tf.io.ModelArtifacts = {
-        modelTopology: modelJSON.modelTopology,
-        format: modelJSON.format,
-        generatedBy: modelJSON.generatedBy,
-        convertedBy: modelJSON.convertedBy,
-        weightSpecs: modelJSON.weightsManifest?.[0]?.weights || [],
-        trainingConfig: modelJSON.trainingConfig
-      };
-
-      // Cargar pesos binarios
-      const weightPaths: string[] = modelJSON.weightsManifest?.[0]?.paths || [];
-      if (weightPaths.length > 0) {
-        const buffers: Buffer[] = weightPaths.map((p: string) =>
-          fs.readFileSync(path.join(dirPath, p))
-        );
-        const totalLen = buffers.reduce((sum, b) => sum + b.length, 0);
-        const combined = new Uint8Array(totalLen);
-        let offset = 0;
-        for (const buf of buffers) {
-          combined.set(buf, offset);
-          offset += buf.length;
-        }
-        artifacts.weightData = combined.buffer;
-      }
-
-      return artifacts;
-    }
-  };
-}
-
 // ─── Preparación de datos ────────────────────────────────────────────────────
 /**
  * Carga y prepara features para el entrenamiento.
@@ -407,17 +165,12 @@ export function startTraining(
   mode: string,
   includeLocalTraining: boolean
 ): void {
-  if (trainingInProgress) {
-    logError('Se intentó iniciar entrenamiento pero ya hay un proceso activo.');
-    return;
-  }
-
-  trainingInProgress = true;
+  setTrainingLock(true);
 
   runTraining(songIds, mode, includeLocalTraining)
     .catch(err => logError(`Error fatal en entrenamiento: ${err}`))
     .finally(() => {
-      trainingInProgress = false;
+      setTrainingLock(false);
       logInfo('Lock de entrenamiento liberado.');
     });
 }
@@ -498,7 +251,7 @@ async function runTraining(
 }
 
 // ─── Crear y registrar modelo nuevo ──────────────────────────────────────────
-async function createAndRegisterModel(isGlobal: boolean, dirName: string): Promise<TensorFlowModel> {
+export async function createAndRegisterModel(isGlobal: boolean, dirName: string): Promise<TensorFlowModel> {
   const modelsDir = path.resolve(paths.models);
   const modelPath = path.join(modelsDir, dirName);
 
@@ -729,17 +482,12 @@ async function getPlaylistSongMap(songIds: number[]): Promise<Map<number, number
  * Adquiere el lock de predicción. Todo el progreso se loguea en consola.
  */
 export function startPrediction(songIds: number[]): void {
-  if (predictionInProgress) {
-    logError('Se intentó iniciar predicción pero ya hay un proceso activo.');
-    return;
-  }
-
-  predictionInProgress = true;
+  setPredictionLock(true);
 
   runPrediction(songIds)
     .catch(err => logError(`Error fatal en predicción: ${err}`))
     .finally(() => {
-      predictionInProgress = false;
+      setPredictionLock(false);
       logInfo('Lock de predicción liberado.');
     });
 }
