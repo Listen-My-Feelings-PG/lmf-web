@@ -262,6 +262,20 @@ export class StatsListComponent implements AfterViewChecked {
       (a, b) => new Date(a.interactionDate).getTime() - new Date(b.interactionDate).getTime()
     );
 
+    const VISIBLE_POINTS = 100;
+    const count = stats.length;
+    const useScroll = count > VISIBLE_POINTS;
+
+    if (useScroll) {
+      const containerWidth = canvas.parentElement?.clientWidth || 600;
+      const containerHeight = canvas.parentElement?.clientHeight || 208;
+      const chartWidth = Math.round((containerWidth / VISIBLE_POINTS) * count);
+      canvas.width = chartWidth;
+      canvas.height = containerHeight;
+      canvas.style.width = chartWidth + 'px';
+      canvas.style.height = containerHeight + 'px';
+    }
+
     const labels = stats.map((_, i) => `#${i + 1}`);
     const accuracyData = stats.map(s => s.prediction?.accuracy != null ? +s.prediction.accuracy : null);
 
@@ -282,7 +296,7 @@ export class StatsListComponent implements AfterViewChecked {
       data: {
         labels,
         datasets: [{
-          label: 'Precisi\u00f3n (%)',
+          label: 'Precisión (%)',
           data: accuracyData,
           borderColor: gradient,
           backgroundColor: fillGradient,
