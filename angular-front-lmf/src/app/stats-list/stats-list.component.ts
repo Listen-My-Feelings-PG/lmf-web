@@ -196,6 +196,16 @@ export class StatsListComponent implements AfterViewChecked {
     }
   }
 
+  // 350 entrenamientos → 303rem (proporción base)
+  private readonly REM_PER_TRAINING = 303 / 350;
+  private readonly SCROLL_THRESHOLD = 100;
+
+  getExpandedChartWidth(song: Song): string {
+    const count = song.stats?.length ?? 0;
+    if (count <= this.SCROLL_THRESHOLD) return '100%';
+    return `${(count * this.REM_PER_TRAINING).toFixed(1)}rem`;
+  }
+
   toggleExpandedChart(song: Song): void {
     if (this.expandedSongId() === song.id) {
       this.expandedSongId.set(null);
@@ -262,20 +272,6 @@ export class StatsListComponent implements AfterViewChecked {
       (a, b) => new Date(a.interactionDate).getTime() - new Date(b.interactionDate).getTime()
     );
 
-    const VISIBLE_POINTS = 100;
-    const count = stats.length;
-    const useScroll = count > VISIBLE_POINTS;
-
-    if (useScroll) {
-      const containerWidth = canvas.parentElement?.clientWidth || 600;
-      const containerHeight = canvas.parentElement?.clientHeight || 208;
-      const chartWidth = Math.round((containerWidth / VISIBLE_POINTS) * count);
-      canvas.width = chartWidth;
-      canvas.height = containerHeight;
-      canvas.style.width = chartWidth + 'px';
-      canvas.style.height = containerHeight + 'px';
-    }
-
     const labels = stats.map((_, i) => `#${i + 1}`);
     const accuracyData = stats.map(s => s.prediction?.accuracy != null ? +s.prediction.accuracy : null);
 
@@ -296,7 +292,7 @@ export class StatsListComponent implements AfterViewChecked {
       data: {
         labels,
         datasets: [{
-          label: 'Precisión (%)',
+          label: 'Precisi\u00f3n (%)',
           data: accuracyData,
           borderColor: gradient,
           backgroundColor: fillGradient,

@@ -25,7 +25,7 @@
 
   <!-- Table Container with Scroll -->
   <div class="flex-1 min-h-0 overflow-y-auto rounded-lg border-2 border-gray-700">
-    <table class="w-full text-xs">
+    <table class="w-full text-xs table-fixed">
       <!-- Table Header (Sticky) -->
       <thead class="bg-gray-800 sticky top-0 z-10 border-b-2 border-gray-700">
         @for (headerGroup of table.getHeaderGroups(); track headerGroup.id) {
@@ -183,8 +183,9 @@
         <tr>
           <td [colSpan]="table.getAllColumns().length"
             class="p-0">
-            <div class="bg-gray-800/50 border-t border-b border-gray-700 p-3">
-              <div class="h-52 overflow-x-auto">
+            <div class="bg-gray-800/50 border-t border-b border-gray-700 p-3 chat-canvas-scroll-container">
+              <div class="h-52 chat-canvas-container"
+                [style.width]="getExpandedChartWidth(row.original)">
                 <canvas [id]="'expanded-chart-' + row.original.id"></canvas>
               </div>
             </div>
