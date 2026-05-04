@@ -15,6 +15,7 @@ export interface AppConfig {
  */
 export interface AppPaths {
   audio: string;
+  onboard: string;
   features: string;
   models: string;
 }

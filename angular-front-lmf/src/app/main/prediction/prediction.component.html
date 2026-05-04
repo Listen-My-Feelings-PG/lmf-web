@@ -26,7 +26,9 @@
   <div class="flex-1 min-h-0">
     <app-list [list]="listForTraining.list"
       (onSelectSong)="playSong($event)"
-      [lockRate]="true"></app-list>
+      [lockRate]="true"
+      [predictMode]="true"
+      (onPredictSelected)="startPrediction($event)"></app-list>
   </div>
 
 </div>

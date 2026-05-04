@@ -13,13 +13,51 @@
     </div>
 
     <!-- Search Input -->
-    <div class="flex items-center gap-3">
-      <label class="text-gray-300 font-semibold">Buscar:</label>
-      <input type="text"
-        [value]="globalFilter()"
-        (input)="onSearchChange($any($event.target).value)"
-        placeholder="Buscar canciones..."
-        class="border-2 border-gray-600 bg-gray-800 text-gray-100 rounded-lg px-4 py-2 focus:outline-none focus:border-primary transition-colors">
+    <div class="flex items-center gap-4 flex-wrap justify-end">
+      <!-- Action Button: onboard or predict -->
+      @if (!predictMode) {
+      <!-- Copy to Onboard Button -->
+      <button (click)="copyToOnboard()"
+        [disabled]="selectedRows().size === 0 || isCopyingOnboard()"
+        class="flex items-center gap-2 px-3 py-2 rounded-lg border-2 font-medium text-xs transition-all
+          border-gray-600 bg-gray-800 text-gray-300
+          hover:border-primary hover:text-primary
+          disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-gray-600 disabled:hover:text-gray-300">
+        @if (isCopyingOnboard()) {
+        <i class="fas fa-spinner fa-spin"></i>
+        <span>Copiando...</span>
+        } @else {
+        <i class="fas fa-copy"></i>
+        <span>Copiar canciones seleccionadas a onboarding</span>
+        @if (selectedRows().size > 0) {
+        <span class="bg-primary/20 text-primary rounded-full px-2 py-0.5 font-bold">{{ selectedRows().size }}</span>
+        }
+        }
+      </button>
+      } @else {
+      <!-- Predict Selected Button -->
+      <button (click)="predictSelected()"
+        [disabled]="selectedRows().size === 0"
+        class="flex items-center gap-2 px-3 py-2 rounded-lg border-2 font-medium text-xs transition-all
+          border-gray-600 bg-gray-800 text-gray-300
+          hover:border-primary hover:text-primary
+          disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-gray-600 disabled:hover:text-gray-300">
+        <i class="fas fa-brain"></i>
+        <span>Predecir canciones seleccionadas</span>
+        @if (selectedRows().size > 0) {
+        <span class="bg-primary/20 text-primary rounded-full px-2 py-0.5 font-bold">{{ selectedRows().size }}</span>
+        }
+      </button>
+      }
+
+      <div class="flex items-center gap-3">
+        <label class="text-gray-300 font-semibold">Buscar:</label>
+        <input type="text"
+          [value]="globalFilter()"
+          (input)="onSearchChange($any($event.target).value)"
+          placeholder="Buscar canciones..."
+          class="border-2 border-gray-600 bg-gray-800 text-gray-100 rounded-lg px-4 py-2 focus:outline-none focus:border-primary transition-colors">
+      </div>
     </div>
   </div>
 
@@ -31,9 +69,21 @@
         @for (headerGroup of table.getHeaderGroups(); track headerGroup.id) {
         <tr>
           <!-- Checkbox column for selection -->
-          <th class="px-2 py-2 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider w-10">
+          <th
+            [class]="'px-2 py-2 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider w-10 ' + (!predictMode ? 'cursor-pointer hover:bg-gray-700' : 'cursor-default')"
+            (click)="!predictMode ? toggleSelectAll() : null">
             <div class="flex items-center justify-center">
+              @if (!predictMode) {
+              @if (selectAllState() === 'all') {
+              <i class="fas fa-check-square text-primary text-xs"></i>
+              } @else if (selectAllState() === 'some') {
+              <i class="fas fa-minus-square text-primary/60 text-xs"></i>
+              } @else {
               <i class="far fa-square text-gray-500 text-xs"></i>
+              }
+              } @else {
+              <i class="far fa-square text-gray-700 text-xs"></i>
+              }
             </div>
           </th>
 

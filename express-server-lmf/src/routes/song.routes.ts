@@ -5,7 +5,8 @@ import {
   trainSongsByIds,
   getSongsForPrediction,
   predictSongsByIds,
-  tuneSingleSong
+  tuneSingleSong,
+  copySelectedSongsToOnboard
 } from '../controllers/song.controller';
 
 const router: Router = Router();
@@ -16,5 +17,6 @@ router.post('/train-songs-by-ids', trainSongsByIds)
 router.get('/songs-for-prediction/:playlistsIds', getSongsForPrediction);
 router.post('/predict-songs-by-ids', predictSongsByIds);
 router.post('/tune/:idSong', tuneSingleSong);
+router.post('/copy-to-onboard', copySelectedSongsToOnboard);
 
 export default router;

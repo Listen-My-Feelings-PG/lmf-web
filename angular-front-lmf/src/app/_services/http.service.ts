@@ -98,4 +98,13 @@ export class HttpService {
       });
     });
   }
+
+  copySelectedSongsToOnboard(songIds: number[]): Promise<{ success: boolean, message: string }> {
+    return new Promise((resolve, reject) => {
+      this.http.post<{ success: boolean, message: string }>(this.apiUrl + `/songs/copy-to-onboard`, { songIds: JSON.stringify(songIds) }).subscribe({
+        next: (response) => resolve(response),
+        error: (error) => reject({ error, at: 'copySelectedSongsToOnboard' })
+      });
+    });
+  }
 }

@@ -64,10 +64,10 @@ export class PredictionComponent implements OnInit {
     }
   }
 
-  async startPrediction(): Promise<void> {
+  async startPrediction(songIds?: number[]): Promise<void> {
     try {
-      const songIds = this.listForTraining.list.map(song => song.id as number);
-      const predictionResult = await this.httpService.predictSongsByIds(songIds);
+      const ids = songIds ?? this.listForTraining.list.map(song => song.id as number);
+      await this.httpService.predictSongsByIds(ids);
     } catch (error) {
       console.error('Error al iniciar la predicción:', error);
     }

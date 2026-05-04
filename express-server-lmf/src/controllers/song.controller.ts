@@ -6,7 +6,7 @@ import fs from "fs";
 import { paths } from "../main";
 import { isExtractionActive } from "../services/feature-extraction.service";
 import { startTraining, startPrediction, tuneSingleSongById, createAndRegisterModel } from "../services/tensorflow.service";
-import { isTrainingActive, isPredictionActive } from "../subprocess/locks.process";
+import { isTrainingActive, isPredictionActive, isOnboardCopyActive, setOnboardCopyLock } from "../subprocess/locks.process";
 import TsModelModel from "../models/tensorflow-db.model";
 import { logger } from "../utils/env-validator";
 
@@ -216,4 +216,65 @@ export async function predictSongsByIds(req: Request, res: Response): Promise<vo
   } catch (error) {
     sendError(res, 'Error al iniciar la predicción', InternalServerError, error instanceof Error ? error : null);
   }
+}
+
+export async function copySelectedSongsToOnboard(req: Request, res: Response): Promise<void> {
+  let ids: number[];
+  try {
+    ids = JSON.parse(req.body.songIds);
+    if (!Array.isArray(ids) || ids.length === 0) {
+      sendError(res, 'Lista de IDs de canciones vacía o inválida', BadRequest, null);
+      return;
+    }
+    ids = ids.map(Number).filter(n => !isNaN(n));
+    if (ids.length === 0) {
+      sendError(res, 'Los IDs de canciones deben ser números válidos', BadRequest, null);
+      return;
+    }
+  } catch {
+    sendError(res, 'Error al parsear songIds. Envíe un JSON válido.', BadRequest, null);
+    return;
+  }
+
+  if (isOnboardCopyActive()) {
+    sendError(res, 'Hay una copia de onboarding en proceso. Intente más tarde.', Locked, null);
+    return;
+  }
+
+  // Generar nombre de carpeta: yyyyMMdd_HHmmsscc
+  const now = new Date();
+  const pad = (n: number, len = 2) => String(n).padStart(len, '0');
+  const folderName = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}${pad(Math.floor(now.getMilliseconds() / 10))}`;
+  const destFolder = path.resolve(paths.onboard, folderName);
+
+  // Fire-and-forget: responder 202 inmediatamente
+  res.status(202).json({
+    success: true,
+    message: `Copia iniciada para ${ids.length} canciones. Carpeta destino: ${folderName}`
+  });
+
+  // Proceso asíncrono de copia
+  setOnboardCopyLock(true);
+  (async () => {
+    try {
+      const songs = await SongModel.getSongsByIds(ids);
+      if (!fs.existsSync(destFolder))
+        fs.mkdirSync(destFolder, { recursive: true });
+
+      for (const song of songs) {
+        const src = path.resolve(paths.audio, song.fileName);
+        if (fs.existsSync(src)) {
+          const dest = path.join(destFolder, song.fileName);
+          fs.copyFileSync(src, dest);
+        } else {
+          logger('warn', `⚠️  Archivo no encontrado, se omite: ${song.fileName}`);
+        }
+      }
+      logger('info', `✅ Onboarding completado. ${songs.length} canciones copiadas a: ${destFolder}`);
+    } catch (error) {
+      logger('error', '❌ Error durante la copia de onboarding', error);
+    } finally {
+      setOnboardCopyLock(false);
+    }
+  })();
 }

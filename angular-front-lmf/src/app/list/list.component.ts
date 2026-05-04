@@ -4,6 +4,7 @@ import {
 } from '@angular/core';
 import { Playlist, Song } from '../_types/generals.models';
 import { GlobalPlaylistService } from '../_services/global-playlist.service';
+import { HttpService } from '../_services/http.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -27,9 +28,11 @@ export class ListComponent implements OnDestroy, OnChanges {
   @Input('list') list: Array<Song>;
   @Input('lockRate') lockRate: boolean;
   @Input('showTuneButton') showTuneButton: boolean;
+  @Input('predictMode') predictMode: boolean;
   @Output('onSelectSong') onSelectSong: EventEmitter<Song>;
   @Output('onRateSong') onRateSong: EventEmitter<{ song: Song, score: UserScore }>;
   @Output('onTuneSong') onTuneSong: EventEmitter<number>;
+  @Output('onPredictSelected') onPredictSelected: EventEmitter<number[]>;
 
   songPlaying: Song | null;
   currentPlaylist: Playlist | null;
@@ -42,6 +45,7 @@ export class ListComponent implements OnDestroy, OnChanges {
   ]);
   selectedRows = signal<Set<number>>(new Set());
   hoveredRow = signal<number | null>(null);
+  isCopyingOnboard = signal(false);
 
   // Helper methods for template
   Math = Math;
@@ -91,7 +95,7 @@ export class ListComponent implements OnDestroy, OnChanges {
     initialState: { pagination: { pageSize: 10, }, },
   }));
 
-  constructor(private globalPlaylist: GlobalPlaylistService) {
+  constructor(private globalPlaylist: GlobalPlaylistService, private httpService: HttpService) {
     this.list = [];
     this.currentPlaylist = null;
     this.songPlaying = null;
@@ -99,7 +103,9 @@ export class ListComponent implements OnDestroy, OnChanges {
     this.onRateSong = new EventEmitter<{ song: Song, score: UserScore }>();
     this.lockRate = false;
     this.showTuneButton = false;
+    this.predictMode = false;
     this.onTuneSong = new EventEmitter<number>();
+    this.onPredictSelected = new EventEmitter<number[]>();
 
     // Effect en constructor (contexto de inyección válido)
     effect(() => {
@@ -169,6 +175,33 @@ export class ListComponent implements OnDestroy, OnChanges {
     return this.selectedRows().has(songId);
   }
 
+  // 'all' | 'some' | 'none'
+  selectAllState(): 'all' | 'some' | 'none' {
+    const filteredIds = this.table.getFilteredRowModel().rows.map(r => r.original.id!);
+    if (filteredIds.length === 0) return 'none';
+    const selected = this.selectedRows();
+    const checkedCount = filteredIds.filter(id => selected.has(id)).length;
+    if (checkedCount === 0) return 'none';
+    if (checkedCount === filteredIds.length) return 'all';
+    return 'some';
+  }
+
+  toggleSelectAll(): void {
+    const filteredIds = this.table.getFilteredRowModel().rows.map(r => r.original.id!);
+    const state = this.selectAllState();
+    if (state === 'all') {
+      // Deseleccionar todas las filtradas
+      const newSelected = new Set(this.selectedRows());
+      filteredIds.forEach(id => newSelected.delete(id));
+      this.selectedRows.set(newSelected);
+    } else {
+      // Seleccionar todas las filtradas
+      const newSelected = new Set(this.selectedRows());
+      filteredIds.forEach(id => newSelected.add(id));
+      this.selectedRows.set(newSelected);
+    }
+  }
+
   onSearchChange(value: string): void {
     this.globalFilter.set(value);
   }
@@ -229,5 +262,24 @@ export class ListComponent implements OnDestroy, OnChanges {
 
   ngOnDestroy(): void {
     // Los effects se limpian automáticamente
+  }
+
+  async copyToOnboard(): Promise<void> {
+    const ids = Array.from(this.selectedRows());
+    if (ids.length === 0) return;
+    this.isCopyingOnboard.set(true);
+    try {
+      await this.httpService.copySelectedSongsToOnboard(ids);
+    } catch (error) {
+      console.error('Error al copiar canciones al onboarding:', error);
+    } finally {
+      this.isCopyingOnboard.set(false);
+    }
+  }
+
+  predictSelected(): void {
+    const ids = Array.from(this.selectedRows());
+    if (ids.length === 0) return;
+    this.onPredictSelected.emit(ids);
   }
 }
