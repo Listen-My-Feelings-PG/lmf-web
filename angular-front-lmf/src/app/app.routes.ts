@@ -5,6 +5,7 @@ import { ListComponent } from './list/list.component';
 import { TrainingComponent } from './main/training/training.component';
 import { PredictionComponent } from './main/prediction/prediction.component';
 import { StatsComponent } from './main/stats/stats.component';
+import { VocadbComponent } from './main/vocadb/vocadb.component';
 
 export const routes: Routes = [
   {
@@ -14,6 +15,7 @@ export const routes: Routes = [
       { path: 'training', component: TrainingComponent },
       { path: 'prediction', component: PredictionComponent },
       { path: 'stats', component: StatsComponent },
+      { path: 'vocadb', component: VocadbComponent },
       { path: '', redirectTo: 'list', pathMatch: 'full' }
     ]
   },
