@@ -237,6 +237,7 @@
       [showTuneButton]="true"
       (onSelectSong)="playSong($event)"
       (onRateSong)="rateSongByUser($event)"
-      (onTuneSong)="tuneSong($event)"></app-list>
+      (onTuneSong)="tuneSong($event)"
+      (onDeleteSongsFromLibrary)="removeDeletedSongs($event)"></app-list>
   </div>
 </div>

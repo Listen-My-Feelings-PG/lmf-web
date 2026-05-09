@@ -33,6 +33,7 @@ export class ListComponent implements OnDestroy, OnChanges {
   @Output('onRateSong') onRateSong: EventEmitter<{ song: Song, score: UserScore }>;
   @Output('onTuneSong') onTuneSong: EventEmitter<number>;
   @Output('onPredictSelected') onPredictSelected: EventEmitter<number[]>;
+  @Output('onDeleteSongsFromLibrary') onDeleteSongsFromLibrary: EventEmitter<number[]>;
 
   songPlaying: Song | null;
   currentPlaylist: Playlist | null;
@@ -46,6 +47,7 @@ export class ListComponent implements OnDestroy, OnChanges {
   selectedRows = signal<Set<number>>(new Set());
   hoveredRow = signal<number | null>(null);
   isCopyingOnboard = signal(false);
+  isDeletingFromLibrary = signal(false);
 
   // Helper methods for template
   Math = Math;
@@ -106,6 +108,7 @@ export class ListComponent implements OnDestroy, OnChanges {
     this.predictMode = false;
     this.onTuneSong = new EventEmitter<number>();
     this.onPredictSelected = new EventEmitter<number[]>();
+    this.onDeleteSongsFromLibrary = new EventEmitter<number[]>();
 
     // Effect en constructor (contexto de inyección válido)
     effect(() => {
@@ -275,6 +278,42 @@ export class ListComponent implements OnDestroy, OnChanges {
     } finally {
       this.isCopyingOnboard.set(false);
     }
+  }
+
+  async deleteSelectedFromLibrary(): Promise<void> {
+    const ids = Array.from(this.selectedRows());
+    if (ids.length === 0) return;
+
+    const confirmed = window.confirm(`Se borraran fisicamente ${ids.length} canciones de la biblioteca. Esta accion no se puede deshacer. Continuar?`);
+    if (!confirmed) return;
+
+    this.isDeletingFromLibrary.set(true);
+    try {
+      const result = await this.httpService.deleteSelectedSongsFromLibrary(ids);
+      const deletedIds = result.deletedIds?.length ? result.deletedIds : ids;
+      this.removeSongsFromList(deletedIds);
+      this.onDeleteSongsFromLibrary.emit(deletedIds);
+    } catch (error) {
+      console.error('Error al eliminar canciones de la biblioteca:', error);
+    } finally {
+      this.isDeletingFromLibrary.set(false);
+    }
+  }
+
+  private removeSongsFromList(songIds: number[]): void {
+    const deletedIds = new Set(songIds);
+    this.list = this.list.filter(song => !deletedIds.has(song.id!));
+    this.data.set(this.data().filter(song => !deletedIds.has(song.id!)));
+    this.selectedRows.set(new Set(Array.from(this.selectedRows()).filter(id => !deletedIds.has(id))));
+
+    const globalSongs = this.globalPlaylist.getSongList();
+    if (globalSongs.ok && globalSongs.value) {
+      this.globalPlaylist.setSongList(globalSongs.value.filter(song => !deletedIds.has(song.id!)));
+    }
+
+    const currentSong = this.globalPlaylist.getSongPlaying();
+    if (currentSong.ok && currentSong.value?.id && deletedIds.has(currentSong.value.id))
+      this.globalPlaylist.clearSongPlaying();
   }
 
   predictSelected(): void {

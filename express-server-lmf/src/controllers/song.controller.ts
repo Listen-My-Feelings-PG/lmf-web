@@ -6,9 +6,46 @@ import fs from "fs";
 import { paths } from "../main";
 import { isExtractionActive } from "../services/feature-extraction.service";
 import { startTraining, startPrediction, tuneSingleSongById, createAndRegisterModel } from "../services/tensorflow.service";
-import { isTrainingActive, isPredictionActive, isOnboardCopyActive, setOnboardCopyLock } from "../subprocess/locks.process";
+import {
+  isTrainingActive,
+  isPredictionActive,
+  isOnboardCopyActive,
+  setOnboardCopyLock,
+  isLibraryDeletionActive,
+  setLibraryDeletionLock
+} from "../subprocess/locks.process";
 import TsModelModel from "../models/tensorflow-db.model";
 import { logger } from "../utils/env-validator";
+
+type SongDeleteFailure = {
+  id: number;
+  fileName: string;
+  error: string;
+};
+
+function parseSongIds(rawSongIds: unknown): number[] | null {
+  try {
+    const parsed = typeof rawSongIds === 'string' ? JSON.parse(rawSongIds) : rawSongIds;
+    if (!Array.isArray(parsed) || parsed.length === 0)
+      return null;
+
+    const ids = parsed.map(Number).filter(id => Number.isInteger(id) && id > 0);
+    return ids.length > 0 ? [...new Set(ids)] : null;
+  } catch {
+    return null;
+  }
+}
+
+function resolveAudioFilePath(fileName: string): string {
+  const audioRoot = path.resolve(paths.audio);
+  const filePath = path.resolve(audioRoot, fileName);
+  const relativePath = path.relative(audioRoot, filePath);
+
+  if (relativePath.startsWith('..') || path.isAbsolute(relativePath))
+    throw new Error(`Archivo fuera del directorio de audio: ${fileName}`);
+
+  return filePath;
+}
 
 export async function tuneSingleSong(req: Request, res: Response): Promise<void> {
   const idSong = parseInt(req.params.idSong, 10);
@@ -218,6 +255,101 @@ export async function predictSongsByIds(req: Request, res: Response): Promise<vo
   }
 }
 
+export async function deleteSelectedSongsFromLibrary(req: Request, res: Response): Promise<void> {
+  const ids = parseSongIds(req.body.songIds);
+  if (!ids) {
+    sendError(res, 'Lista de IDs de canciones vacia o invalida', BadRequest, null);
+    return;
+  }
+
+  if (isExtractionActive()) {
+    sendError(res, 'La extraccion de features esta en progreso. Intente de nuevo cuando termine.', Locked, null);
+    return;
+  }
+
+  if (isTrainingActive()) {
+    sendError(res, 'Hay un proceso de entrenamiento activo. Intente mas tarde.', Locked, null);
+    return;
+  }
+
+  if (isPredictionActive()) {
+    sendError(res, 'Hay un proceso de prediccion activo. Intente mas tarde.', Locked, null);
+    return;
+  }
+
+  if (isOnboardCopyActive()) {
+    sendError(res, 'Hay una copia de onboarding en proceso. Intente mas tarde.', Locked, null);
+    return;
+  }
+
+  if (isLibraryDeletionActive()) {
+    sendError(res, 'Hay un borrado de biblioteca en proceso. Intente mas tarde.', Locked, null);
+    return;
+  }
+
+  setLibraryDeletionLock(true);
+  try {
+    const songs = await SongModel.getSongsByIds(ids);
+    if (songs.length === 0) {
+      sendError(res, 'No se encontraron canciones activas para borrar', NotFound, null);
+      return;
+    }
+
+    const deletedIds: number[] = [];
+    const missingFileIds: number[] = [];
+    const failures: SongDeleteFailure[] = [];
+
+    for (const song of songs) {
+      const songId = song.id!;
+      try {
+        const filePath = resolveAudioFilePath(song.fileName);
+        await fs.promises.unlink(filePath);
+        deletedIds.push(songId);
+      } catch (error) {
+        const code = error && typeof error === 'object' && 'code' in error
+          ? String((error as NodeJS.ErrnoException).code)
+          : '';
+
+        if (code === 'ENOENT') {
+          missingFileIds.push(songId);
+          deletedIds.push(songId);
+          logger('warn', `Archivo de audio no encontrado al borrar. Se desactivara en BD: ${song.fileName}`);
+        } else {
+          failures.push({
+            id: songId,
+            fileName: song.fileName,
+            error: error instanceof Error ? error.message : String(error)
+          });
+        }
+      }
+    }
+
+    if (deletedIds.length > 0)
+      await SongModel.logicalDeleteByIds(deletedIds);
+
+    if (deletedIds.length === 0) {
+      sendError(res, 'No se pudo borrar ninguna cancion de la biblioteca', InternalServerError, failures[0] ? new Error(failures[0].error) : null);
+      return;
+    }
+
+    const message = failures.length === 0
+      ? `${deletedIds.length} canciones eliminadas de la biblioteca.`
+      : `${deletedIds.length} canciones eliminadas de la biblioteca. ${failures.length} no se pudieron borrar.`;
+
+    res.status(failures.length > 0 ? 207 : 200).json({
+      success: failures.length === 0,
+      message,
+      deletedIds,
+      missingFileIds,
+      failures
+    });
+  } catch (error) {
+    sendError(res, 'Error al eliminar canciones de la biblioteca', InternalServerError, error instanceof Error ? error : null);
+  } finally {
+    setLibraryDeletionLock(false);
+  }
+}
+
 export async function copySelectedSongsToOnboard(req: Request, res: Response): Promise<void> {
   let ids: number[];
   try {
@@ -238,6 +370,11 @@ export async function copySelectedSongsToOnboard(req: Request, res: Response): P
 
   if (isOnboardCopyActive()) {
     sendError(res, 'Hay una copia de onboarding en proceso. Intente más tarde.', Locked, null);
+    return;
+  }
+
+  if (isLibraryDeletionActive()) {
+    sendError(res, 'Hay un borrado de biblioteca en proceso. Intente mas tarde.', Locked, null);
     return;
   }
 

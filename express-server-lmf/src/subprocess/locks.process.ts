@@ -4,6 +4,7 @@
 let trainingInProgress = false;
 let predictionInProgress = false;
 let onboardCopyInProgress = false;
+let libraryDeletionInProgress = false;
 
 export function isTrainingActive(): boolean {
   return trainingInProgress;
@@ -17,6 +18,10 @@ export function isOnboardCopyActive(): boolean {
   return onboardCopyInProgress;
 }
 
+export function isLibraryDeletionActive(): boolean {
+  return libraryDeletionInProgress;
+}
+
 export function setTrainingLock(active: boolean): void {
   trainingInProgress = active;
 }
@@ -27,4 +32,8 @@ export function setPredictionLock(active: boolean): void {
 
 export function setOnboardCopyLock(active: boolean): void {
   onboardCopyInProgress = active;
+}
+
+export function setLibraryDeletionLock(active: boolean): void {
+  libraryDeletionInProgress = active;
 }

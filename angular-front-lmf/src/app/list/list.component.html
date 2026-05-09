@@ -34,6 +34,25 @@
         }
         }
       </button>
+
+      <!-- Delete From Library Button -->
+      <button (click)="deleteSelectedFromLibrary()"
+        [disabled]="selectedRows().size === 0 || isDeletingFromLibrary()"
+        class="flex items-center gap-2 px-3 py-2 rounded-lg border-2 font-medium text-xs transition-all
+          border-gray-600 bg-gray-800 text-gray-300
+          hover:border-red-500 hover:text-red-400
+          disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-gray-600 disabled:hover:text-gray-300">
+        @if (isDeletingFromLibrary()) {
+        <i class="fas fa-spinner fa-spin"></i>
+        <span>Eliminando...</span>
+        } @else {
+        <i class="fas fa-trash-alt"></i>
+        <span>Eliminar canciones seleccionadas de la biblioteca</span>
+        @if (selectedRows().size > 0) {
+        <span class="bg-red-500/20 text-red-400 rounded-full px-2 py-0.5 font-bold">{{ selectedRows().size }}</span>
+        }
+        }
+      </button>
       } @else {
       <!-- Predict Selected Button -->
       <button (click)="predictSelected()"

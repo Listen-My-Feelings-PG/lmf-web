@@ -53,6 +53,12 @@ export class TrainingComponent {
     }
   }
 
+  removeDeletedSongs(songIds: number[]): void {
+    const deletedIds = new Set(songIds);
+    this.listForTraining.list = this.listForTraining.list.filter(song => !deletedIds.has(song.id!));
+    this.applyFiltersToList();
+  }
+
   private applyFiltersToList(): void {
     let filteredList: Array<Song> = JSON.parse(JSON.stringify(this.listForTraining.list));
     if (this.selectedMode === 'clean') {

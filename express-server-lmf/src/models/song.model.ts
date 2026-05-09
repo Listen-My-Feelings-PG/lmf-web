@@ -96,7 +96,28 @@ class SongModel {
   }
 
   /**
-   * Reactivar una canción (ca_activo = 1)
+   * Borrado logico de multiples canciones (ca_activo = 0)
+   */
+  static async logicalDeleteByIds(ids: number[]): Promise<{ success: boolean; count: number }> {
+    try {
+      if (ids.length === 0)
+        return { success: false, count: 0 };
+
+      const rows = await psql<{ id: number }[]>`
+        UPDATE public.canciones
+        SET ca_activo = B'0'
+        WHERE ca_id = ANY(${ids}) AND ca_activo = B'1'
+        RETURNING ca_id as id
+      `;
+      return { success: rows.length > 0, count: rows.length };
+    } catch (error) {
+      console.error('Error al desactivar canciones:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Reactivar una cancion (ca_activo = 1)
    */
   static async reactivateById(id: number): Promise<{ success: boolean }> {
     try {

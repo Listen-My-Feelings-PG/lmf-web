@@ -107,4 +107,13 @@ export class HttpService {
       });
     });
   }
+
+  deleteSelectedSongsFromLibrary(songIds: number[]): Promise<{ success: boolean, message: string, deletedIds: number[] }> {
+    return new Promise((resolve, reject) => {
+      this.http.post<{ success: boolean, message: string, deletedIds: number[] }>(this.apiUrl + `/songs/delete-from-library`, { songIds: JSON.stringify(songIds) }).subscribe({
+        next: (response) => resolve(response),
+        error: (error) => reject({ error, at: 'deleteSelectedSongsFromLibrary' })
+      });
+    });
+  }
 }

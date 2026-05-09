@@ -48,6 +48,13 @@ export class PlayerComponent implements OnDestroy {
       if (lockRateStatus.ok)
         this.setup.lockRate = lockRateStatus.value || false;
 
+      if (!songPlaying) {
+        if (this.setup.playingIndex !== null)
+          this.stop();
+        this.setup.list = currentSongs;
+        return;
+      }
+
       if (songPlaying) {
         const currentPlayingSong = this.setup.list[this.setup.playingIndex!];
         if (!currentPlayingSong || (currentPlayingSong.id !== songPlaying.id)) {
