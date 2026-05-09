@@ -5,6 +5,7 @@ let trainingInProgress = false;
 let predictionInProgress = false;
 let onboardCopyInProgress = false;
 let libraryDeletionInProgress = false;
+let vocadbYoutubeReportInProgress = false;
 
 export function isTrainingActive(): boolean {
   return trainingInProgress;
@@ -22,6 +23,10 @@ export function isLibraryDeletionActive(): boolean {
   return libraryDeletionInProgress;
 }
 
+export function isVocadbYoutubeReportActive(): boolean {
+  return vocadbYoutubeReportInProgress;
+}
+
 export function setTrainingLock(active: boolean): void {
   trainingInProgress = active;
 }
@@ -36,4 +41,8 @@ export function setOnboardCopyLock(active: boolean): void {
 
 export function setLibraryDeletionLock(active: boolean): void {
   libraryDeletionInProgress = active;
+}
+
+export function setVocadbYoutubeReportLock(active: boolean): void {
+  vocadbYoutubeReportInProgress = active;
 }

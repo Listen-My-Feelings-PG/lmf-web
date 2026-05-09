@@ -27,7 +27,8 @@ const directories: string[] = [
   process.env.AUDIO_PATH || './files/audio',
   process.env.AUDIO_ONBOARD_PATH || './files/onboard',
   process.env.FEATURES_PATH || './files/features',
-  process.env.MODELS_PATH || './files/ts-models'
+  process.env.MODELS_PATH || './files/ts-models',
+  process.env.VOCADB_YOUTUBE_LINKS_REPORTS_PATH || './files/vocadb_reports'
 ];
 
 directories.forEach(dir => {

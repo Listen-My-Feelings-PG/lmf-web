@@ -1,1 +1,171 @@
-<p>vocadb works!</p>
+<section class="vocadb-page flex h-full min-h-full flex-col gap-5 text-gray-100">
+  <header class="rounded border border-gray-800 bg-gray-900 p-4 shadow-lg">
+    <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+      <div>
+        <h2 class="text-2xl font-bold text-primary">VocaDB YouTube</h2>
+        <div class="mt-3 flex flex-wrap gap-2 text-xs text-gray-300">
+          <span class="filter-pill">artistId=1</span>
+          <span class="filter-pill">artistParticipationStatus=Everything</span>
+          <span class="filter-pill">childVoicebanks=true</span>
+          <span class="filter-pill">minScore=4</span>
+          <span class="filter-pill">onlyWithPvs=false</span>
+          <span class="filter-pill">fields=PVs,Artists</span>
+          <span class="filter-pill">ArtistType=Vocaloid</span>
+        </div>
+      </div>
+
+      <form class="flex flex-col gap-3 md:flex-row md:items-end" (ngSubmit)="runExtraction()">
+        <label class="field-control">
+          <span>Año</span>
+          <input
+            type="number"
+            name="year"
+            [(ngModel)]="year"
+            [min]="minYear"
+            [max]="maxYear"
+            [disabled]="loading">
+        </label>
+
+        <label class="field-control">
+          <span>Salto dias</span>
+          <input
+            type="number"
+            name="rangeDays"
+            [(ngModel)]="rangeDays"
+            [min]="minRangeDays"
+            [max]="maxRangeDays"
+            [disabled]="loading">
+        </label>
+
+        <button
+          type="submit"
+          class="action-button bg-primary text-gray-950 hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+          [disabled]="loading">
+          <i class="fas" [class.fa-spinner]="loading" [class.fa-spin]="loading" [class.fa-link]="!loading"></i>
+          <span>{{ loading ? 'Extrayendo' : 'Extraer links' }}</span>
+        </button>
+      </form>
+    </div>
+  </header>
+
+  <div *ngIf="errorMessage" class="rounded border border-red-500/50 bg-red-950/40 px-4 py-3 text-sm text-red-100">
+    {{ errorMessage }}
+  </div>
+
+  <div *ngIf="loading" class="rounded border border-gray-800 bg-gray-900 p-5 text-sm text-gray-300">
+    <div class="flex items-center gap-3">
+      <i class="fas fa-spinner fa-spin text-primary"></i>
+      <span>Procesando rangos de fecha en el servidor...</span>
+    </div>
+  </div>
+
+  <ng-container *ngIf="extraction as result">
+    <section class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <article class="stat-card">
+        <span>Total canciones</span>
+        <strong>{{ result.stats.totalSongsReceived }}</strong>
+      </article>
+      <article class="stat-card">
+        <span>Total API</span>
+        <strong>{{ result.stats.totalCountFromApi }}</strong>
+      </article>
+      <article class="stat-card">
+        <span>YouTube Original PVs</span>
+        <strong>{{ result.stats.youtubeOriginalPvs }}</strong>
+      </article>
+      <article class="stat-card">
+        <span>URLs unicas</span>
+        <strong>{{ result.stats.uniqueYoutubeOriginalUrls }}</strong>
+      </article>
+      <article class="stat-card">
+        <span>Requests</span>
+        <strong>{{ result.stats.requestsMade }}</strong>
+      </article>
+      <article class="stat-card">
+        <span>Rangos finales</span>
+        <strong>{{ result.stats.leafRanges }}</strong>
+      </article>
+      <article class="stat-card">
+        <span>Rangos capados</span>
+        <strong>{{ result.stats.truncatedRanges }}</strong>
+      </article>
+      <article class="stat-card">
+        <span>Duplicados URL</span>
+        <strong>{{ result.stats.duplicateYoutubeUrls }}</strong>
+      </article>
+    </section>
+
+    <section
+      *ngIf="result.stats.unresolvedTruncatedRanges > 0"
+      class="rounded border border-yellow-500/50 bg-yellow-950/30 px-4 py-3 text-sm text-yellow-100">
+      {{ result.stats.unresolvedTruncatedRanges }} rango(s) diario(s) siguieron capados por la API.
+    </section>
+
+    <section class="rounded border border-gray-800 bg-gray-900 p-4">
+      <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <h3 class="text-lg font-bold text-secondary">Reporte</h3>
+          <p class="mt-1 break-all text-sm text-gray-300">{{ result.report.filePath }}</p>
+        </div>
+        <div class="text-sm text-gray-400">
+          {{ result.report.linksWritten }} links escritos
+        </div>
+      </div>
+    </section>
+
+    <section class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,32rem)]">
+      <div class="rounded border border-gray-800 bg-gray-900 p-4">
+        <div class="mb-3 flex items-center justify-between gap-3">
+          <h3 class="text-lg font-bold text-accent">Rangos consultados</h3>
+          <span class="text-sm text-gray-400">{{ result.rangeLogs.length }} rangos</span>
+        </div>
+
+        <div class="range-table-wrapper">
+          <table class="range-table w-full text-left text-sm">
+            <thead>
+              <tr>
+                <th>Inicio</th>
+                <th>Fin</th>
+                <th>Dias</th>
+                <th>Items</th>
+                <th>Total</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let range of result.rangeLogs">
+                <td>{{ range.afterDate }}</td>
+                <td>{{ range.beforeDate }}</td>
+                <td>{{ range.days }}</td>
+                <td>{{ range.received }}</td>
+                <td>{{ range.totalCount }}</td>
+                <td>
+                  <span class="status-badge" [class.status-warning]="range.truncated">
+                    {{ range.truncated ? 'Capado' : 'OK' }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="rounded border border-gray-800 bg-gray-900 p-4">
+        <div class="mb-3 flex items-center justify-between gap-3">
+          <h3 class="text-lg font-bold text-primary">Links</h3>
+          <button
+            type="button"
+            class="action-button border border-gray-700 bg-gray-800 text-gray-100 hover:border-primary disabled:cursor-not-allowed disabled:opacity-50"
+            (click)="copyLinks()"
+            [disabled]="result.urls.length === 0">
+            <i class="fas fa-copy"></i>
+            <span>Copiar</span>
+          </button>
+        </div>
+
+        <textarea class="links-output" readonly [value]="urlsText"></textarea>
+        <p *ngIf="copyMessage" class="mt-2 text-sm text-gray-300">{{ copyMessage }}</p>
+      </div>
+    </section>
+  </ng-container>
+</section>

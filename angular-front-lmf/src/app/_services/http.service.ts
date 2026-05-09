@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Song } from '../_types/generals.models';
 import { Calibration, HttpResponseSuccess, Playlist, TrainingModality, UserScore } from '../_types/generals.interfaces';
+import { VocaDbYoutubeExtractionResult } from '../_types/vocadb.interfaces';
 
 @Injectable({
   providedIn: 'root'
@@ -113,6 +114,15 @@ export class HttpService {
       this.http.post<{ success: boolean, message: string, deletedIds: number[] }>(this.apiUrl + `/songs/delete-from-library`, { songIds: JSON.stringify(songIds) }).subscribe({
         next: (response) => resolve(response),
         error: (error) => reject({ error, at: 'deleteSelectedSongsFromLibrary' })
+      });
+    });
+  }
+
+  createVocadbYoutubeLinksReport(year: number, rangeDays: number): Promise<VocaDbYoutubeExtractionResult> {
+    return new Promise((resolve, reject) => {
+      this.http.post<HttpResponseSuccess>(this.apiUrl + `/vocadb/youtube-links-report`, { year, rangeDays }).subscribe({
+        next: (response) => resolve(response.data as VocaDbYoutubeExtractionResult),
+        error: (error) => reject({ error, at: 'createVocadbYoutubeLinksReport' })
       });
     });
   }
