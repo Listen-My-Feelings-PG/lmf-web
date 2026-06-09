@@ -19,7 +19,7 @@ export function getCachedFeature(songId: number, featuresFileName: string, featu
 
   try {
     const npy = readNpy(featurePath);
-    const pooled = meanPoolEmbeddings(npy.data, npy.shape);
+    const pooled = poolEmbeddings(npy.data, npy.shape);
     const normalized = normalizeEmbedding(pooled);
     featureCache.set(songId, normalized);
     return normalized;
@@ -38,19 +38,28 @@ export function invalidateFeatureCache(songId?: number): void {
 
 // ─── Helpers de features ─────────────────────────────────────────────────────
 /**
- * Mean-pool de embeddings VGGish: (N, 128) → (128,)
- * Promedia los embeddings a través del tiempo para obtener un vector fijo.
+ * Mean & Std-pool de embeddings VGGish: (N, 128) → (256,)
+ * Captura el promedio (característica general) y la desviación estándar (dinamismo).
  */
-export function meanPoolEmbeddings(data: Float32Array, shape: number[]): Float32Array {
+export function poolEmbeddings(data: Float32Array, shape: number[]): Float32Array {
   const [numFrames, embDim] = shape;
-  const result = new Float32Array(embDim);
+  const result = new Float32Array(embDim * 2);
 
   for (let j = 0; j < embDim; j++) {
     let sum = 0;
     for (let i = 0; i < numFrames; i++) {
       sum += data[i * embDim + j];
     }
-    result[j] = sum / numFrames;
+    const mean = sum / numFrames;
+    result[j] = mean; // Primera mitad: Promedio
+
+    let varianceSum = 0;
+    for (let i = 0; i < numFrames; i++) {
+      const diff = data[i * embDim + j] - mean;
+      varianceSum += diff * diff;
+    }
+    const std = Math.sqrt(varianceSum / numFrames);
+    result[embDim + j] = std; // Segunda mitad: Desviación estándar
   }
 
   return result;

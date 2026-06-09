@@ -9,7 +9,7 @@ import type { TrainingEntry, PredictionEntry } from '../models/calibration.model
 import PlaylistModel from '../models/playlist.model';
 import { Song, TensorFlowModel } from '../types/generals.models';
 import { setTrainingLock, setPredictionLock } from '../subprocess/locks.process';
-import { getCachedFeature } from '../subprocess/feature-cache.process';
+import { getCachedFeature, invalidateFeatureCache } from '../subprocess/feature-cache.process';
 import { nodeSaveHandler, nodeLoadHandler } from './filesystem.service';
 
 // ─── Configuración por defecto ───────────────────────────────────────────────
@@ -18,7 +18,7 @@ const DEFAULT_CONFIG = {
   batchSize: parseInt(process.env.TS_CONFIG_DEAFULT_BATCH_SIZE || '32'),
   learningRate: parseFloat(process.env.TS_CONFIG_DEAFULT_LEARNING_RATE || '0.001'),
   numClasses: parseInt(process.env.TS_CONFIG_DEAFULT_NUM_CLASSES || '4'),
-  inputDim: parseInt(process.env.TS_CONFIG_DEAFULT_INPUT_DIM || '128'), // VGGish embedding dimension
+  inputDim: parseInt(process.env.TS_CONFIG_DEAFULT_INPUT_DIM || '304'), // VGGish (128) + Librosa (24) -> 152 * 2 = 304
   validationSplit: parseFloat(process.env.TS_CONFIG_DEAFULT_VALIDATION_SPLIT || '0.2'),
   fineTuningEpochs: parseInt(process.env.TS_CONFIG_DEAFULT_FINE_TUNING_EPOCHS || '5'),
 };
@@ -26,11 +26,11 @@ const DEFAULT_CONFIG = {
 const ARCHITECTURE_JSON = JSON.stringify({
   type: 'sequential',
   layers: [
-    { type: 'dense', units: 64, activation: 'relu', init: 'heNormal' },
-    { type: 'dropout', rate: 0.3 },
-    { type: 'dense', units: 32, activation: 'relu', init: 'heNormal' },
-    { type: 'dropout', rate: 0.3 },
-    { type: 'dense', units: 1, activation: 'sigmoid', note: 'output * 3 → rango [0,3]' }
+    { type: 'dense', units: 256, activation: 'relu', init: 'heNormal' },
+    { type: 'dropout', rate: 0.2 },
+    { type: 'dense', units: 128, activation: 'relu', init: 'heNormal' },
+    { type: 'dropout', rate: 0.2 },
+    { type: 'dense', units: 4, activation: 'softmax', note: 'clasificación 4 clases' }
   ]
 });
 
@@ -79,28 +79,27 @@ function createModelArchitecture(
   // Capa 1: Proyección del espacio de embeddings (128-dim) a representación interna (64-dim)
   model.add(tf.layers.dense({
     inputShape: [inputDim],
-    units: 64,
+    units: 256,
     activation: 'relu',
     kernelInitializer: 'heNormal'
   }));
 
-  // Regularización: apaga 30% de neuronas al azar durante entrenamiento
-  model.add(tf.layers.dropout({ rate: 0.3 }));
+  // Regularización
+  model.add(tf.layers.dropout({ rate: 0.2 }));
 
-  // Capa 2: Compresión adicional a 32-dim para capturar patrones de alto nivel
   model.add(tf.layers.dense({
-    units: 32,
+    units: 128,
     activation: 'relu',
     kernelInitializer: 'heNormal'
   }));
 
   // Regularización: segunda barrera contra overfitting
-  model.add(tf.layers.dropout({ rate: 0.3 }));
+  model.add(tf.layers.dropout({ rate: 0.2 }));
 
-  // Capa de salida: 1 neurona con sigmoid → [0,1], se escala × 3 → [0,3]
+  // Capa de salida: 4 neuronas (probabilidades para 0, 1, 2, 3)
   model.add(tf.layers.dense({
-    units: 1,
-    activation: 'sigmoid'
+    units: 4,
+    activation: 'softmax'
   }));
 
   return model;
@@ -112,8 +111,8 @@ function createModelArchitecture(
 function compileModel(model: tf.LayersModel, learningRate: number = DEFAULT_CONFIG.learningRate): void {
   model.compile({
     optimizer: tf.train.adam(learningRate),
-    loss: 'meanSquaredError',
-    metrics: ['mae']
+    loss: 'categoricalCrossentropy',
+    metrics: ['accuracy']
   });
 }
 
@@ -190,6 +189,10 @@ async function runTraining(
   // 1. Obtener canciones de la BD
   const songs = await SongModel.getSongsByIds(songIds);
   logInfo(`Canciones encontradas en BD: ${songs.length}`);
+
+  // Invalida caché para recalcular con la nueva dimensión
+  invalidateFeatureCache();
+  logInfo('Caché de características de audio invalidada.');
 
   // 2. Verificar/crear modelo global
   const defaultPlaylist = await PlaylistModel.getDefaultPlaylist();
@@ -332,25 +335,49 @@ async function trainSingleModel(
 
   compileModel(model, tsModel.learningRate);
 
-  // Convertir a tensores
-  const xData = new Float32Array(features.length * DEFAULT_CONFIG.inputDim);
-  features.forEach((feat, i) => xData.set(feat, i * DEFAULT_CONFIG.inputDim));
+  // Sobremuestreo (Oversampling) manual para balancear clases minoritarias
+  const classCountArray = [0, 0, 0, 0];
+  labels.forEach(l => classCountArray[l]++);
+  const maxCount = Math.max(...classCountArray);
 
-  const xs = tf.tensor2d(xData, [features.length, DEFAULT_CONFIG.inputDim]);
-  // Labels normalizados a [0,1] para sigmoid: label / 3
-  const ys = tf.tensor1d(labels.map(l => l / 3), 'float32');
+  const balancedFeatures: Float32Array[] = [];
+  const balancedLabels: number[] = [];
+
+  labels.forEach((label, index) => {
+    const count = classCountArray[label];
+    let weight = count > 0 ? Math.round(maxCount / count) : 1;
+    
+    // Énfasis extra para calificaciones altas
+    if (label >= 2) {
+      weight = Math.round(weight * 2);
+    }
+
+    for (let i = 0; i < weight; i++) {
+      balancedFeatures.push(features[index]);
+      balancedLabels.push(label); // No se divide por 3 (activación lineal)
+    }
+  });
+
+  logInfo(`  Sobremuestreo aplicado: Dataset creció de ${features.length} a ${balancedFeatures.length} muestras.`);
+
+  // Convertir a tensores
+  const xData = new Float32Array(balancedFeatures.length * DEFAULT_CONFIG.inputDim);
+  balancedFeatures.forEach((feat, i) => xData.set(feat, i * DEFAULT_CONFIG.inputDim));
+
+  const xs = tf.tensor2d(xData, [balancedFeatures.length, DEFAULT_CONFIG.inputDim]);
+  const ys = tf.oneHot(tf.tensor1d(balancedLabels, 'int32'), 4);
 
   // Entrenar
   const epochs = DEFAULT_CONFIG.epochs;
-  const batchSize = Math.min(DEFAULT_CONFIG.batchSize, features.length);
-  const useValidation = features.length >= 10;
+  const batchSize = Math.min(DEFAULT_CONFIG.batchSize, balancedFeatures.length);
+  const useValidation = balancedFeatures.length >= 10;
 
-  logInfo(`Fit: ${features.length} muestras, ${epochs} épocas, batch=${batchSize}, validación=${useValidation}`);
+  logInfo(`Fit: ${balancedFeatures.length} muestras balanceadas, ${epochs} épocas, batch=${batchSize}, validación=${useValidation}`);
 
   // Early stopping: detener si val_loss no mejora en 'patience' épocas
   let bestValLoss = Infinity;
   let patienceCounter = 0;
-  const patience = 20;
+  const patience = 40; // Mayor paciencia para dejar que la red memorice outliers
   let stoppedEarly = false;
 
   const history = await (model as tf.LayersModel).fit(xs, ys, {
@@ -362,9 +389,9 @@ async function trainSingleModel(
       onEpochEnd: (epoch, logs) => {
         if ((epoch + 1) % 10 === 0 || epoch === 0) {
           const loss = logs?.loss?.toFixed(4) ?? '?';
-          const mae = (logs?.mae)?.toFixed(4) ?? '?';
+          const acc = (logs?.acc)?.toFixed(4) ?? '?';
           const valLoss = logs?.val_loss?.toFixed(4) ?? '-';
-          logInfo(`  Época ${epoch + 1}/${epochs} — loss: ${loss} | mae: ${mae} | val_loss: ${valLoss}`);
+          logInfo(`  Época ${epoch + 1}/${epochs} — loss: ${loss} | acc: ${acc} | val_loss: ${valLoss}`);
         }
 
         // Early stopping basado en val_loss
@@ -387,12 +414,12 @@ async function trainSingleModel(
 
   // Obtener métricas finales
   const lossArr = history.history['loss'] as number[];
-  const maeArr = history.history['mae'] as number[];
+  const accArr = history.history['acc'] as number[];
   const finalLoss = lossArr[lossArr.length - 1];
-  const finalMae = maeArr[maeArr.length - 1];
+  const finalAcc = accArr[accArr.length - 1];
   const actualEpochs = lossArr.length;
 
-  logSuccess(`Entrenamiento completado — loss(MSE): ${finalLoss.toFixed(4)} | mae: ${finalMae.toFixed(4)} | épocas: ${actualEpochs}/${epochs}${stoppedEarly ? ' (early stop)' : ''}`);
+  logSuccess(`Entrenamiento completado — loss(CE): ${finalLoss.toFixed(4)} | acc: ${finalAcc.toFixed(4)} | épocas: ${actualEpochs}/${epochs}${stoppedEarly ? ' (early stop)' : ''}`);
 
   // Guardar modelo actualizado a disco
   if (!fs.existsSync(modelPath)) {
@@ -410,7 +437,7 @@ async function trainSingleModel(
     trainedSongs: newTrainedSongs,
     completedEpochs: newEpochs,
     loss: finalLoss,
-    accuracy: finalMae,
+    accuracy: finalAcc,
     version: newVersion
   });
 
@@ -431,7 +458,7 @@ async function trainSingleModel(
       loss: finalLoss,
       batchSize,
       validationSplit: useValidation ? DEFAULT_CONFIG.validationSplit : 0,
-      mae: finalMae
+      mae: finalAcc
     });
 
     // Actualizar resultados en la canción
@@ -567,8 +594,8 @@ async function runPrediction(songIds: number[]): Promise<void> {
       const prediction = model.predict(input) as tf.Tensor;
       const rawOutput = await prediction.data();
 
-      // Sigmoid produce [0,1], escalar × 3 → [0,3]
-      const globalScore = rawOutput[0] * 3;
+      // Clasificación: Valor Esperado
+      const globalScore = rawOutput[0]*0 + rawOutput[1]*1 + rawOutput[2]*2 + rawOutput[3]*3;
 
       // Calcular precisión: 100 - (|predicción - userScore| / 3) * 100
       const hasUserScore = song.userScore !== undefined && song.userScore !== null;
@@ -677,7 +704,7 @@ export async function tuneSingleSongById(songId: number): Promise<Song> {
   const targetFeatureArray = Array.from(normalized);
   for (let i = 0; i < TARGET_WEIGHT; i++) {
     allFeatures.push(normalized);
-    allLabels.push(song.userScore / 3);
+    allLabels.push(song.userScore);
   }
 
   // Agregar TODAS las demás canciones calificadas (igual que clean training)
@@ -687,7 +714,7 @@ export async function tuneSingleSongById(songId: number): Promise<Song> {
     const sNormalized = getCachedFeature(s.id!, s.tsFeaturesFileName, featuresDir);
     if (!sNormalized) continue;
     allFeatures.push(sNormalized);
-    allLabels.push(s.userScore / 3);
+    allLabels.push(s.userScore);
   }
 
   logInfo(`  Mini-retrain: ${allFeatures.length} muestras (target x${TARGET_WEIGHT} + ${allFeatures.length - TARGET_WEIGHT} canciones)`);
@@ -697,7 +724,7 @@ export async function tuneSingleSongById(songId: number): Promise<Song> {
   allFeatures.forEach((feat, i) => xData.set(feat, i * DEFAULT_CONFIG.inputDim));
 
   const xs = tf.tensor2d(xData, [allFeatures.length, DEFAULT_CONFIG.inputDim]);
-  const ys = tf.tensor1d(allLabels, 'float32');
+  const ys = tf.oneHot(tf.tensor1d(allLabels, 'int32'), 4);
 
   const history = await (model as tf.LayersModel).fit(xs, ys, {
     epochs: tuneEpochs,
@@ -732,7 +759,7 @@ export async function tuneSingleSongById(songId: number): Promise<Song> {
   const input = tf.tensor2d([targetFeatureArray], [1, DEFAULT_CONFIG.inputDim]);
   const prediction = model.predict(input) as tf.Tensor;
   const rawOutput = await prediction.data();
-  const globalScore = rawOutput[0] * 3;
+  const globalScore = rawOutput[0]*0 + rawOutput[1]*1 + rawOutput[2]*2 + rawOutput[3]*3;
   const predictionAccuracy = Math.min(99.9999, Math.max(0, 100 - (Math.abs(globalScore - song.userScore) / 3) * 100));
 
   logSuccess(`  Canción ${songId}: predicción=${globalScore.toFixed(4)} | usuario=${song.userScore} | precisión=${predictionAccuracy.toFixed(1)}%`);

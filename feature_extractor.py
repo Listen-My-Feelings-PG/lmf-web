@@ -92,7 +92,39 @@ def extract_features_vggish(model, audio_path: str, device: str = 'cpu') -> np.n
     if isinstance(embeddings, torch.Tensor):
         embeddings = embeddings.detach().cpu().numpy()
 
-    return embeddings
+    # Características musicales extra con librosa
+    # Usamos hop_length de 15360 para emparejar con ventanas de 0.96s de VGGish (16000 Hz)
+    hop_length = 15360
+    n_fft = 2048
+
+    mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=20, n_fft=n_fft, hop_length=hop_length) # (20, t)
+    centroid = librosa.feature.spectral_centroid(y=y, sr=sr, n_fft=n_fft, hop_length=hop_length) # (1, t)
+    bandwidth = librosa.feature.spectral_bandwidth(y=y, sr=sr, n_fft=n_fft, hop_length=hop_length) # (1, t)
+    rolloff = librosa.feature.spectral_rolloff(y=y, sr=sr, n_fft=n_fft, hop_length=hop_length) # (1, t)
+    zcr = librosa.feature.zero_crossing_rate(y=y, hop_length=hop_length) # (1, t)
+
+    extra_features = np.vstack([mfcc, centroid, bandwidth, rolloff, zcr]).T # (t, 24)
+
+    # Alinear dimensiones de tiempo (t) con las salidas de VGGish (N)
+    N = embeddings.shape[0]
+    t = extra_features.shape[0]
+    
+    if t > N:
+        extra_features = extra_features[:N, :]
+    elif t < N:
+        pad_width = N - t
+        extra_features = np.pad(extra_features, ((0, pad_width), (0, 0)), mode='edge')
+
+    # Escalar extra features al rango [0, 255] para compatibilidad con la normalización en Node.js
+    min_val = extra_features.min(axis=0, keepdims=True)
+    max_val = extra_features.max(axis=0, keepdims=True)
+    range_val = np.where(max_val - min_val == 0, 1.0, max_val - min_val)
+    extra_features_scaled = ((extra_features - min_val) / range_val) * 255.0
+
+    # Dimensión total: 128 (VGGish) + 24 (Librosa) = 152
+    combined_embeddings = np.hstack([embeddings, extra_features_scaled])
+
+    return combined_embeddings
 
 
 def process_batch(songs_file: str, audio_dir: str, output_dir: str):
