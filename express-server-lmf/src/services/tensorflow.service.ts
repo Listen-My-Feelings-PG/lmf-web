@@ -116,6 +116,36 @@ function compileModel(model: tf.LayersModel, learningRate: number = DEFAULT_CONF
   });
 }
 
+/**
+ * Crea un dataset balanceado a partir de listas de features y labels.
+ * Aplica sobremuestreo a las clases minoritarias y énfasis a las calificaciones >= 2.
+ */
+function buildBalancedDataset(features: Float32Array[], labels: number[]): { balancedFeatures: Float32Array[], balancedLabels: number[] } {
+  const classCountArray = [0, 0, 0, 0];
+  labels.forEach(l => classCountArray[l]++);
+  const maxCount = Math.max(...classCountArray);
+
+  const balancedFeatures: Float32Array[] = [];
+  const balancedLabels: number[] = [];
+
+  labels.forEach((label, index) => {
+    const count = classCountArray[label];
+    let weight = count > 0 ? Math.round(maxCount / count) : 1;
+    
+    // Énfasis extra para calificaciones altas
+    if (label >= 2) {
+      weight = Math.round(weight * 2);
+    }
+
+    for (let i = 0; i < weight; i++) {
+      balancedFeatures.push(features[index]);
+      balancedLabels.push(label);
+    }
+  });
+
+  return { balancedFeatures, balancedLabels };
+}
+
 // ─── Preparación de datos ────────────────────────────────────────────────────
 /**
  * Carga y prepara features para el entrenamiento.
@@ -336,27 +366,7 @@ async function trainSingleModel(
   compileModel(model, tsModel.learningRate);
 
   // Sobremuestreo (Oversampling) manual para balancear clases minoritarias
-  const classCountArray = [0, 0, 0, 0];
-  labels.forEach(l => classCountArray[l]++);
-  const maxCount = Math.max(...classCountArray);
-
-  const balancedFeatures: Float32Array[] = [];
-  const balancedLabels: number[] = [];
-
-  labels.forEach((label, index) => {
-    const count = classCountArray[label];
-    let weight = count > 0 ? Math.round(maxCount / count) : 1;
-    
-    // Énfasis extra para calificaciones altas
-    if (label >= 2) {
-      weight = Math.round(weight * 2);
-    }
-
-    for (let i = 0; i < weight; i++) {
-      balancedFeatures.push(features[index]);
-      balancedLabels.push(label); // No se divide por 3 (activación lineal)
-    }
-  });
+  const { balancedFeatures, balancedLabels } = buildBalancedDataset(features, labels);
 
   logInfo(`  Sobremuestreo aplicado: Dataset creció de ${features.length} a ${balancedFeatures.length} muestras.`);
 
@@ -694,27 +704,31 @@ export async function tuneSingleSongById(songId: number): Promise<Song> {
   // duplicada TARGET_WEIGHT veces para sesgar el gradiente hacia ella.
   // TARGET_WEIGHT escala con el dataset para mantener ~10% de presencia.
   const allScoredSongs = await SongModel.getAllSongsScoredByUserInDefaultPlaylist();
-  const otherSongsCount = allScoredSongs.filter(s => s.id !== songId && s.tsFeaturesFileName && s.userScore !== undefined && s.userScore !== null).length;
-  const TARGET_WEIGHT = Math.max(20, Math.round(otherSongsCount * 0.1));
+  
+  const baseFeatures: Float32Array[] = [];
+  const baseLabels: number[] = [];
 
-  const allFeatures: Float32Array[] = [];
-  const allLabels: number[] = [];
-
-  // Agregar canción objetivo con peso TARGET_WEIGHT
-  const targetFeatureArray = Array.from(normalized);
-  for (let i = 0; i < TARGET_WEIGHT; i++) {
-    allFeatures.push(normalized);
-    allLabels.push(song.userScore);
-  }
-
-  // Agregar TODAS las demás canciones calificadas (igual que clean training)
+  // Recolectar TODAS las demás canciones
   for (const s of allScoredSongs) {
     if (s.id === songId) continue;
     if (!s.tsFeaturesFileName || s.userScore === undefined || s.userScore === null) continue;
     const sNormalized = getCachedFeature(s.id!, s.tsFeaturesFileName, featuresDir);
     if (!sNormalized) continue;
-    allFeatures.push(sNormalized);
-    allLabels.push(s.userScore);
+    baseFeatures.push(sNormalized);
+    baseLabels.push(s.userScore);
+  }
+
+  // Balancear la base al igual que en Clean Training
+  const { balancedFeatures: allFeatures, balancedLabels: allLabels } = buildBalancedDataset(baseFeatures, baseLabels);
+
+  // Calcular TARGET_WEIGHT basado en el tamaño del dataset balanceado
+  const TARGET_WEIGHT = Math.max(20, Math.round(allFeatures.length * 0.1));
+
+  // Inyectar la canción objetivo
+  const targetFeatureArray = Array.from(normalized);
+  for (let i = 0; i < TARGET_WEIGHT; i++) {
+    allFeatures.push(normalized);
+    allLabels.push(song.userScore);
   }
 
   logInfo(`  Mini-retrain: ${allFeatures.length} muestras (target x${TARGET_WEIGHT} + ${allFeatures.length - TARGET_WEIGHT} canciones)`);
@@ -739,8 +753,8 @@ export async function tuneSingleSongById(songId: number): Promise<Song> {
   // 5. Guardar modelo
   await model.save(nodeSaveHandler(modelPath));
 
-  const maeArr = history.history['mae'] as number[];
-  const finalMae = maeArr ? maeArr[maeArr.length - 1] : 0;
+  const accArr = history.history['acc'] as number[];
+  const finalAcc = accArr ? accArr[accArr.length - 1] : 0;
 
   // 6. Registro de entrenamiento (fine-tuning siempre es true)
   const trainingId = await TrainingRecordModel.create({
@@ -752,7 +766,7 @@ export async function tuneSingleSongById(songId: number): Promise<Song> {
     loss: finalLoss,
     batchSize: DEFAULT_CONFIG.batchSize,
     validationSplit: 0,
-    mae: finalMae
+    mae: finalAcc
   });
 
   // 7. Predecir inmediatamente

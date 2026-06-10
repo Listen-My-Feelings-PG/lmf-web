@@ -45,11 +45,15 @@ export class TrainingComponent {
   }
 
   async tuneSong(idSong: number): Promise<void> {
-    const tunedSong = await this.httpService.tuneSongByIdSong(idSong);
-    const indexInList = this.listForTraining.list.findIndex(song => song.id === idSong);
-    if (indexInList !== -1) {
-      this.listForTraining.list[indexInList] = tunedSong;
-      this.applyFiltersToList();
+    try {
+      const tunedSong = await this.httpService.tuneSongByIdSong(idSong);
+      const indexInList = this.listForTraining.list.findIndex(song => song.id === idSong);
+      if (indexInList !== -1) {
+        this.listForTraining.list[indexInList] = tunedSong;
+        this.applyFiltersToList();
+      }
+    } catch (error: any) {
+      console.warn('Fine-tuning no procesado:', error?.error?.error?.message || error);
     }
   }
 

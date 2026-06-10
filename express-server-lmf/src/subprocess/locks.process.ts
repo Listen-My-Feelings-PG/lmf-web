@@ -3,6 +3,7 @@
 
 let trainingInProgress = false;
 let predictionInProgress = false;
+let fineTuningInProgress = false;
 let onboardCopyInProgress = false;
 let libraryDeletionInProgress = false;
 let vocadbYoutubeReportInProgress = false;
@@ -13,6 +14,10 @@ export function isTrainingActive(): boolean {
 
 export function isPredictionActive(): boolean {
   return predictionInProgress;
+}
+
+export function isFineTuningActive(): boolean {
+  return fineTuningInProgress;
 }
 
 export function isOnboardCopyActive(): boolean {
@@ -33,6 +38,10 @@ export function setTrainingLock(active: boolean): void {
 
 export function setPredictionLock(active: boolean): void {
   predictionInProgress = active;
+}
+
+export function setFineTuningLock(active: boolean): void {
+  fineTuningInProgress = active;
 }
 
 export function setOnboardCopyLock(active: boolean): void {

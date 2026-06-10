@@ -9,6 +9,8 @@ import { startTraining, startPrediction, tuneSingleSongById, createAndRegisterMo
 import {
   isTrainingActive,
   isPredictionActive,
+  isFineTuningActive,
+  setFineTuningLock,
   isOnboardCopyActive,
   setOnboardCopyLock,
   isLibraryDeletionActive,
@@ -54,16 +56,19 @@ export async function tuneSingleSong(req: Request, res: Response): Promise<void>
     return;
   }
 
-  if (isTrainingActive()) {
-    sendError(res, 'Hay un proceso de entrenamiento activo. Intente más tarde.', Locked, null);
+  if (isTrainingActive() || isPredictionActive() || isFineTuningActive()) {
+    sendError(res, 'Hay un proceso activo en TensorFlow. Intente más tarde.', Locked, null);
     return;
   }
 
+  setFineTuningLock(true);
   try {
     const updatedSong = await tuneSingleSongById(idSong);
     res.status(200).json({ success: true, data: updatedSong, message: 'Fine-tuning completado' });
   } catch (error) {
     sendError(res, 'Error al hacer fine-tuning', InternalServerError, error instanceof Error ? error : null);
+  } finally {
+    setFineTuningLock(false);
   }
 }
 
