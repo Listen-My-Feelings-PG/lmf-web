@@ -29,8 +29,8 @@ export class MainComponent implements OnInit {
           if (songList) {
             this.globalPlaylistService.initialize({
               playlists: playlists,
-              songList: songList,
-              selected: defaultPlaylist,
+              songsInPlaylistSelected: songList,
+              playlistSelected: defaultPlaylist,
               lockRate: false
             });
           }

@@ -48,18 +48,22 @@
     </div>
   </header>
 
-  <div *ngIf="errorMessage" class="rounded border border-red-500/50 bg-red-950/40 px-4 py-3 text-sm text-red-100">
+  @if (errorMessage) {
+  <div class="rounded border border-red-500/50 bg-red-950/40 px-4 py-3 text-sm text-red-100">
     {{ errorMessage }}
   </div>
+  }
 
-  <div *ngIf="loading" class="rounded border border-gray-800 bg-gray-900 p-5 text-sm text-gray-300">
+  @if (loading) {
+  <div class="rounded border border-gray-800 bg-gray-900 p-5 text-sm text-gray-300">
     <div class="flex items-center gap-3">
       <i class="fas fa-spinner fa-spin text-primary"></i>
       <span>Procesando rangos de fecha en el servidor...</span>
     </div>
   </div>
+  }
 
-  <ng-container *ngIf="extraction as result">
+  @if (extraction; as result) {
     <section class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
       <article class="stat-card">
         <span>Total canciones</span>
@@ -95,11 +99,12 @@
       </article>
     </section>
 
+    @if (result.stats.unresolvedTruncatedRanges > 0) {
     <section
-      *ngIf="result.stats.unresolvedTruncatedRanges > 0"
       class="rounded border border-yellow-500/50 bg-yellow-950/30 px-4 py-3 text-sm text-yellow-100">
       {{ result.stats.unresolvedTruncatedRanges }} rango(s) diario(s) siguieron capados por la API.
     </section>
+    }
 
     <section class="rounded border border-gray-800 bg-gray-900 p-4">
       <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
@@ -133,7 +138,8 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let range of result.rangeLogs">
+              @for (range of result.rangeLogs; track $index) {
+              <tr>
                 <td>{{ range.afterDate }}</td>
                 <td>{{ range.beforeDate }}</td>
                 <td>{{ range.days }}</td>
@@ -145,6 +151,7 @@
                   </span>
                 </td>
               </tr>
+              }
             </tbody>
           </table>
         </div>
@@ -164,8 +171,10 @@
         </div>
 
         <textarea class="links-output" readonly [value]="urlsText"></textarea>
-        <p *ngIf="copyMessage" class="mt-2 text-sm text-gray-300">{{ copyMessage }}</p>
+        @if (copyMessage) {
+        <p class="mt-2 text-sm text-gray-300">{{ copyMessage }}</p>
+        }
       </div>
     </section>
-  </ng-container>
+  }
 </section>

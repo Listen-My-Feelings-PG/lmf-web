@@ -4,7 +4,7 @@
       <label class="text-gray-300 font-semibold">Mostrar</label>
       <select (change)="setPageSize(+$any($event.target).value)"
         [value]="table.getState().pagination.pageSize"
-        class="border-2 border-gray-600 bg-gray-800 text-gray-100 rounded-lg px-3 py-2 focus:outline-none focus:border-primary transition-colors cursor-pointer">
+        class="form-select">
         <option [value]="10">10</option>
         <option [value]="50">50</option>
         <option [value]="100">100</option>
@@ -19,10 +19,7 @@
       <!-- Copy to Onboard Button -->
       <button (click)="copyToOnboard()"
         [disabled]="selectedRows().size === 0 || isCopyingOnboard()"
-        class="flex items-center gap-2 px-3 py-2 rounded-lg border-2 font-medium text-xs transition-all
-          border-gray-600 bg-gray-800 text-gray-300
-          hover:border-primary hover:text-primary
-          disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-gray-600 disabled:hover:text-gray-300">
+        class="btn-action">
         @if (isCopyingOnboard()) {
         <i class="fas fa-spinner fa-spin"></i>
         <span>Copiando...</span>
@@ -30,7 +27,7 @@
         <i class="fas fa-copy"></i>
         <span>Copiar canciones seleccionadas a onboarding</span>
         @if (selectedRows().size > 0) {
-        <span class="bg-primary/20 text-primary rounded-full px-2 py-0.5 font-bold">{{ selectedRows().size }}</span>
+        <span class="badge badge-primary">{{ selectedRows().size }}</span>
         }
         }
       </button>
@@ -38,10 +35,7 @@
       <!-- Delete From Library Button -->
       <button (click)="deleteSelectedFromLibrary()"
         [disabled]="selectedRows().size === 0 || isDeletingFromLibrary()"
-        class="flex items-center gap-2 px-3 py-2 rounded-lg border-2 font-medium text-xs transition-all
-          border-gray-600 bg-gray-800 text-gray-300
-          hover:border-red-500 hover:text-red-400
-          disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-gray-600 disabled:hover:text-gray-300">
+        class="btn-danger">
         @if (isDeletingFromLibrary()) {
         <i class="fas fa-spinner fa-spin"></i>
         <span>Eliminando...</span>
@@ -49,7 +43,7 @@
         <i class="fas fa-trash-alt"></i>
         <span>Eliminar canciones seleccionadas de la biblioteca</span>
         @if (selectedRows().size > 0) {
-        <span class="bg-red-500/20 text-red-400 rounded-full px-2 py-0.5 font-bold">{{ selectedRows().size }}</span>
+        <span class="badge badge-danger">{{ selectedRows().size }}</span>
         }
         }
       </button>
@@ -57,14 +51,11 @@
       <!-- Predict Selected Button -->
       <button (click)="predictSelected()"
         [disabled]="selectedRows().size === 0"
-        class="flex items-center gap-2 px-3 py-2 rounded-lg border-2 font-medium text-xs transition-all
-          border-gray-600 bg-gray-800 text-gray-300
-          hover:border-primary hover:text-primary
-          disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-gray-600 disabled:hover:text-gray-300">
+        class="btn-action">
         <i class="fas fa-brain"></i>
         <span>Predecir canciones seleccionadas</span>
         @if (selectedRows().size > 0) {
-        <span class="bg-primary/20 text-primary rounded-full px-2 py-0.5 font-bold">{{ selectedRows().size }}</span>
+        <span class="badge badge-primary">{{ selectedRows().size }}</span>
         }
       </button>
       }
@@ -75,21 +66,21 @@
           [value]="globalFilter()"
           (input)="onSearchChange($any($event.target).value)"
           placeholder="Buscar canciones..."
-          class="border-2 border-gray-600 bg-gray-800 text-gray-100 rounded-lg px-4 py-2 focus:outline-none focus:border-primary transition-colors">
+          class="form-input">
       </div>
     </div>
   </div>
 
   <!-- Table Container with Scroll -->
-  <div class="flex-1 min-h-0 overflow-y-auto rounded-lg border-2 border-gray-700">
+  <div class="table-container">
     <table class="w-full text-xs">
       <!-- Table Header (Sticky) -->
-      <thead class="bg-gray-800 sticky top-0 z-10 border-b-2 border-gray-700">
+      <thead class="table-header">
         @for (headerGroup of table.getHeaderGroups(); track headerGroup.id) {
         <tr>
           <!-- Checkbox column for selection -->
           <th
-            [class]="'px-2 py-2 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider w-10 ' + (!predictMode ? 'cursor-pointer hover:bg-gray-700' : 'cursor-default')"
+            class="table-th w-10" [class.sortable]="!predictMode" [class.cursor-default]="predictMode"
             (click)="!predictMode ? toggleSelectAll() : null">
             <div class="flex items-center justify-center">
               @if (!predictMode) {
@@ -109,7 +100,7 @@
           @for (header of headerGroup.headers; track header.id) {
 
           <th
-            [class]="'px-2 py-2 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider relative ' + (header.column.getCanSort() ? 'cursor-pointer select-none hover:bg-gray-700' : '')"
+            class="table-th" [class.sortable]="header.column.getCanSort()"
             (click)="header.column.getCanSort() ? header.column.getToggleSortingHandler()?.($event) : null"
             [style.width]="header.column.id === 'fileName' ? 'auto' : header.getSize() + 'px'"
             [style.minWidth.px]="header.column.columnDef.minSize">
@@ -159,8 +150,7 @@
         <tr (mouseenter)="hoveredRow.set(row.original.id!)"
           (mouseleave)="hoveredRow.set(null)"
           (click)="selectSong(row.original)"
-          [class]="'cursor-pointer transition-all duration-150 group ' + 
-              (isPlaying(row.original) ? 'bg-gradient-to-r from-purple-900/25 to-pink-900/25 border-l-4 border-primary' : 'hover:bg-gray-800')">
+          class="table-row group" [class.playing]="isPlaying(row.original)">
 
           <!-- Checkbox column (visible on hover) -->
           <td class="px-2 py-2 text-center">
@@ -285,7 +275,7 @@
             (click)="$event.stopPropagation()">
             <button (click)="trainSingleSong(row.original.id!)"
               [disabled]="row.original.userScore == null || row.original.tsPrediction == null"
-              class="w-7 h-7 flex items-center justify-center rounded border border-gray-600 text-gray-400 hover:text-primary hover:border-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-gray-400 disabled:hover:border-gray-600"
+              class="btn-icon w-7 h-7"
               title="Fine-tune esta canción">
               <i class="fas fa-bullseye text-sm"></i>
             </button>
@@ -307,7 +297,8 @@
   <div class="flex flex-col md:flex-row justify-between items-center mt-4 gap-4">
     <!-- Info Text -->
     <div class="text-gray-400 text-sm">
-      Mostrando {{ table.getFilteredRowModel().rows.length === 0 ? 0 : table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1 }}
+      Mostrando
+      {{ table.getFilteredRowModel().rows.length === 0 ? 0 : table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1 }}
       a
       {{ Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, table.getFilteredRowModel().rows.length) }}
       de {{ table.getFilteredRowModel().rows.length }} canciones
@@ -320,13 +311,13 @@
     <div class="flex items-center gap-2">
       <button (click)="table.firstPage()"
         [disabled]="!table.getCanPreviousPage()"
-        class="inline-block px-3 py-2 min-w-[2.5rem] bg-gray-800 border-2 border-gray-600 text-gray-300 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-700 hover:border-primary">
+        class="btn-page">
         Primero
       </button>
 
       <button (click)="table.previousPage()"
         [disabled]="!table.getCanPreviousPage()"
-        class="inline-block px-3 py-2 min-w-[2.5rem] bg-gray-800 border-2 border-gray-600 text-gray-300 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-700 hover:border-primary">
+        class="btn-page">
         Anterior
       </button>
 
@@ -336,10 +327,7 @@
       <span class="px-2 text-gray-500">...</span>
       } @else {
       <button (click)="table.setPageIndex(pageNum)"
-        [class]="'inline-block px-3 py-2 min-w-[2.5rem] text-center rounded-lg font-medium transition-all ' + 
-              (table.getState().pagination.pageIndex === pageNum 
-                ? 'bg-primary border-2 border-primary text-white font-bold' 
-                : 'bg-gray-800 border-2 border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-primary')">
+        class="btn-page" [class.active]="table.getState().pagination.pageIndex === pageNum">
         {{ pageNum + 1 }}
       </button>
       }
@@ -347,13 +335,13 @@
 
       <button (click)="table.nextPage()"
         [disabled]="!table.getCanNextPage()"
-        class="inline-block px-3 py-2 min-w-[2.5rem] bg-gray-800 border-2 border-gray-600 text-gray-300 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-700 hover:border-primary">
+        class="btn-page">
         Siguiente
       </button>
 
       <button (click)="table.lastPage()"
         [disabled]="!table.getCanNextPage()"
-        class="inline-block px-3 py-2 min-w-[2.5rem] bg-gray-800 border-2 border-gray-600 text-gray-300 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-700 hover:border-primary">
+        class="btn-page">
         Último
       </button>
     </div>
