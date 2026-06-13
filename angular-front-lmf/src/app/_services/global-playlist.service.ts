@@ -11,15 +11,15 @@ export class GlobalPlaylistService {
     this.state = signal<GlobalPlaylistSetup>({
       initialized: false,
       playlists: [],
-      selected: null,
-      songList: [],
+      playlistSelected: null,
+      songsInPlaylistSelected: [],
       lockRate: false
     });
   }
 
   readonly playlists = computed(() => this.state().playlists);
-  readonly songList = computed(() => this.state().songList);
-  readonly selectedPlaylist = computed(() => this.state().selected);
+  readonly songList = computed(() => this.state().songsInPlaylistSelected);
+  readonly selectedPlaylist = computed(() => this.state().playlistSelected);
   readonly currentSong = computed(() => this.state().songPlaying);
   readonly initialized = computed(() => this.state().initialized);
 
@@ -51,7 +51,7 @@ export class GlobalPlaylistService {
     const currentState = this.state();
     if (!currentState.initialized)
       return { ok: false, error: 'La playlist global no ha sido inicializada. No se puede reproducir una canción.' };
-    const songExists = currentState.songList.some(s => s.id === song.id);
+    const songExists = currentState.songsInPlaylistSelected.some(s => s.id === song.id);
     if (!songExists)
       return { ok: false, error: 'La canción seleccionada no existe en la playlist seleccionada.' };
     this.state.update(state => ({
@@ -79,17 +79,17 @@ export class GlobalPlaylistService {
     const songPlaying = currentState.songPlaying;
     if (!songPlaying)
       return { ok: false, error: 'No hay una canción en reproducción. No se puede calificar.' };
-    const songIndex = currentState.songList.findIndex(s => s.id === songPlaying.id);
+    const songIndex = currentState.songsInPlaylistSelected.findIndex(s => s.id === songPlaying.id);
     if (songIndex === -1)
       return { ok: false, error: 'La canción en reproducción no existe en la playlist seleccionada.' };
-    const updatedSongList = [...currentState.songList];
+    const updatedSongList = [...currentState.songsInPlaylistSelected];
     updatedSongList[songIndex] = {
       ...updatedSongList[songIndex],
       userScore: score
     };
     this.state.update(state => ({
       ...state,
-      songList: updatedSongList,
+      songsInPlaylistSelected: updatedSongList,
       songPlaying: {
         ...state.songPlaying!,
         userScore: score
@@ -128,7 +128,7 @@ export class GlobalPlaylistService {
   getSelectedPlaylist(): Result<Playlist | null> {
     const currentState = this.state();
     if (!currentState.initialized) return { ok: false, error: 'La playlist global no ha sido inicializada. No se puede obtener la playlist seleccionada.' };
-    return { ok: true, value: currentState.selected || null };
+    return { ok: true, value: currentState.playlistSelected || null };
   }
 
   setSelectedPlaylist(playlist: Playlist): Result<void> {
@@ -138,7 +138,7 @@ export class GlobalPlaylistService {
     if (!playlistExists) return { ok: false, error: 'La playlist seleccionada no existe en la lista global.' };
     this.state.update(state => ({
       ...state,
-      selected: playlist
+      playlistSelected: playlist
     }));
     return { ok: true };
   }
@@ -148,7 +148,7 @@ export class GlobalPlaylistService {
     if (!currentState.initialized) return { ok: false, error: 'La playlist global no ha sido inicializada. No se puede limpiar la playlist seleccionada.' };
     this.state.update(state => ({
       ...state,
-      selected: null
+      playlistSelected: null
     }));
     return { ok: true };
   }
@@ -156,7 +156,7 @@ export class GlobalPlaylistService {
   getSongList(): Result<Array<Song>> {
     const currentState = this.state();
     if (!currentState.initialized) return { ok: false, error: 'La playlist global no ha sido inicializada. No se puede obtener la lista de canciones.' };
-    return { ok: true, value: currentState.songList || [] };
+    return { ok: true, value: currentState.songsInPlaylistSelected || [] };
   }
 
   setSongList(songs: Array<Song>, options?: { emptyPlaylistList?: boolean, clearSelectedPlaylist?: boolean }): Result<void> {
@@ -164,9 +164,9 @@ export class GlobalPlaylistService {
     if (!currentState.initialized) return { ok: false, error: 'La playlist global no ha sido inicializada. No se puede actualizar la lista de canciones.' };
     this.state.update(state => ({
       ...state,
-      songList: songs,
+      songsInPlaylistSelected: songs,
       playlists: options?.emptyPlaylistList ? [] : state.playlists,
-      selected: options?.clearSelectedPlaylist ? null : state.selected
+      playlistSelected: options?.clearSelectedPlaylist ? null : state.playlistSelected
     }));
     return { ok: true };
   }
@@ -176,7 +176,7 @@ export class GlobalPlaylistService {
     if (!currentState.initialized) return { ok: false, error: 'La playlist global no ha sido inicializada. No se puede limpiar la lista de canciones.' };
     this.state.update(state => ({
       ...state,
-      songList: []
+      songsInPlaylistSelected: []
     }));
     return { ok: true };
   }

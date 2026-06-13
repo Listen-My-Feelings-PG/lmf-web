@@ -16,8 +16,8 @@ export interface HttpResponseSuccess {
 
 export interface GlobalPlaylistSetup {
   playlists: Array<Playlist>,
-  songList: Array<Song>,
-  selected: Playlist | null,
+  songsInPlaylistSelected: Array<Song>,
+  playlistSelected: Playlist | null,
   lockRate: boolean,
   songPlaying?: Song,
   initialized?: boolean
@@ -28,7 +28,7 @@ export interface Calibration {
   songId: number;
   modelId: number;
   prediction?: {
-    prediction: number;
+    score: number;
     accuracy: number;
     idLastFit: number | null;
   },

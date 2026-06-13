@@ -307,7 +307,7 @@
   <div class="flex flex-col md:flex-row justify-between items-center mt-4 gap-4">
     <!-- Info Text -->
     <div class="text-gray-400 text-sm">
-      Mostrando {{ table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1 }}
+      Mostrando {{ table.getFilteredRowModel().rows.length === 0 ? 0 : table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1 }}
       a
       {{ Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, table.getFilteredRowModel().rows.length) }}
       de {{ table.getFilteredRowModel().rows.length }} canciones

@@ -124,8 +124,8 @@ export class ListComponent implements OnDestroy, OnChanges {
             this.data.set([...this.list]);
           }
         }
-        this.songPlaying = songPlaying;
       }
+      this.songPlaying = songPlaying || null;
     });
   }
 
@@ -136,7 +136,15 @@ export class ListComponent implements OnDestroy, OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['list'] && changes['list'].currentValue) {
       this.data.set(this.list);
+      
+      const currentIds = new Set(this.list.map(s => s.id));
+      const newSelected = new Set([...this.selectedRows()].filter(id => currentIds.has(id)));
+      if (newSelected.size !== this.selectedRows().size) {
+        this.selectedRows.set(newSelected);
+      }
+      this.checkPaginationBounds();
     }
+
     if (changes['showTuneButton']) {
       if (this.showTuneButton) {
         this.columns.set(this.allColumns);
@@ -314,6 +322,20 @@ export class ListComponent implements OnDestroy, OnChanges {
     const currentSong = this.globalPlaylist.getSongPlaying();
     if (currentSong.ok && currentSong.value?.id && deletedIds.has(currentSong.value.id))
       this.globalPlaylist.clearSongPlaying();
+      
+    this.checkPaginationBounds();
+  }
+
+  private checkPaginationBounds(): void {
+    setTimeout(() => {
+      const pageCount = this.table.getPageCount();
+      const pageIndex = this.table.getState().pagination.pageIndex;
+      if (pageIndex >= pageCount && pageCount > 0) {
+        this.table.setPageIndex(pageCount - 1);
+      } else if (pageCount === 0 && pageIndex > 0) {
+        this.table.setPageIndex(0);
+      }
+    });
   }
 
   predictSelected(): void {

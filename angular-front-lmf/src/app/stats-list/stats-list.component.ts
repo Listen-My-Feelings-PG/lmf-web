@@ -340,7 +340,7 @@ export class StatsListComponent implements AfterViewChecked {
                 return [
                   `ID: ${cal.id}`,
                   `Canci\u00f3n ID: ${cal.songId}  |  Modelo ID: ${cal.modelId}`,
-                  `Predicción: ${cal.prediction?.prediction != null ? (+cal.prediction.prediction).toFixed(5) : 'N/A'}`,
+                  `Predicción: ${cal.prediction?.score != null ? (+cal.prediction.score).toFixed(5) : 'N/A'}`,
                   `Precisión: ${cal.prediction?.accuracy != null ? (+cal.prediction.accuracy).toFixed(4) + '%' : 'N/A'}`,
                   `User Score: ${cal.userScore ?? 'N/A'}`,
                   `Último Entren. ID: ${cal.prediction?.idLastFit ?? 'N/A'}`,
