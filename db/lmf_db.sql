@@ -2467,3 +2467,6 @@ ALTER TABLE ONLY public.playlists
 -- PostgreSQL database dump complete
 --
 
+
+-- Admin User
+INSERT INTO public.usuarios (us_username, us_password, us_activo) VALUES ('admin', '$Mmyh9k6cWb5EIOpzIby2IeMyy1xQNUDHwZbP4z8JJUAosjnomVosO', B'1');

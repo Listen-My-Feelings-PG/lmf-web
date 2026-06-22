@@ -9,6 +9,7 @@ import fs from 'fs';
 import dotenv from 'dotenv';
 import { AppConfig, AppPaths } from './types/generals.types';
 import { checkEnv } from './utils/env-validator';
+import { checkToken } from './services/jwt.service';
 
 dotenv.config();
 checkEnv();
@@ -59,6 +60,9 @@ app.use((req: Request, _res: Response, next: NextFunction) => {
   console.info(`[${timestamp}] ${req.method} ${req.url}`);
   next();
 });
+
+// Autenticación JWT global (ignora rutas en su lógica o acá)
+app.use(checkToken);
 
 const appPaths: AppPaths = {
   audio: directories[0],
