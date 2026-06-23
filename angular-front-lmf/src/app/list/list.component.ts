@@ -98,7 +98,11 @@ export class ListComponent implements OnDestroy, OnChanges {
     initialState: { pagination: { pageSize: 10, }, },
   }));
 
-  constructor(private globalPlaylist: GlobalPlaylistService, private httpService: HttpService, private toastService: ToastService) {
+  constructor(
+    private globalPlaylist: GlobalPlaylistService,
+    private httpService: HttpService,
+    private toastService: ToastService
+  ) {
     this.list = [];
     this.currentPlaylist = null;
     this.songPlaying = null;

@@ -1,4 +1,4 @@
-import { Component, effect } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Song } from '../../_types/generals.models';
 import { Calibration } from '../../_types/generals.interfaces';
 import { GlobalPlaylistService } from '../../_services/global-playlist.service';
@@ -11,17 +11,20 @@ import { StatsListComponent } from '../../stats-list/stats-list.component';
   templateUrl: './stats.component.html',
   styleUrl: './stats.component.scss'
 })
-export class StatsComponent {
+export class StatsComponent implements OnInit {
   songList: Array<Song>;
 
   constructor(private globalPlaylistService: GlobalPlaylistService, private httpService: HttpService) {
     this.songList = [];
-    effect(async () => {
-      const playlists = this.globalPlaylistService.getCurrentPlaylistList();
-      if (playlists.ok && playlists.value?.length) {
-        const defaultPlaylist = playlists.value?.find(pl => pl.isDefault);
-        const songs = await this.httpService.getAllSongsByPlaylistId(defaultPlaylist?.id as number);
-        const calibrationList = await this.httpService.getAllSongsCalibrationByIdPlaylist(defaultPlaylist?.id as number);
+  }
+
+  async ngOnInit(): Promise<void> {
+    const playlists = await this.httpService.getAllPlaylists();
+    if (playlists && playlists.length) {
+      const defaultPlaylist = playlists.find(pl => pl.isDefault);
+      if (defaultPlaylist?.id) {
+        const songs = await this.httpService.getAllSongsByPlaylistId(defaultPlaylist.id);
+        const calibrationList = await this.httpService.getAllSongsCalibrationByIdPlaylist(defaultPlaylist.id);
 
         // Agrupar calibraciones de predicción por songId
         const calibrationMap = new Map<number, Calibration[]>();
@@ -39,7 +42,7 @@ export class StatsComponent {
           return song;
         });
       }
-    });
+    }
   }
 
   playSong(event: Song): void {

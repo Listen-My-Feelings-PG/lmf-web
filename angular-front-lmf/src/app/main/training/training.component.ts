@@ -1,4 +1,4 @@
-import { Component, effect, OnInit, OnDestroy } from '@angular/core';
+import { Component, effect, OnInit, OnDestroy, AfterViewInit, AfterContentInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Song } from '../../_types/generals.models';
@@ -29,7 +29,7 @@ export class TrainingComponent implements OnInit, OnDestroy {
   // Estado del botón de entrenamiento
   trainingMessage: string | null = null;
   trainingMessageType: 'success' | 'error' | 'locked' = 'success';
-  private socketSubs: Subscription[] = [];
+  private socketSubscriptions: Subscription[] = [];
 
   constructor(private httpService: HttpService, private globalPlaylistService: GlobalPlaylistService, private socketService: SocketService, private toastService: ToastService) {
     this.selectedMode = 'none';
@@ -37,19 +37,15 @@ export class TrainingComponent implements OnInit, OnDestroy {
       listFiltered: [],
       list: []
     }
-    effect(async () => {
-      const playlists = this.globalPlaylistService.getCurrentPlaylistList();
-      if (playlists.ok && playlists.value?.length) {
-        const defaultPlaylist = playlists.value?.find(pl => pl.isDefault);
-        const songs = await this.httpService.getAllSongsByPlaylistId(defaultPlaylist?.id as number);
-        this.listForTraining.list = songs;
-        this.applyFiltersToList();
-      }
-    });
   }
 
   ngOnInit(): void {
-    this.socketSubs.push(
+    this.reloadSongs();
+    this.generateSocketSubscribers();
+  }
+
+  generateSocketSubscribers(): void {
+    this.socketSubscriptions.push(
       this.socketService.taskExec$.subscribe(() => {
         // No recargamos la lista en el inicio porque ya usamos bloqueo optimista en el front
       }),
@@ -60,16 +56,18 @@ export class TrainingComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.socketSubs.forEach(sub => sub.unsubscribe());
+    this.socketSubscriptions.forEach(sub => sub.unsubscribe());
   }
 
   async reloadSongs(): Promise<void> {
-    const playlists = this.globalPlaylistService.getCurrentPlaylistList();
-    if (playlists.ok && playlists.value?.length) {
-      const defaultPlaylist = playlists.value?.find(pl => pl.isDefault);
-      const songs = await this.httpService.getAllSongsByPlaylistId(defaultPlaylist?.id as number);
-      this.listForTraining.list = songs;
-      this.applyFiltersToList();
+    const playlists = await this.httpService.getAllPlaylists();
+    if (playlists && playlists.length) {
+      const defaultPlaylist = playlists.find(pl => pl.isDefault);
+      if (defaultPlaylist?.id) {
+        const songs = await this.httpService.getAllSongsByPlaylistId(defaultPlaylist.id);
+        this.listForTraining.list = songs;
+        this.applyFiltersToList();
+      }
     }
   }
 
