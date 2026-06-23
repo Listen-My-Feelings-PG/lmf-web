@@ -136,7 +136,7 @@ export class ListComponent implements OnDestroy, OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['list'] && changes['list'].currentValue) {
       this.data.set(this.list);
-      
+
       const currentIds = new Set(this.list.map(s => s.id));
       const newSelected = new Set([...this.selectedRows()].filter(id => currentIds.has(id)));
       if (newSelected.size !== this.selectedRows().size) {
@@ -322,7 +322,7 @@ export class ListComponent implements OnDestroy, OnChanges {
     const currentSong = this.globalPlaylist.getSongPlaying();
     if (currentSong.ok && currentSong.value?.id && deletedIds.has(currentSong.value.id))
       this.globalPlaylist.clearSongPlaying();
-      
+
     this.checkPaginationBounds();
   }
 

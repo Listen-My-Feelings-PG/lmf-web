@@ -10,6 +10,7 @@ import dotenv from 'dotenv';
 import { AppConfig, AppPaths } from './types/generals.types';
 import { checkEnv } from './utils/env-validator';
 import { checkToken } from './services/jwt.service';
+import { initSocket } from './services/socket.service';
 
 dotenv.config();
 checkEnv();
@@ -41,6 +42,8 @@ directories.forEach(dir => {
 
 const app: Application = express();
 const httpServer: HttpServer = require('http').Server(app);
+
+initSocket(httpServer);
 
 app.disable('x-powered-by');
 app.use(compression());
@@ -103,6 +106,14 @@ httpServer.listen(port, async (error?: Error) => {
   console.info(`Entorno: ${process.env.NODE_ENV || 'development'}`);
   console.info(`Base de datos: ${process.env.DB_DATABASE}`);
   console.info('='.repeat(50));
+
+  // Limpiar procesos interrumpidos
+  try {
+    await psql`UPDATE public.canciones SET ca_ts_status = null WHERE ca_ts_status IS NOT NULL`;
+    console.info('Estados de tareas de canciones reseteados a null (limpieza post-caída).');
+  } catch (err) {
+    console.error('Error limpiando procesos interrumpidos:', err);
+  }
 
   // Inicializar sincronización de canciones almacenadas
   const { initializeStoragedSongs } = await import('./services/filesystem.service');

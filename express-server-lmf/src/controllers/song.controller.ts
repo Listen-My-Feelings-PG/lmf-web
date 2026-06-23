@@ -6,16 +6,9 @@ import fs from "fs";
 import { paths } from "../main";
 import { isExtractionActive } from "../services/feature-extraction.service";
 import { startTraining, startPrediction, tuneSingleSongById, createAndRegisterModel } from "../services/tensorflow.service";
-import {
-  isTrainingActive,
-  isPredictionActive,
-  isFineTuningActive,
-  setFineTuningLock,
-  isOnboardCopyActive,
-  setOnboardCopyLock,
-  isLibraryDeletionActive,
-  setLibraryDeletionLock
-} from "../subprocess/locks.process";
+import { psql } from "../main";
+import { addTask, isTaskActive, removeTask } from "../subprocess/task.pool";
+import { emitTaskExec, emitTaskFinish } from "../services/socket.service";
 import TsModelModel from "../models/tensorflow-db.model";
 import { logger } from "../utils/env-validator";
 
@@ -56,19 +49,24 @@ export async function tuneSingleSong(req: Request, res: Response): Promise<void>
     return;
   }
 
-  if (isTrainingActive() || isPredictionActive() || isFineTuningActive()) {
-    sendError(res, 'Hay un proceso activo en TensorFlow. Intente más tarde.', Locked, null);
+  if (isTaskActive('fine-tuning', idSong)) {
+    sendError(res, 'Esta canción ya está en proceso de fine-tuning.', Locked, null);
     return;
   }
 
-  setFineTuningLock(true);
+  const taskId = addTask('fine-tuning', idSong);
   try {
+    await psql`UPDATE public.canciones SET ca_ts_status = 'fine-tuning' WHERE ca_id = ${idSong}`;
+    emitTaskExec({ type: 'fine-tuning', songId: idSong, message: `Iniciando fine-tuning para la canción ${idSong}` });
+
     const updatedSong = await tuneSingleSongById(idSong);
     res.status(200).json({ success: true, data: updatedSong, message: 'Fine-tuning completado' });
   } catch (error) {
     sendError(res, 'Error al hacer fine-tuning', InternalServerError, error instanceof Error ? error : null);
   } finally {
-    setFineTuningLock(false);
+    await psql`UPDATE public.canciones SET ca_ts_status = null WHERE ca_id = ${idSong}`;
+    removeTask(taskId);
+    emitTaskFinish({ type: 'fine-tuning', songId: idSong, message: `Fine-tuning completado para la canción ${idSong}` });
   }
 }
 
@@ -176,7 +174,7 @@ export async function trainSongsByIds(req: Request, res: Response): Promise<void
   }
 
   // Verificar si hay un proceso de entrenamiento activo
-  if (isTrainingActive()) {
+  if (isTaskActive('training')) {
     sendError(res, 'Ya hay un proceso de entrenamiento activo. Intente más tarde.', Locked, null);
     return;
   }
@@ -223,13 +221,13 @@ export async function predictSongsByIds(req: Request, res: Response): Promise<vo
   }
 
   // Verificar si hay un proceso de entrenamiento activo
-  if (isTrainingActive()) {
+  if (isTaskActive('training')) {
     sendError(res, 'Hay un proceso de entrenamiento activo. Intente de nuevo cuando termine.', Locked, null);
     return;
   }
 
   // Verificar si hay un proceso de predicción activo
-  if (isPredictionActive()) {
+  if (isTaskActive('prediction')) {
     sendError(res, 'Ya hay un proceso de predicción activo. Intente más tarde.', Locked, null);
     return;
   }
@@ -272,27 +270,27 @@ export async function deleteSelectedSongsFromLibrary(req: Request, res: Response
     return;
   }
 
-  if (isTrainingActive()) {
+  if (isTaskActive('training')) {
     sendError(res, 'Hay un proceso de entrenamiento activo. Intente mas tarde.', Locked, null);
     return;
   }
 
-  if (isPredictionActive()) {
+  if (isTaskActive('prediction')) {
     sendError(res, 'Hay un proceso de prediccion activo. Intente mas tarde.', Locked, null);
     return;
   }
 
-  if (isOnboardCopyActive()) {
+  if (isTaskActive('onboard-copy')) {
     sendError(res, 'Hay una copia de onboarding en proceso. Intente mas tarde.', Locked, null);
     return;
   }
 
-  if (isLibraryDeletionActive()) {
+  if (isTaskActive('library-deletion')) {
     sendError(res, 'Hay un borrado de biblioteca en proceso. Intente mas tarde.', Locked, null);
     return;
   }
 
-  setLibraryDeletionLock(true);
+  const taskId = addTask('library-deletion');
   try {
     const songs = await SongModel.getSongsByIds(ids);
     if (songs.length === 0) {
@@ -351,7 +349,8 @@ export async function deleteSelectedSongsFromLibrary(req: Request, res: Response
   } catch (error) {
     sendError(res, 'Error al eliminar canciones de la biblioteca', InternalServerError, error instanceof Error ? error : null);
   } finally {
-    setLibraryDeletionLock(false);
+    removeTask(taskId);
+    emitTaskFinish({ type: 'library-deletion', message: 'Borrado de biblioteca completado' });
   }
 }
 
@@ -373,12 +372,12 @@ export async function copySelectedSongsToOnboard(req: Request, res: Response): P
     return;
   }
 
-  if (isOnboardCopyActive()) {
+  if (isTaskActive('onboard-copy')) {
     sendError(res, 'Hay una copia de onboarding en proceso. Intente más tarde.', Locked, null);
     return;
   }
 
-  if (isLibraryDeletionActive()) {
+  if (isTaskActive('library-deletion')) {
     sendError(res, 'Hay un borrado de biblioteca en proceso. Intente mas tarde.', Locked, null);
     return;
   }
@@ -396,7 +395,8 @@ export async function copySelectedSongsToOnboard(req: Request, res: Response): P
   });
 
   // Proceso asíncrono de copia
-  setOnboardCopyLock(true);
+  const taskId = addTask('onboard-copy');
+  emitTaskExec({ type: 'onboard-copy', message: `Iniciando copia de ${ids.length} canciones a onboard` });
   (async () => {
     try {
       const songs = await SongModel.getSongsByIds(ids);
@@ -416,7 +416,8 @@ export async function copySelectedSongsToOnboard(req: Request, res: Response): P
     } catch (error) {
       logger('error', '❌ Error durante la copia de onboarding', error);
     } finally {
-      setOnboardCopyLock(false);
+      removeTask(taskId);
+      emitTaskFinish({ type: 'onboard-copy', message: 'Copia de onboarding completada' });
     }
   })();
 }

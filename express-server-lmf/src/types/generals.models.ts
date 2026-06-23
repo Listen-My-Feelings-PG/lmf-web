@@ -8,6 +8,7 @@ export class Song {
   public tsTrainLevelLocal: number = 0;
   public tsTrainLevelGlobal: number = 0;
   public tsFeaturesFileName: string | null = null;
+  public tsStatus?: string | null = null;
   public fileSize?: number;
   public dataType?: 'file';
   public idPlaylist?: number;

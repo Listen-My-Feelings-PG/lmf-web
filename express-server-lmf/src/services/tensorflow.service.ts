@@ -8,7 +8,8 @@ import { TrainingRecordModel, PredictionRecordModel } from '../models/calibratio
 import type { TrainingEntry, PredictionEntry } from '../models/calibration.model';
 import PlaylistModel from '../models/playlist.model';
 import { Song, TensorFlowModel } from '../types/generals.models';
-import { setTrainingLock, setPredictionLock } from '../subprocess/locks.process';
+import { addTask, removeTask } from '../subprocess/task.pool';
+import { emitTaskExec, emitTaskFinish } from '../services/socket.service';
 import { getCachedFeature, invalidateFeatureCache } from '../subprocess/feature-cache.process';
 import { nodeSaveHandler, nodeLoadHandler } from './filesystem.service';
 
@@ -194,12 +195,14 @@ export function startTraining(
   mode: string,
   includeLocalTraining: boolean
 ): void {
-  setTrainingLock(true);
+  const taskId = addTask('training');
+  emitTaskExec({ type: 'training', message: `Iniciando entrenamiento para ${songIds.length} canciones` });
 
   runTraining(songIds, mode, includeLocalTraining)
     .catch(err => logError(`Error fatal en entrenamiento: ${err}`))
     .finally(() => {
-      setTrainingLock(false);
+      removeTask(taskId);
+      emitTaskFinish({ type: 'training', message: 'Entrenamiento finalizado' });
       logInfo('Lock de entrenamiento liberado.');
     });
 }
@@ -519,12 +522,14 @@ async function getPlaylistSongMap(songIds: number[]): Promise<Map<number, number
  * Adquiere el lock de predicción. Todo el progreso se loguea en consola.
  */
 export function startPrediction(songIds: number[]): void {
-  setPredictionLock(true);
+  const taskId = addTask('prediction');
+  emitTaskExec({ type: 'prediction', message: `Iniciando predicción para ${songIds.length} canciones` });
 
   runPrediction(songIds)
     .catch(err => logError(`Error fatal en predicción: ${err}`))
     .finally(() => {
-      setPredictionLock(false);
+      removeTask(taskId);
+      emitTaskFinish({ type: 'prediction', message: 'Predicción finalizada' });
       logInfo('Lock de predicción liberado.');
     });
 }

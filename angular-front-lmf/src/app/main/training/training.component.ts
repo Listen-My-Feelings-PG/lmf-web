@@ -1,4 +1,4 @@
-import { Component, effect } from '@angular/core';
+import { Component, effect, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Song } from '../../_types/generals.models';
@@ -6,6 +6,8 @@ import { HttpService } from '../../_services/http.service';
 import { ListComponent } from "../../list/list.component";
 import { GlobalPlaylistService } from '../../_services/global-playlist.service';
 import { TrainingModality, UserScore } from '../../_types/generals.interfaces';
+import { SocketService } from '../../_services/socket.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-training',
@@ -13,7 +15,7 @@ import { TrainingModality, UserScore } from '../../_types/generals.interfaces';
   templateUrl: './training.component.html',
   styleUrl: './training.component.scss'
 })
-export class TrainingComponent {
+export class TrainingComponent implements OnInit, OnDestroy {
   listForTraining: {
     listFiltered: Array<Song>,
     list: Array<Song>
@@ -26,8 +28,9 @@ export class TrainingComponent {
   // Estado del botón de entrenamiento
   trainingMessage: string | null = null;
   trainingMessageType: 'success' | 'error' | 'locked' = 'success';
+  private socketSubs: Subscription[] = [];
 
-  constructor(private httpService: HttpService, private globalPlaylistService: GlobalPlaylistService) {
+  constructor(private httpService: HttpService, private globalPlaylistService: GlobalPlaylistService, private socketService: SocketService) {
     this.selectedMode = 'none';
     this.listForTraining = {
       listFiltered: [],
@@ -42,6 +45,31 @@ export class TrainingComponent {
         this.applyFiltersToList();
       }
     });
+  }
+
+  ngOnInit(): void {
+    this.socketSubs.push(
+      this.socketService.taskExec$.subscribe(() => {
+        this.reloadSongs();
+      }),
+      this.socketService.taskFinish$.subscribe(() => {
+        this.reloadSongs();
+      })
+    );
+  }
+
+  ngOnDestroy(): void {
+    this.socketSubs.forEach(sub => sub.unsubscribe());
+  }
+
+  async reloadSongs(): Promise<void> {
+    const playlists = this.globalPlaylistService.getCurrentPlaylistList();
+    if (playlists.ok && playlists.value?.length) {
+      const defaultPlaylist = playlists.value?.find(pl => pl.isDefault);
+      const songs = await this.httpService.getAllSongsByPlaylistId(defaultPlaylist?.id as number);
+      this.listForTraining.list = songs;
+      this.applyFiltersToList();
+    }
   }
 
   async tuneSong(idSong: number): Promise<void> {

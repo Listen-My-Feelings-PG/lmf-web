@@ -92,3 +92,29 @@ export const checkToken = (req: Request, res: Response, next: NextFunction): voi
     });
   }
 };
+
+/**
+ * Verifica tokens JWT en conexiones Socket.IO
+ * @param token - Token JWT a verificar
+ * @param socket - Socket de Socket.IO (necesita ser any para inyectar user)
+ * @param next - Callback de Socket.IO
+ */
+export const checkTokenSocket = (token: string | undefined, socket: any, next: (err?: Error) => void): void => {
+  const key = process.env.JWTKEY || 'secret_fallback_key';
+  
+  if (token) {
+    token = token.replace('Bearer ', '');
+    jwt.verify(token, key, (error, decoded) => {
+      if (error) {
+        console.error('SOCKET Error:', error.name === 'TokenExpiredError' ? 'Token expirado' : 'Token inválido');
+        next(new Error('Authentication error'));
+      } else {
+        socket.user = decoded as JwtPayload;
+        next();
+      }
+    });
+  } else {
+    console.error('SOCKET Error: No se encontró token');
+    next(new Error('Authentication error'));
+  }
+};

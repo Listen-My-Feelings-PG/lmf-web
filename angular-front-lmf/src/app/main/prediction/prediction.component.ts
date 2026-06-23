@@ -1,8 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { GlobalPlaylistService } from '../../_services/global-playlist.service';
 import { Song } from '../../_types/generals.models';
 import { ListComponent } from '../../list/list.component';
 import { HttpService } from '../../_services/http.service';
+import { SocketService } from '../../_services/socket.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-prediction',
@@ -10,16 +12,19 @@ import { HttpService } from '../../_services/http.service';
   templateUrl: './prediction.component.html',
   styleUrl: './prediction.component.scss'
 })
-export class PredictionComponent implements OnInit {
+export class PredictionComponent implements OnInit, OnDestroy {
   listForTraining: {
     list: Array<Song>,
     listFull: Array<Song>,
     playlistMode: 'multiple' | 'single'
   }
 
+  private socketSubs: Subscription[] = [];
+
   constructor(
     private globalPlaylistService: GlobalPlaylistService,
-    private httpService: HttpService
+    private httpService: HttpService,
+    private socketService: SocketService
   ) {
     this.listForTraining = {
       list: [],
@@ -29,6 +34,22 @@ export class PredictionComponent implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
+    this.socketSubs.push(
+      this.socketService.taskExec$.subscribe(() => {
+        this.reloadSongs();
+      }),
+      this.socketService.taskFinish$.subscribe(() => {
+        this.reloadSongs();
+      })
+    );
+    await this.reloadSongs();
+  }
+
+  ngOnDestroy(): void {
+    this.socketSubs.forEach(sub => sub.unsubscribe());
+  }
+
+  async reloadSongs(): Promise<void> {
     try {
       const songsForPrediction = await this.httpService.getSongsForPrediction();
       this.listForTraining = {
@@ -40,7 +61,6 @@ export class PredictionComponent implements OnInit {
     } catch (error) {
       console.error('Error al cargar las canciones para predicción:', error);
     }
-
   }
 
   playSong(event: Song): void {

@@ -147,7 +147,8 @@ class SongModel {
           ca_metadata as metadata,
           ca_ts_prediccion as "tsPrediction",
           ca_train_level_global as "tsTrainLevelGlobal",
-          ca_ts_features_filename as "tsFeaturesFileName"
+          ca_ts_features_filename as "tsFeaturesFileName",
+          ca_ts_status as "tsStatus"
         FROM public.canciones
         WHERE ca_activo = B'0'`;
       return songs.map(song => new Song({
@@ -159,7 +160,8 @@ class SongModel {
         tsPrediction: song.tsPrediction ?? null,
         tsTrainLevelLocal: song.tsTrainLevelLocal ?? null,
         tsTrainLevelGlobal: song.tsTrainLevelGlobal ?? null,
-        tsFeaturesFileName: song.tsFeaturesFileName ?? null
+        tsFeaturesFileName: song.tsFeaturesFileName ?? null,
+        tsStatus: song.tsStatus ?? null
       }));
     } catch (error) {
       console.error('Error al obtener canciones inactivas:', error);
@@ -178,7 +180,8 @@ class SongModel {
           ca_metadata as metadata,
           ca_ts_prediccion as "tsPrediction",
           ca_train_level_global as "tsTrainLevelGlobal",
-          ca_ts_features_filename as "tsFeaturesFileName"
+          ca_ts_features_filename as "tsFeaturesFileName",
+          ca_ts_status as "tsStatus"
         FROM public.canciones
         WHERE ca_activo = B'1'`;
       return songs.map(song => new Song({
@@ -190,7 +193,8 @@ class SongModel {
         tsPrediction: song.tsPrediction ?? null,
         tsTrainLevelLocal: song.tsTrainLevelLocal ?? null,
         tsTrainLevelGlobal: song.tsTrainLevelGlobal ?? null,
-        tsFeaturesFileName: song.tsFeaturesFileName ?? null
+        tsFeaturesFileName: song.tsFeaturesFileName ?? null,
+        tsStatus: song.tsStatus ?? null
       }));
     } catch (error) {
       console.error('Error al obtener todas las canciones:', error);
@@ -209,7 +213,8 @@ class SongModel {
           ca_metadata as metadata,
           ca_ts_prediccion as "tsPrediction",
           ca_train_level_global as "tsTrainLevelGlobal",
-          ca_ts_features_filename as "tsFeaturesFileName"
+          ca_ts_features_filename as "tsFeaturesFileName",
+          ca_ts_status as "tsStatus"
         FROM public.canciones
         WHERE ca_id = ${id} AND ca_activo = B'1'`;
       if (!song) return null;
@@ -222,7 +227,8 @@ class SongModel {
         tsPrediction: song.tsPrediction ?? null,
         tsTrainLevelLocal: song.tsTrainLevelLocal ?? null,
         tsTrainLevelGlobal: song.tsTrainLevelGlobal ?? null,
-        tsFeaturesFileName: song.tsFeaturesFileName ?? null
+        tsFeaturesFileName: song.tsFeaturesFileName ?? null,
+        tsStatus: song.tsStatus ?? null
       });
     } catch (error) {
       console.error('Error al buscar canción por ID:', error);
@@ -241,7 +247,8 @@ class SongModel {
           ca_metadata as metadata,
           ca_ts_prediccion as "tsPrediction",
           ca_train_level_global as "tsTrainLevelGlobal",
-          ca_ts_features_filename as "tsFeaturesFileName"
+          ca_ts_features_filename as "tsFeaturesFileName",
+          ca_ts_status as "tsStatus"
         FROM public.canciones
         WHERE ca_filename = ${fileName} AND ca_activo = B'1'`;
       if (!song) return null;
@@ -254,7 +261,8 @@ class SongModel {
         tsPrediction: song.tsPrediction ?? null,
         tsTrainLevelLocal: song.tsTrainLevelLocal ?? null,
         tsTrainLevelGlobal: song.tsTrainLevelGlobal ?? null,
-        tsFeaturesFileName: song.tsFeaturesFileName ?? null
+        tsFeaturesFileName: song.tsFeaturesFileName ?? null,
+        tsStatus: song.tsStatus ?? null
       });
     } catch (error) {
       console.error('Error al buscar canción por nombre:', error);
@@ -274,6 +282,7 @@ class SongModel {
           ca_metadata,
           ca_ts_prediccion,
           ca_ts_features_filename,
+          ca_ts_status,
           latest_pred.pd_accuracy
       FROM rel_playlists_canciones
       left join canciones on ca_id=pr_ca_id
@@ -294,6 +303,7 @@ class SongModel {
         tsPrediction: song.ca_ts_prediccion ?? null,
         tsTrainLevelGlobal: song.ca_train_level_global ?? null,
         tsFeaturesFileName: song.ca_ts_features_filename ?? null,
+        tsStatus: song.ca_ts_status ?? null,
         idPlaylist: idPlaylist,
         accuracy: (song.ca_calif_usuario != null && song.ca_ts_prediccion != null && song.pd_accuracy != null) ? parseFloat(song.pd_accuracy) : null
       }));
@@ -317,7 +327,8 @@ class SongModel {
           ca_metadata as metadata,
           ca_ts_prediccion as "tsPrediction",
           ca_train_level_global as "tsTrainLevelGlobal",
-          ca_ts_features_filename as "tsFeaturesFileName"
+          ca_ts_features_filename as "tsFeaturesFileName",
+          ca_ts_status as "tsStatus"
       `;
       if (!song) throw new Error(`Canción ${idSong} no encontrada`);
       return new Song({
@@ -328,7 +339,8 @@ class SongModel {
         metadata: song.metadata && song.metadata.trim().startsWith('{') ? JSON.parse(song.metadata) : undefined,
         tsPrediction: song.tsPrediction ?? null,
         tsTrainLevelGlobal: song.tsTrainLevelGlobal ?? null,
-        tsFeaturesFileName: song.tsFeaturesFileName ?? null
+        tsFeaturesFileName: song.tsFeaturesFileName ?? null,
+        tsStatus: song.tsStatus ?? null
       });
     } catch (error) {
       console.error('Error al actualizar la calificación de la canción:', error);
@@ -348,6 +360,7 @@ class SongModel {
           ca_ts_prediccion as "tsPrediction",
           ca_train_level_global as "tsTrainLevelGlobal",
           ca_ts_features_filename as "tsFeaturesFileName",
+          ca_ts_status as "tsStatus",
           pr_pl_id as "idPlaylist",
           latest_pred.pd_accuracy as "predAccuracy"
         FROM rel_playlists_canciones
@@ -391,6 +404,7 @@ class SongModel {
           ca_metadata,
           ca_ts_prediccion,
           ca_ts_features_filename,
+          ca_ts_status,
           pr_pl_id as "idPlaylist"
       FROM rel_playlists_canciones
       left join canciones on ca_id=pr_ca_id
@@ -405,6 +419,7 @@ class SongModel {
         tsPrediction: song.ca_ts_prediccion ?? null,
         tsTrainLevelGlobal: song.ca_train_level_global ?? null,
         tsFeaturesFileName: song.ca_ts_features_filename ?? null,
+        tsStatus: song.ca_ts_status ?? null,
         idPlaylist: song.idPlaylist
       }));
     } catch (error) {
@@ -428,7 +443,8 @@ class SongModel {
           ca_metadata as metadata,
           ca_ts_prediccion as "tsPrediction",
           ca_train_level_global as "tsTrainLevelGlobal",
-          ca_ts_features_filename as "tsFeaturesFileName"
+          ca_ts_features_filename as "tsFeaturesFileName",
+          ca_ts_status as "tsStatus"
         FROM public.canciones
         WHERE ca_id = ANY(${ids}) AND ca_activo = B'1'`;
       return songs.map(song => new Song({
@@ -439,7 +455,8 @@ class SongModel {
         metadata: song.metadata && song.metadata.trim().startsWith('{') ? JSON.parse(song.metadata) : undefined,
         tsPrediction: song.tsPrediction ?? null,
         tsTrainLevelGlobal: song.tsTrainLevelGlobal ?? null,
-        tsFeaturesFileName: song.tsFeaturesFileName ?? null
+        tsFeaturesFileName: song.tsFeaturesFileName ?? null,
+        tsStatus: song.tsStatus ?? null
       }));
     } catch (error) {
       console.error('Error al obtener canciones por IDs:', error);
@@ -511,6 +528,7 @@ class SongModel {
         tsPrediction: song.ca_ts_prediccion ?? null,
         tsTrainLevelGlobal: song.ca_train_level_global ?? null,
         tsFeaturesFileName: song.ca_ts_features_filename ?? null,
+        tsStatus: song.ca_ts_status ?? null,
       }));
     } catch (error) {
       console.error('Error al obtener canciones aleatorias para replay:', error);

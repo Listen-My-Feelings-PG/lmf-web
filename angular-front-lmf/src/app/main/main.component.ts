@@ -3,6 +3,7 @@ import { Router, RouterOutlet } from '@angular/router';
 import { PlayerComponent } from '../player/player.component';
 import { HttpService } from '../_services/http.service';
 import { GlobalPlaylistService } from '../_services/global-playlist.service';
+import { SocketService } from '../_services/socket.service';
 
 @Component({
   selector: 'app-main',
@@ -14,10 +15,12 @@ export class MainComponent implements OnInit {
   constructor(
     private httpService: HttpService,
     private globalPlaylistService: GlobalPlaylistService,
-    private router: Router
+    private router: Router,
+    private socketService: SocketService
   ) { }
 
   async ngOnInit(): Promise<void> {
+    this.socketService.connect();
     try {
       const playlists = await this.httpService.getAllPlaylists();
       if (playlists) {
@@ -45,5 +48,9 @@ export class MainComponent implements OnInit {
     this.router.navigate([`/main/${view}`]).catch(error => console.error(`Error al navegar a ${view}:`, error));
   }
 
-
+  logout(): void {
+    this.socketService.disconnect();
+    sessionStorage.removeItem('lmf_token');
+    this.router.navigate(['/login']);
+  }
 }

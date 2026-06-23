@@ -79,8 +79,9 @@
         @for (headerGroup of table.getHeaderGroups(); track headerGroup.id) {
         <tr>
           <!-- Checkbox column for selection -->
-          <th
-            class="table-th w-10" [class.sortable]="!predictMode" [class.cursor-default]="predictMode"
+          <th class="table-th w-10"
+            [class.sortable]="!predictMode"
+            [class.cursor-default]="predictMode"
             (click)="!predictMode ? toggleSelectAll() : null">
             <div class="flex items-center justify-center">
               @if (!predictMode) {
@@ -99,8 +100,8 @@
 
           @for (header of headerGroup.headers; track header.id) {
 
-          <th
-            class="table-th" [class.sortable]="header.column.getCanSort()"
+          <th class="table-th"
+            [class.sortable]="header.column.getCanSort()"
             (click)="header.column.getCanSort() ? header.column.getToggleSortingHandler()?.($event) : null"
             [style.width]="header.column.id === 'fileName' ? 'auto' : header.getSize() + 'px'"
             [style.minWidth.px]="header.column.columnDef.minSize">
@@ -150,7 +151,8 @@
         <tr (mouseenter)="hoveredRow.set(row.original.id!)"
           (mouseleave)="hoveredRow.set(null)"
           (click)="selectSong(row.original)"
-          class="table-row group" [class.playing]="isPlaying(row.original)">
+          class="table-row group"
+          [class.playing]="isPlaying(row.original)">
 
           <!-- Checkbox column (visible on hover) -->
           <td class="px-2 py-2 text-center">
@@ -274,7 +276,7 @@
           <td class="px-2 py-2 text-center"
             (click)="$event.stopPropagation()">
             <button (click)="trainSingleSong(row.original.id!)"
-              [disabled]="row.original.userScore == null || row.original.tsPrediction == null"
+              [disabled]="row.original.userScore == null || row.original.tsPrediction == null || row.original.tsStatus === 'fine-tuning'"
               class="btn-icon w-7 h-7"
               title="Fine-tune esta canción">
               <i class="fas fa-bullseye text-sm"></i>
@@ -327,7 +329,8 @@
       <span class="px-2 text-gray-500">...</span>
       } @else {
       <button (click)="table.setPageIndex(pageNum)"
-        class="btn-page" [class.active]="table.getState().pagination.pageIndex === pageNum">
+        class="btn-page"
+        [class.active]="table.getState().pagination.pageIndex === pageNum">
         {{ pageNum + 1 }}
       </button>
       }
