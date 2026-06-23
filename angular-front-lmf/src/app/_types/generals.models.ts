@@ -18,6 +18,7 @@ export class Song {
     urlAlbumArt: string
   };
   public stats?: Array<Calibration>;
+  public fineTuneButtonEnabled: boolean = true;
   constructor(data: Partial<Song> = {}) {
     Object.assign(this, data);
   }

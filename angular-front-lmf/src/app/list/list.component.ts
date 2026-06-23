@@ -16,6 +16,7 @@ import {
   ColumnDef,
 } from '@tanstack/angular-table';
 import { UserScore } from '../_types/generals.interfaces';
+import { ToastService } from '../_services/toast.service';
 import { environment } from '../../environments/environment';
 
 @Component({
@@ -97,7 +98,7 @@ export class ListComponent implements OnDestroy, OnChanges {
     initialState: { pagination: { pageSize: 10, }, },
   }));
 
-  constructor(private globalPlaylist: GlobalPlaylistService, private httpService: HttpService) {
+  constructor(private globalPlaylist: GlobalPlaylistService, private httpService: HttpService, private toastService: ToastService) {
     this.list = [];
     this.currentPlaylist = null;
     this.songPlaying = null;
@@ -130,14 +131,23 @@ export class ListComponent implements OnDestroy, OnChanges {
   }
 
   trainSingleSong(idSong: number): void {
+    const song = this.list.find(s => s.id === idSong);
+    if (song) {
+      song.fineTuneButtonEnabled = false;
+      this.data.set([...this.list]);
+    }
     this.onTuneSong.emit(idSong);
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['list'] && changes['list'].currentValue) {
+      this.list = this.list.filter(s => s !== null && s !== undefined).map(song => {
+        song.fineTuneButtonEnabled = song.tsStatus !== 'fine-tuning';
+        return song;
+      });
       this.data.set(this.list);
 
-      const currentIds = new Set(this.list.map(s => s.id));
+      const currentIds = new Set(this.list.map(s => s?.id).filter(id => id != null));
       const newSelected = new Set([...this.selectedRows()].filter(id => currentIds.has(id)));
       if (newSelected.size !== this.selectedRows().size) {
         this.selectedRows.set(newSelected);
@@ -281,8 +291,12 @@ export class ListComponent implements OnDestroy, OnChanges {
     this.isCopyingOnboard.set(true);
     try {
       await this.httpService.copySelectedSongsToOnboard(ids);
+      // Notificaremos de forma pasiva que la tarea fue encolada
+      this.toastService.show(`Copia de ${ids.length} canciones al onboard encolada.`, 'info');
+      this.selectedRows.set(new Set());
     } catch (error) {
-      console.error('Error al copiar canciones al onboarding:', error);
+      console.error('Error al encolar copia al onboard:', error);
+      this.toastService.show('Error al encolar la copia al onboard', 'error');
     } finally {
       this.isCopyingOnboard.set(false);
     }
@@ -297,33 +311,15 @@ export class ListComponent implements OnDestroy, OnChanges {
 
     this.isDeletingFromLibrary.set(true);
     try {
-      const result = await this.httpService.deleteSelectedSongsFromLibrary(ids);
-      const deletedIds = result.deletedIds?.length ? result.deletedIds : ids;
-      this.removeSongsFromList(deletedIds);
-      this.onDeleteSongsFromLibrary.emit(deletedIds);
+      await this.httpService.deleteSelectedSongsFromLibrary(ids);
+      this.toastService.show(`Borrado de ${ids.length} canciones de la biblioteca encolado.`, 'warning');
+      this.selectedRows.set(new Set());
     } catch (error) {
-      console.error('Error al eliminar canciones de la biblioteca:', error);
+      console.error('Error al encolar eliminación de la biblioteca:', error);
+      this.toastService.show('Error al encolar borrado', 'error');
     } finally {
       this.isDeletingFromLibrary.set(false);
     }
-  }
-
-  private removeSongsFromList(songIds: number[]): void {
-    const deletedIds = new Set(songIds);
-    this.list = this.list.filter(song => !deletedIds.has(song.id!));
-    this.data.set(this.data().filter(song => !deletedIds.has(song.id!)));
-    this.selectedRows.set(new Set(Array.from(this.selectedRows()).filter(id => !deletedIds.has(id))));
-
-    const globalSongs = this.globalPlaylist.getSongList();
-    if (globalSongs.ok && globalSongs.value) {
-      this.globalPlaylist.setSongList(globalSongs.value.filter(song => !deletedIds.has(song.id!)));
-    }
-
-    const currentSong = this.globalPlaylist.getSongPlaying();
-    if (currentSong.ok && currentSong.value?.id && deletedIds.has(currentSong.value.id))
-      this.globalPlaylist.clearSongPlaying();
-
-    this.checkPaginationBounds();
   }
 
   private checkPaginationBounds(): void {

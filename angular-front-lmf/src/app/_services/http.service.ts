@@ -55,10 +55,10 @@ export class HttpService {
     });
   }
 
-  tuneSongByIdSong(idSong: number): Promise<Song> {
+  tuneSongByIdSong(idSong: number): Promise<{ success: boolean, message: string }> {
     return new Promise((resolve, reject) => {
-      this.http.post<HttpResponseSuccess>(this.apiUrl + `/songs/tune/${idSong}`, {}).subscribe({
-        next: (response) => resolve(response.data as Song),
+      this.http.post<{ success: boolean, message: string }>(this.apiUrl + `/songs/tune/${idSong}`, {}).subscribe({
+        next: (response) => resolve(response),
         error: (error) => reject({ error, at: 'tuneSongByIdSong' })
       });
     });

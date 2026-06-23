@@ -8,6 +8,7 @@ import { GlobalPlaylistService } from '../../_services/global-playlist.service';
 import { TrainingModality, UserScore } from '../../_types/generals.interfaces';
 import { SocketService } from '../../_services/socket.service';
 import { Subscription } from 'rxjs';
+import { ToastService } from '../../_services/toast.service';
 
 @Component({
   selector: 'app-training',
@@ -30,7 +31,7 @@ export class TrainingComponent implements OnInit, OnDestroy {
   trainingMessageType: 'success' | 'error' | 'locked' = 'success';
   private socketSubs: Subscription[] = [];
 
-  constructor(private httpService: HttpService, private globalPlaylistService: GlobalPlaylistService, private socketService: SocketService) {
+  constructor(private httpService: HttpService, private globalPlaylistService: GlobalPlaylistService, private socketService: SocketService, private toastService: ToastService) {
     this.selectedMode = 'none';
     this.listForTraining = {
       listFiltered: [],
@@ -50,7 +51,7 @@ export class TrainingComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.socketSubs.push(
       this.socketService.taskExec$.subscribe(() => {
-        this.reloadSongs();
+        // No recargamos la lista en el inicio porque ya usamos bloqueo optimista en el front
       }),
       this.socketService.taskFinish$.subscribe(() => {
         this.reloadSongs();
@@ -74,17 +75,15 @@ export class TrainingComponent implements OnInit, OnDestroy {
 
   async tuneSong(idSong: number): Promise<void> {
     try {
-      const tunedSong = await this.httpService.tuneSongByIdSong(idSong);
-      const indexInList = this.listForTraining.list.findIndex(song => song.id === idSong);
-      if (indexInList !== -1) {
-        this.listForTraining.list[indexInList] = tunedSong;
-        this.applyFiltersToList();
-      }
+      const response = await this.httpService.tuneSongByIdSong(idSong);
+      this.toastService.show(response.message, 'info');
     } catch (error: any) {
       console.warn('Fine-tuning no procesado:', error?.error?.error?.message || error);
     }
   }
 
+  // Este método queda para actualizaciones futuras de lista rápida,
+  // pero por ahora reloadSongs() a través de sockets hace el trabajo.
   removeDeletedSongs(songIds: number[]): void {
     const deletedIds = new Set(songIds);
     this.listForTraining.list = this.listForTraining.list.filter(song => !deletedIds.has(song.id!));

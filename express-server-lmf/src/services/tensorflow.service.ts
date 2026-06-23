@@ -8,8 +8,6 @@ import { TrainingRecordModel, PredictionRecordModel } from '../models/calibratio
 import type { TrainingEntry, PredictionEntry } from '../models/calibration.model';
 import PlaylistModel from '../models/playlist.model';
 import { Song, TensorFlowModel } from '../types/generals.models';
-import { addTask, removeTask } from '../subprocess/task.pool';
-import { emitTaskExec, emitTaskFinish } from '../services/socket.service';
 import { getCachedFeature, invalidateFeatureCache } from '../subprocess/feature-cache.process';
 import { nodeSaveHandler, nodeLoadHandler } from './filesystem.service';
 
@@ -132,7 +130,7 @@ function buildBalancedDataset(features: Float32Array[], labels: number[]): { bal
   labels.forEach((label, index) => {
     const count = classCountArray[label];
     let weight = count > 0 ? Math.round(maxCount / count) : 1;
-    
+
     // Énfasis extra para calificaciones altas
     if (label >= 2) {
       weight = Math.round(weight * 2);
@@ -185,30 +183,8 @@ function prepareSongsForTraining(
   return { features, labels, songIds };
 }
 
-// ─── Punto de entrada público ────────────────────────────────────────────────
-/**
- * Inicia el entrenamiento en background (fire-and-forget).
- * Adquiere el lock global. Todo el progreso se loguea en consola.
- */
-export function startTraining(
-  songIds: number[],
-  mode: string,
-  includeLocalTraining: boolean
-): void {
-  const taskId = addTask('training');
-  emitTaskExec({ type: 'training', message: `Iniciando entrenamiento para ${songIds.length} canciones` });
-
-  runTraining(songIds, mode, includeLocalTraining)
-    .catch(err => logError(`Error fatal en entrenamiento: ${err}`))
-    .finally(() => {
-      removeTask(taskId);
-      emitTaskFinish({ type: 'training', message: 'Entrenamiento finalizado' });
-      logInfo('Lock de entrenamiento liberado.');
-    });
-}
-
 // ─── Flujo principal de entrenamiento ────────────────────────────────────────
-async function runTraining(
+export async function runTraining(
   songIds: number[],
   mode: string,
   includeLocalTraining: boolean
@@ -516,38 +492,21 @@ async function getPlaylistSongMap(songIds: number[]): Promise<Map<number, number
   return map;
 }
 
-// ─── Predicción ──────────────────────────────────────────────────────────────
-/**
- * Inicia la predicción en background (fire-and-forget).
- * Adquiere el lock de predicción. Todo el progreso se loguea en consola.
- */
-export function startPrediction(songIds: number[]): void {
-  const taskId = addTask('prediction');
-  emitTaskExec({ type: 'prediction', message: `Iniciando predicción para ${songIds.length} canciones` });
-
-  runPrediction(songIds)
-    .catch(err => logError(`Error fatal en predicción: ${err}`))
-    .finally(() => {
-      removeTask(taskId);
-      emitTaskFinish({ type: 'prediction', message: 'Predicción finalizada' });
-      logInfo('Lock de predicción liberado.');
-    });
-}
-
 /**
  * Flujo principal de predicción.
  * Carga el modelo global, ejecuta predict sobre cada canción y
  * publica los resultados en las tablas `canciones` y `predicciones`.
  */
-async function runPrediction(songIds: number[]): Promise<void> {
+export async function runPrediction(songIds: number[]): Promise < void> {
   logInfo('═'.repeat(60));
   logInfo('Iniciando predicción de canciones');
-  logInfo(`Canciones solicitadas: ${songIds.length}`);
+  logInfo(`Canciones solicitadas: ${songIds.length
+}`);
   logInfo('═'.repeat(60));
 
   // 1. Obtener canciones de la BD
   const songs = await SongModel.getSongsByIds(songIds);
-  logInfo(`Canciones encontradas en BD: ${songs.length}`);
+  logInfo(`Canciones encontradas en BD: ${ songs.length } `);
 
   if (songs.length === 0) {
     logInfo('No se encontraron canciones. Abortando predicción.');
@@ -559,7 +518,7 @@ async function runPrediction(songIds: number[]): Promise<void> {
   if (!globalModel) {
     throw new Error('No existe modelo global entrenado. Entrene un modelo primero.');
   }
-  logInfo(`Modelo global: ID=${globalModel.id}, v${globalModel.version}, ${globalModel.trainedSongs} canciones entrenadas`);
+  logInfo(`Modelo global: ID = ${ globalModel.id }, v${ globalModel.version }, ${ globalModel.trainedSongs } canciones entrenadas`);
 
   // 3. Cargar modelo desde disco
   const modelsDir = path.resolve(paths.models);
@@ -567,7 +526,7 @@ async function runPrediction(songIds: number[]): Promise<void> {
   const modelJsonPath = path.join(modelPath, 'model.json');
 
   if (!fs.existsSync(modelJsonPath)) {
-    throw new Error(`Archivo de modelo no encontrado en disco: ${modelJsonPath}`);
+    throw new Error(`Archivo de modelo no encontrado en disco: ${ modelJsonPath } `);
   }
 
   const model = await tf.loadLayersModel(nodeLoadHandler(modelPath));
@@ -586,21 +545,21 @@ async function runPrediction(songIds: number[]): Promise<void> {
 
   for (const song of songs) {
     if (!song.tsFeaturesFileName) {
-      logInfo(`  Canción ${song.id}: sin archivo de features. Omitiendo.`);
+      logInfo(`  Canción ${ song.id }: sin archivo de features.Omitiendo.`);
       skipped++;
       continue;
     }
 
     const normalized = getCachedFeature(song.id!, song.tsFeaturesFileName, featuresDir);
     if (!normalized) {
-      logInfo(`  Canción ${song.id}: archivo de features no encontrado o inválido. Omitiendo.`);
+      logInfo(`  Canción ${ song.id }: archivo de features no encontrado o inválido.Omitiendo.`);
       skipped++;
       continue;
     }
 
     const lastFitId = lastFitMap.get(song.id!);
     if (!lastFitId) {
-      logInfo(`  Canción ${song.id}: sin registro de entrenamiento previo. Omitiendo registro de predicción.`);
+      logInfo(`  Canción ${ song.id }: sin registro de entrenamiento previo.Omitiendo registro de predicción.`);
     }
 
     try {
@@ -619,7 +578,7 @@ async function runPrediction(songIds: number[]): Promise<void> {
         ? Math.min(99.9999, Math.max(0, 100 - (Math.abs(globalScore - userScore) / 3) * 100))
         : null;
 
-      logInfo(`  Canción ${song.id}: predicción=${globalScore.toFixed(4)} | usuario=${hasUserScore ? userScore : 'N/A'} | precisión=${predictionAccuracy !== null ? predictionAccuracy.toFixed(1) + '%' : 'N/A'}`);
+      logInfo(`  Canción ${ song.id }: predicción = ${ globalScore.toFixed(4) } | usuario=${ hasUserScore ? userScore : 'N/A' } | precisión=${ predictionAccuracy !== null ? predictionAccuracy.toFixed(1) + '%' : 'N/A' } `);
 
       // Actualizar tabla canciones
       await SongModel.updateTrainingResults(song.id!, {
@@ -644,7 +603,7 @@ async function runPrediction(songIds: number[]): Promise<void> {
       input.dispose();
       prediction.dispose();
     } catch (err) {
-      logError(`  Error prediciendo canción ${song.id}: ${err}`);
+      logError(`  Error prediciendo canción ${ song.id }: ${ err } `);
       skipped++;
     }
   }
@@ -652,14 +611,14 @@ async function runPrediction(songIds: number[]): Promise<void> {
   // 6. Insertar registros de predicción en batch
   if (predictionEntries.length > 0) {
     await PredictionRecordModel.createBatch(predictionEntries);
-    logSuccess(`${predictionEntries.length} registros de predicción guardados`);
+    logSuccess(`${ predictionEntries.length } registros de predicción guardados`);
   }
 
   // 7. Limpiar modelo
   model.dispose();
 
   logInfo('─'.repeat(40));
-  logSuccess(`Predicción completada: ${predicted} predichas, ${skipped} omitidas`);
+  logSuccess(`Predicción completada: ${ predicted } predichas, ${ skipped } omitidas`);
   logInfo('═'.repeat(60));
 }
 
@@ -671,21 +630,21 @@ async function runPrediction(songIds: number[]): Promise<void> {
  */
 export async function tuneSingleSongById(songId: number): Promise<Song> {
   logInfo('─'.repeat(40));
-  logInfo(`Fine-tuning canción ${songId}`);
+  logInfo(`Fine - tuning canción ${ songId } `);
 
   // 1. Obtener canción
   const song = await SongModel.getSongById(songId);
-  if (!song) throw new Error(`Canción ${songId} no encontrada`);
+  if (!song) throw new Error(`Canción ${ songId } no encontrada`);
   if (song.userScore === undefined || song.userScore === null)
-    throw new Error(`Canción ${songId} no tiene calificación del usuario`);
+    throw new Error(`Canción ${ songId } no tiene calificación del usuario`);
   if (!song.tsFeaturesFileName)
-    throw new Error(`Canción ${songId} no tiene archivo de features`);
+    throw new Error(`Canción ${ songId } no tiene archivo de features`);
 
   // 2. Cargar features (con caché)
   const featuresDir = path.resolve(paths.features);
   const normalized = getCachedFeature(songId, song.tsFeaturesFileName, featuresDir);
   if (!normalized)
-    throw new Error(`Archivo de features no encontrado o inválido: ${song.tsFeaturesFileName}`);
+    throw new Error(`Archivo de features no encontrado o inválido: ${ song.tsFeaturesFileName } `);
 
   // 3. Obtener modelo global
   const globalModel = await TsModelModel.getGlobalModel();
@@ -695,7 +654,7 @@ export async function tuneSingleSongById(songId: number): Promise<Song> {
   const modelPath = path.join(modelsDir, globalModel.filename);
   const modelJsonPath = path.join(modelPath, 'model.json');
   if (!fs.existsSync(modelJsonPath))
-    throw new Error(`Archivo de modelo no encontrado: ${modelJsonPath}`);
+    throw new Error(`Archivo de modelo no encontrado: ${ modelJsonPath } `);
 
   const model = await tf.loadLayersModel(nodeLoadHandler(modelPath));
 
@@ -736,7 +695,7 @@ export async function tuneSingleSongById(songId: number): Promise<Song> {
     allLabels.push(song.userScore);
   }
 
-  logInfo(`  Mini-retrain: ${allFeatures.length} muestras (target x${TARGET_WEIGHT} + ${allFeatures.length - TARGET_WEIGHT} canciones)`);
+  logInfo(`  Mini - retrain: ${ allFeatures.length } muestras(target x${ TARGET_WEIGHT } + ${ allFeatures.length - TARGET_WEIGHT } canciones)`);
 
   // Construir tensores
   const xData = new Float32Array(allFeatures.length * DEFAULT_CONFIG.inputDim);
@@ -753,7 +712,7 @@ export async function tuneSingleSongById(songId: number): Promise<Song> {
 
   const lossArr = history.history['loss'] as number[];
   const finalLoss = lossArr[lossArr.length - 1];
-  logInfo(`  Fine-tune completado — loss: ${finalLoss.toFixed(6)} (${tuneEpochs} épocas, lr=${tuneLr})`);
+  logInfo(`  Fine - tune completado — loss: ${ finalLoss.toFixed(6) } (${ tuneEpochs } épocas, lr = ${ tuneLr })`);
 
   // 5. Guardar modelo
   await model.save(nodeSaveHandler(modelPath));
@@ -781,7 +740,7 @@ export async function tuneSingleSongById(songId: number): Promise<Song> {
   const globalScore = rawOutput[0]*0 + rawOutput[1]*1 + rawOutput[2]*2 + rawOutput[3]*3;
   const predictionAccuracy = Math.min(99.9999, Math.max(0, 100 - (Math.abs(globalScore - song.userScore) / 3) * 100));
 
-  logSuccess(`  Canción ${songId}: predicción=${globalScore.toFixed(4)} | usuario=${song.userScore} | precisión=${predictionAccuracy.toFixed(1)}%`);
+  logSuccess(`  Canción ${ songId }: predicción = ${ globalScore.toFixed(4) } | usuario=${ song.userScore } | precisión=${ predictionAccuracy.toFixed(1) }% `);
 
   // 8. Actualizar canción: globalScore + incrementar trainLevelGlobal
   await SongModel.updateTrainingResults(songId, {
@@ -815,11 +774,11 @@ export async function tuneSingleSongById(songId: number): Promise<Song> {
   prediction.dispose();
   model.dispose();
 
-  logSuccess(`Fine-tuning y predicción completados para canción ${songId}`);
+  logSuccess(`Fine - tuning y predicción completados para canción ${ songId } `);
 
   // Retornar canción actualizada
   const updatedSong = await SongModel.getSongById(songId);
-  if (!updatedSong) throw new Error(`No se pudo obtener canción actualizada ${songId}`);
+  if (!updatedSong) throw new Error(`No se pudo obtener canción actualizada ${ songId } `);
   updatedSong.accuracy = predictionAccuracy;
   return updatedSong;
 }

@@ -5,18 +5,13 @@ import path from "path";
 import fs from "fs";
 import { paths } from "../main";
 import { isExtractionActive } from "../services/feature-extraction.service";
-import { startTraining, startPrediction, tuneSingleSongById, createAndRegisterModel } from "../services/tensorflow.service";
+import { runTraining, runPrediction, tuneSingleSongById, createAndRegisterModel } from "../services/tensorflow.service";
 import { psql } from "../main";
-import { addTask, isTaskActive, removeTask } from "../subprocess/task.pool";
-import { emitTaskExec, emitTaskFinish } from "../services/socket.service";
+import { addTask, isTaskActive } from "../subprocess/task.pool";
 import TsModelModel from "../models/tensorflow-db.model";
 import { logger } from "../utils/env-validator";
 
-type SongDeleteFailure = {
-  id: number;
-  fileName: string;
-  error: string;
-};
+
 
 function parseSongIds(rawSongIds: unknown): number[] | null {
   try {
@@ -54,19 +49,25 @@ export async function tuneSingleSong(req: Request, res: Response): Promise<void>
     return;
   }
 
-  const taskId = addTask('fine-tuning', idSong);
   try {
     await psql`UPDATE public.canciones SET ca_ts_status = 'fine-tuning' WHERE ca_id = ${idSong}`;
-    emitTaskExec({ type: 'fine-tuning', songId: idSong, message: `Iniciando fine-tuning para la canción ${idSong}` });
+    
+    addTask({
+      type: 'fine-tuning',
+      scope: 'single',
+      songIds: [idSong],
+      execute: async (ids) => {
+        try {
+          await tuneSingleSongById(ids[0]);
+        } finally {
+          await psql`UPDATE public.canciones SET ca_ts_status = null WHERE ca_id = ${ids[0]}`;
+        }
+      }
+    });
 
-    const updatedSong = await tuneSingleSongById(idSong);
-    res.status(200).json({ success: true, data: updatedSong, message: 'Fine-tuning completado' });
+    res.status(200).json({ success: true, message: 'Fine-tuning encolado correctamente' });
   } catch (error) {
-    sendError(res, 'Error al hacer fine-tuning', InternalServerError, error instanceof Error ? error : null);
-  } finally {
-    await psql`UPDATE public.canciones SET ca_ts_status = null WHERE ca_id = ${idSong}`;
-    removeTask(taskId);
-    emitTaskFinish({ type: 'fine-tuning', songId: idSong, message: `Fine-tuning completado para la canción ${idSong}` });
+    sendError(res, 'Error al encolar fine-tuning', InternalServerError, error instanceof Error ? error : null);
   }
 }
 
@@ -201,15 +202,21 @@ export async function trainSongsByIds(req: Request, res: Response): Promise<void
       return;
     }
 
-    // Fire-and-forget: iniciar entrenamiento en background
-    startTraining(songIds, mode, includeLocalTraining);
+    addTask({
+      type: 'training',
+      scope: 'global',
+      songIds,
+      execute: async (ids) => {
+        await runTraining(ids, mode, includeLocalTraining);
+      }
+    });
 
     res.status(200).json({
       success: true,
-      message: `Entrenamiento iniciado para ${songIds.length} canciones (modo: ${mode}, local: ${includeLocalTraining}). Revise la consola del servidor.`
+      message: `Entrenamiento de ${songIds.length} canciones encolado.`
     });
   } catch (error) {
-    sendError(res, 'Error al iniciar el entrenamiento', InternalServerError, error instanceof Error ? error : null);
+    sendError(res, 'Error al encolar el entrenamiento', InternalServerError, error instanceof Error ? error : null);
   }
 }
 
@@ -246,15 +253,21 @@ export async function predictSongsByIds(req: Request, res: Response): Promise<vo
       return;
     }
 
-    // Fire-and-forget: iniciar predicción en background
-    startPrediction(songIds);
+    addTask({
+      type: 'prediction',
+      scope: 'global',
+      songIds,
+      execute: async (ids) => {
+        await runPrediction(ids);
+      }
+    });
 
     res.status(200).json({
       success: true,
-      message: `Predicción iniciada para ${songIds.length} canciones. Revise la consola del servidor.`
+      message: `Predicción de ${songIds.length} canciones encolada.`
     });
   } catch (error) {
-    sendError(res, 'Error al iniciar la predicción', InternalServerError, error instanceof Error ? error : null);
+    sendError(res, 'Error al encolar la predicción', InternalServerError, error instanceof Error ? error : null);
   }
 }
 
@@ -290,68 +303,40 @@ export async function deleteSelectedSongsFromLibrary(req: Request, res: Response
     return;
   }
 
-  const taskId = addTask('library-deletion');
-  try {
-    const songs = await SongModel.getSongsByIds(ids);
-    if (songs.length === 0) {
-      sendError(res, 'No se encontraron canciones activas para borrar', NotFound, null);
-      return;
-    }
+  addTask({
+    type: 'library-deletion',
+    scope: 'global',
+    songIds: ids,
+    execute: async (targetIds) => {
+      const songs = await SongModel.getSongsByIds(targetIds);
+      if (songs.length === 0) return;
 
-    const deletedIds: number[] = [];
-    const missingFileIds: number[] = [];
-    const failures: SongDeleteFailure[] = [];
-
-    for (const song of songs) {
-      const songId = song.id!;
-      try {
-        const filePath = resolveAudioFilePath(song.fileName);
-        await fs.promises.unlink(filePath);
-        deletedIds.push(songId);
-      } catch (error) {
-        const code = error && typeof error === 'object' && 'code' in error
-          ? String((error as NodeJS.ErrnoException).code)
-          : '';
-
-        if (code === 'ENOENT') {
-          missingFileIds.push(songId);
+      const deletedIds: number[] = [];
+      for (const song of songs) {
+        const songId = song.id!;
+        try {
+          const filePath = resolveAudioFilePath(song.fileName);
+          await fs.promises.unlink(filePath);
           deletedIds.push(songId);
-          logger('warn', `Archivo de audio no encontrado al borrar. Se desactivara en BD: ${song.fileName}`);
-        } else {
-          failures.push({
-            id: songId,
-            fileName: song.fileName,
-            error: error instanceof Error ? error.message : String(error)
-          });
+        } catch (error) {
+          const code = error && typeof error === 'object' && 'code' in error
+            ? String((error as NodeJS.ErrnoException).code) : '';
+          if (code === 'ENOENT') {
+            deletedIds.push(songId);
+            logger('warn', `Archivo no encontrado al borrar. Se desactivará en BD: ${song.fileName}`);
+          }
         }
       }
+
+      if (deletedIds.length > 0)
+        await SongModel.logicalDeleteByIds(deletedIds);
     }
+  });
 
-    if (deletedIds.length > 0)
-      await SongModel.logicalDeleteByIds(deletedIds);
-
-    if (deletedIds.length === 0) {
-      sendError(res, 'No se pudo borrar ninguna cancion de la biblioteca', InternalServerError, failures[0] ? new Error(failures[0].error) : null);
-      return;
-    }
-
-    const message = failures.length === 0
-      ? `${deletedIds.length} canciones eliminadas de la biblioteca.`
-      : `${deletedIds.length} canciones eliminadas de la biblioteca. ${failures.length} no se pudieron borrar.`;
-
-    res.status(failures.length > 0 ? 207 : 200).json({
-      success: failures.length === 0,
-      message,
-      deletedIds,
-      missingFileIds,
-      failures
-    });
-  } catch (error) {
-    sendError(res, 'Error al eliminar canciones de la biblioteca', InternalServerError, error instanceof Error ? error : null);
-  } finally {
-    removeTask(taskId);
-    emitTaskFinish({ type: 'library-deletion', message: 'Borrado de biblioteca completado' });
-  }
+  res.status(202).json({
+    success: true,
+    message: `Borrado de ${ids.length} canciones encolado.`
+  });
 }
 
 export async function copySelectedSongsToOnboard(req: Request, res: Response): Promise<void> {
@@ -388,36 +373,34 @@ export async function copySelectedSongsToOnboard(req: Request, res: Response): P
   const folderName = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}${pad(Math.floor(now.getMilliseconds() / 10))}`;
   const destFolder = path.resolve(paths.onboard, folderName);
 
-  // Fire-and-forget: responder 202 inmediatamente
+  addTask({
+    type: 'onboard-copy',
+    scope: 'global',
+    songIds: ids,
+    execute: async (targetIds) => {
+      try {
+        const songs = await SongModel.getSongsByIds(targetIds);
+        if (!fs.existsSync(destFolder))
+          fs.mkdirSync(destFolder, { recursive: true });
+
+        for (const song of songs) {
+          const src = path.resolve(paths.audio, song.fileName);
+          if (fs.existsSync(src)) {
+            const dest = path.join(destFolder, song.fileName);
+            fs.copyFileSync(src, dest);
+          } else {
+            logger('warn', `⚠️  Archivo no encontrado, se omite: ${song.fileName}`);
+          }
+        }
+        logger('info', `✅ Onboarding completado. ${songs.length} canciones copiadas a: ${destFolder}`);
+      } catch (error) {
+        logger('error', '❌ Error durante la copia de onboarding', error);
+      }
+    }
+  });
+
   res.status(202).json({
     success: true,
     message: `Copia iniciada para ${ids.length} canciones. Carpeta destino: ${folderName}`
   });
-
-  // Proceso asíncrono de copia
-  const taskId = addTask('onboard-copy');
-  emitTaskExec({ type: 'onboard-copy', message: `Iniciando copia de ${ids.length} canciones a onboard` });
-  (async () => {
-    try {
-      const songs = await SongModel.getSongsByIds(ids);
-      if (!fs.existsSync(destFolder))
-        fs.mkdirSync(destFolder, { recursive: true });
-
-      for (const song of songs) {
-        const src = path.resolve(paths.audio, song.fileName);
-        if (fs.existsSync(src)) {
-          const dest = path.join(destFolder, song.fileName);
-          fs.copyFileSync(src, dest);
-        } else {
-          logger('warn', `⚠️  Archivo no encontrado, se omite: ${song.fileName}`);
-        }
-      }
-      logger('info', `✅ Onboarding completado. ${songs.length} canciones copiadas a: ${destFolder}`);
-    } catch (error) {
-      logger('error', '❌ Error durante la copia de onboarding', error);
-    } finally {
-      removeTask(taskId);
-      emitTaskFinish({ type: 'onboard-copy', message: 'Copia de onboarding completada' });
-    }
-  })();
 }

@@ -1,8 +1,9 @@
 import { Request, Response } from 'express';
 import { BadRequest, InternalServerError, Locked, sendError } from '../services/http-response-handler.service';
 import { extractVocadbYoutubeLinks } from '../services/vocadb.service';
-import { isTaskActive, addTask, removeTask } from '../subprocess/task.pool';
 import { emitTaskExec, emitTaskFinish } from '../services/socket.service';
+
+let isVocadbTaskActive = false;
 
 const DEFAULT_RANGE_DAYS = 3;
 const MAX_RANGE_DAYS = 31;
@@ -35,12 +36,12 @@ export async function createVocadbYoutubeLinksReport(req: Request, res: Response
     return;
   }
 
-  if (isTaskActive('vocadb-youtube-report')) {
+  if (isVocadbTaskActive) {
     sendError(res, 'Hay un proceso de extracción de links VocaDB activo. Intente más tarde.', Locked, null);
     return;
   }
 
-  const taskId = addTask('vocadb-youtube-report');
+  isVocadbTaskActive = true;
   emitTaskExec({ type: 'vocadb-youtube-report', message: 'Iniciando reporte VocaDB' });
   try {
     const result = await extractVocadbYoutubeLinks(year, rangeDays);
@@ -59,7 +60,7 @@ export async function createVocadbYoutubeLinksReport(req: Request, res: Response
       error instanceof Error ? error : null
     );
   } finally {
-    removeTask(taskId);
+    isVocadbTaskActive = false;
     emitTaskFinish({ type: 'vocadb-youtube-report', message: 'Reporte VocaDB completado' });
   }
 }
