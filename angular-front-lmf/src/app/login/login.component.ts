@@ -40,8 +40,8 @@ export class LoginComponent {
     this.http.post<any>('http://localhost:3000/api/v1/auth/login', credentials).subscribe({
       next: (res) => {
         if (res.success && res.token) {
-          localStorage.setItem('lmf_token', res.token);
-          this.router.navigate(['/list']);
+          sessionStorage.setItem('lmf_token', res.token);
+          this.router.navigate(['/main']);
         }
         this.isLoading = false;
       },
