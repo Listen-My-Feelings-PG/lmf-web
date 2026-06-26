@@ -39,6 +39,10 @@ function logInfo(msg: string): void { console.info(`${TAG} ${msg}`); }
 function logSuccess(msg: string): void { console.info(`${TAG} ✓ ${msg}`); }
 function logError(msg: string): void { console.error(`${TAG} ✗ ${msg}`); }
 
+// ─── Helper de Event Loop ────────────────────────────────────────────────────
+// Libera el hilo principal de Node.js para que pueda procesar otras peticiones HTTP
+const yieldEventLoop = () => new Promise(resolve => setImmediate(resolve));
+
 // ─── Creación de modelo ──────────────────────────────────────────────────────
 /**
  * Crea la arquitectura del modelo de clasificación.
@@ -375,7 +379,10 @@ async function trainSingleModel(
     validationSplit: useValidation ? DEFAULT_CONFIG.validationSplit : 0,
     shuffle: true,
     callbacks: {
-      onEpochEnd: (epoch, logs) => {
+      onBatchEnd: async () => {
+        await yieldEventLoop();
+      },
+      onEpochEnd: async (epoch, logs) => {
         if ((epoch + 1) % 10 === 0 || epoch === 0) {
           const loss = logs?.loss?.toFixed(4) ?? '?';
           const acc = (logs?.acc)?.toFixed(4) ?? '?';
@@ -397,6 +404,9 @@ async function trainSingleModel(
             }
           }
         }
+        
+        // Liberar event loop al final de la época también
+        await yieldEventLoop();
       }
     }
   });
@@ -585,17 +595,15 @@ export async function runPrediction(songIds: number[]): Promise < void> {
         globalScore
       });
 
-      // Preparar entrada de predicción (solo si hay registro de entrenamiento previo)
-      if (lastFitId) {
-        predictionEntries.push({
-          songId: song.id!,
-          modelId: globalModel.id!,
-          prediction: globalScore,
-          userScore: hasUserScore ? userScore : null,
-          accuracy: predictionAccuracy,
-          lastFitId
-        });
-      }
+      // Registrar predicción, permitiendo null en lastFitId si la canción es nueva (sin fine-tuning)
+      predictionEntries.push({
+        songId: song.id!,
+        modelId: globalModel.id!,
+        prediction: globalScore,
+        userScore: hasUserScore ? userScore : null,
+        accuracy: predictionAccuracy,
+        lastFitId: lastFitId ?? null
+      });
 
       predicted++;
 
@@ -708,6 +716,15 @@ export async function tuneSingleSongById(songId: number): Promise<Song> {
     epochs: tuneEpochs,
     batchSize: DEFAULT_CONFIG.batchSize,
     shuffle: true,
+    callbacks: {
+      onBatchEnd: async () => {
+        // Liberar el event loop para no colgar el servidor (ej. streaming de audio)
+        await yieldEventLoop();
+      },
+      onEpochEnd: async () => {
+        await yieldEventLoop();
+      }
+    }
   });
 
   const lossArr = history.history['loss'] as number[];

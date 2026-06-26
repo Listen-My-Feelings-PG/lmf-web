@@ -53,30 +53,56 @@
           <!-- 1. Modalidad (Toggle) -->
           <div class="bg-gray-900 border border-gray-600 rounded-lg p-4">
             <label class="block text-sm font-semibold text-gray-300 mb-3">
-              <i class="fas fa-exchange-alt mr-2 text-primary"></i>
-              Modalidad
+              <i class="fas fa-filter mr-2 text-primary"></i>
+              Filtro General
             </label>
             <div class="flex items-center justify-center bg-gray-950 rounded-lg p-2 border border-gray-700">
-              <button (click)="setModality('none')"
-                [class]="selectedMode === 'none' ? 'flex-1 px-4 py-3 rounded-md font-semibold transition-all duration-200 bg-primary text-white shadow-lg' : 'flex-1 px-4 py-3 rounded-md font-semibold transition-all duration-200 text-gray-400 hover:text-gray-200 hover:bg-gray-800'">
-                <i class="fa-solid fa-list mr-2"></i>
-                Lista completa
+              <button (click)="setModality('all')"
+                [class]="currentFilter === 'all' ? 'flex-1 px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 bg-primary text-white shadow-md' : 'flex-1 px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 text-gray-400 hover:text-gray-200 hover:bg-gray-800'">
+                Todas
               </button>
-              <button (click)="setModality('clean')"
-                [class]="selectedMode === 'clean' ? 'flex-1 px-4 py-3 rounded-md font-semibold transition-all duration-200 bg-primary text-white shadow-lg' : 'flex-1 px-4 py-3 rounded-md font-semibold transition-all duration-200 text-gray-400 hover:text-gray-200 hover:bg-gray-800'">
-                <i class="fas fa-graduation-cap mr-2"></i>
-                Entrenamiento Limpio
+              <button (click)="setModality('unrated')"
+                [class]="currentFilter === 'unrated' ? 'flex-1 px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 bg-primary text-white shadow-md' : 'flex-1 px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 text-gray-400 hover:text-gray-200 hover:bg-gray-800'">
+                Sin Calif.
               </button>
-              <button (click)="setModality('infer')"
-                [class]="selectedMode === 'infer' ? 'flex-1 px-4 py-3 rounded-md font-semibold transition-all duration-200 bg-primary text-white shadow-lg' : 'flex-1 px-4 py-3 rounded-md font-semibold transition-all duration-200 text-gray-400 hover:text-gray-200 hover:bg-gray-800'">
-                <i class="fas fa-magic mr-2"></i>
-                Inferir
+              <button (click)="setModality('rated')"
+                [class]="currentFilter === 'rated' ? 'flex-1 px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 bg-primary text-white shadow-md' : 'flex-1 px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 text-gray-400 hover:text-gray-200 hover:bg-gray-800'">
+                Calificadas
+              </button>
+              <button (click)="setModality('no-finetune')"
+                [class]="currentFilter === 'no-finetune' ? 'flex-1 px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 bg-primary text-white shadow-md' : 'flex-1 px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 text-gray-400 hover:text-gray-200 hover:bg-gray-800'">
+                Sin Fine-Tuning
               </button>
             </div>
-            <p class="text-xs text-gray-500 mt-2 italic">
-              Entrenamiento limpio solo carga las canciones calificadas y que no hayan sido entrenadas previamente.
-              Inferir usa las canciones calificadas y entrenadas previamente.
-            </p>
+            
+            <!-- Barra de precisión máxima -->
+            <div class="mt-4 pt-4 border-t border-gray-700">
+              <div class="flex justify-between items-center mb-2">
+                <label class="flex items-center cursor-pointer group">
+                  <input type="checkbox" [(ngModel)]="useAccuracyFilter" (change)="setModality(currentFilter)"
+                    class="w-4 h-4 rounded border-gray-600 text-primary focus:ring-primary focus:ring-offset-gray-900 mr-2">
+                  <span class="text-sm font-semibold text-gray-300 group-hover:text-white transition-colors">
+                    <i class="fas fa-bullseye mr-1 text-secondary"></i>
+                    Filtrar por Precisión
+                  </span>
+                </label>
+                
+                @if (useAccuracyFilter) {
+                <span class="text-sm font-mono text-primary bg-gray-950 px-2 py-1 rounded transition-opacity">
+                  {{ maxAccuracy === 0 ? 'Sin Calcular (0%)' : 'Hasta ' + maxAccuracy + '%' }}
+                </span>
+                }
+              </div>
+              
+              <div [class.opacity-50]="!useAccuracyFilter" [class.pointer-events-none]="!useAccuracyFilter" class="transition-opacity duration-200">
+                <input type="range" min="0" max="100" step="1" [(ngModel)]="maxAccuracy" (change)="setModality(currentFilter)"
+                  [disabled]="!useAccuracyFilter"
+                  class="w-full accent-primary bg-gray-700 h-2 rounded-lg appearance-none cursor-pointer disabled:cursor-not-allowed">
+                <p class="text-xs text-gray-500 mt-2 italic">
+                  0: Solo canciones sin precisión. 1-100: Hasta el porcentaje seleccionado.
+                </p>
+              </div>
+            </div>
           </div>
 
           <!--

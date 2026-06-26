@@ -23,7 +23,9 @@ export class TrainingComponent implements OnInit, OnDestroy {
   }
 
   configPanelCollapsed = false;
-  selectedMode: TrainingModality;
+  currentFilter: 'all' | 'unrated' | 'rated' | 'no-finetune' = 'all';
+  useAccuracyFilter: boolean = false;
+  maxAccuracy: number = 100;
   selectedRatings: Set<number> = new Set();
 
   // Estado del botón de entrenamiento
@@ -32,7 +34,7 @@ export class TrainingComponent implements OnInit, OnDestroy {
   private socketSubscriptions: Subscription[] = [];
 
   constructor(private httpService: HttpService, private globalPlaylistService: GlobalPlaylistService, private socketService: SocketService, private toastService: ToastService) {
-    this.selectedMode = 'none';
+    this.currentFilter = 'all';
     this.listForTraining = {
       listFiltered: [],
       list: []
@@ -90,19 +92,42 @@ export class TrainingComponent implements OnInit, OnDestroy {
 
   private applyFiltersToList(): void {
     let filteredList: Array<Song> = JSON.parse(JSON.stringify(this.listForTraining.list));
-    if (this.selectedMode === 'clean') {
-      filteredList = filteredList.filter(song => song.tsTrainLevelGlobal == 0);
-    } else if (this.selectedMode === 'infer') {
-      filteredList = filteredList.filter(song => song.tsTrainLevelGlobal > 0);
+    
+    // Filtro de Modalidad
+    switch (this.currentFilter) {
+      case 'unrated':
+        filteredList = filteredList.filter(s => s.userScore === null || s.userScore === undefined);
+        break;
+      case 'rated':
+        filteredList = filteredList.filter(s => s.userScore !== null && s.userScore !== undefined);
+        break;
+      case 'no-finetune':
+        filteredList = filteredList.filter(s => (s.tsTrainLevelGlobal || 0) <= 1);
+        break;
+      case 'all':
+      default:
+        break;
     }
+
+    // Filtro de Calificación
     const ratingsSelected = Array.from(this.selectedRatings);
     if (ratingsSelected.length > 0)
       filteredList = filteredList.filter(song => ratingsSelected.includes(song.userScore as number));
+
+    // Filtro de Precisión Máxima
+    if (this.useAccuracyFilter) {
+      if (this.maxAccuracy === 0) {
+        filteredList = filteredList.filter(song => song.accuracy === null || song.accuracy === undefined);
+      } else if (this.maxAccuracy > 0) {
+        filteredList = filteredList.filter(song => song.accuracy !== null && song.accuracy !== undefined && song.accuracy <= this.maxAccuracy);
+      }
+    }
+
     this.listForTraining.listFiltered = filteredList;
   }
 
-  setModality(mode: TrainingModality): void {
-    this.selectedMode = mode;
+  setModality(mode: 'all' | 'unrated' | 'rated' | 'no-finetune'): void {
+    this.currentFilter = mode;
     this.applyFiltersToList();
   }
 
@@ -147,8 +172,10 @@ export class TrainingComponent implements OnInit, OnDestroy {
 
   getActiveFiltersText(): string {
     const filters: string[] = [];
-    if (this.selectedMode === 'infer')
-      filters.push('Modo: Inferir');
+    if (this.currentFilter !== 'all')
+      filters.push(`Filtro: ${this.currentFilter}`);
+    if (this.useAccuracyFilter)
+      filters.push(`Precisión: ${this.maxAccuracy === 0 ? 'Sin calcular' : '<=' + this.maxAccuracy + '%'}`);
     if (this.selectedRatings.size > 0) {
       const ratings = Array.from(this.selectedRatings).sort().map(r => `Rating ${r}`).join(', ');
       filters.push(ratings);
@@ -163,7 +190,8 @@ export class TrainingComponent implements OnInit, OnDestroy {
     this.trainingMessage = null;
 
     try {
-      const result = await this.httpService.trainSongsByIds(songIds, this.selectedMode, false);
+      // Enviamos 'infer' para que el backend acepte entrenar exactamente la lista que hemos filtrado
+      const result = await this.httpService.trainSongsByIds(songIds, 'infer', false);
       this.trainingMessage = result.message;
       this.trainingMessageType = 'success';
     } catch (error: any) {

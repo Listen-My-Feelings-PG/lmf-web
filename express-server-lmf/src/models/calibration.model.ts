@@ -20,7 +20,7 @@ export interface PredictionEntry {
   prediction: number;
   userScore: number | null;
   accuracy: number | null;
-  lastFitId: number;
+  lastFitId: number | null;
 }
 
 // ─── Modelo para tabla entrenamientos ────────────────────────────────────────

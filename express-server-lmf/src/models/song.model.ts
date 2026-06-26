@@ -331,6 +331,14 @@ class SongModel {
           ca_ts_status as "tsStatus"
       `;
       if (!song) throw new Error(`Canción ${idSong} no encontrada`);
+
+      // Actualizar los registros de predicciones previas que no tenían calificación (Clean Training gap)
+      await psql`
+        UPDATE public.predicciones
+        SET pd_user_score = ${userScore},
+            pd_accuracy = LEAST(99.9999, GREATEST(0, 100 - (ABS(pd_ts_prediccion - ${userScore}) / 3) * 100))
+        WHERE pd_id_cancion = ${idSong} AND pd_user_score IS NULL
+      `;
       return new Song({
         id: song.id,
         userScore: song.userScore ?? null,

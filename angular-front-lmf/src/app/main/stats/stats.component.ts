@@ -19,29 +19,37 @@ export class StatsComponent implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
-    const playlists = await this.httpService.getAllPlaylists();
-    if (playlists && playlists.length) {
-      const defaultPlaylist = playlists.find(pl => pl.isDefault);
-      if (defaultPlaylist?.id) {
-        const songs = await this.httpService.getAllSongsByPlaylistId(defaultPlaylist.id);
-        const calibrationList = await this.httpService.getAllSongsCalibrationByIdPlaylist(defaultPlaylist.id);
+    await this.loadData();
+  }
 
-        // Agrupar calibraciones de predicción por songId
-        const calibrationMap = new Map<number, Calibration[]>();
-        for (const cal of calibrationList) {
-          if (cal.prediction) {
-            const existing = calibrationMap.get(cal.songId) || [];
-            existing.push(cal);
-            calibrationMap.set(cal.songId, existing);
+  async loadData(): Promise<void> {
+    try {
+      const playlists = await this.httpService.getAllPlaylists();
+      if (playlists && playlists.length) {
+        const defaultPlaylist = playlists.find(pl => pl.isDefault);
+        if (defaultPlaylist?.id) {
+          const songs = await this.httpService.getAllSongsByPlaylistId(defaultPlaylist.id);
+          const calibrationList = await this.httpService.getAllSongsCalibrationByIdPlaylist(defaultPlaylist.id);
+
+          // Agrupar calibraciones de predicción por songId
+          const calibrationMap = new Map<number, Calibration[]>();
+          for (const cal of calibrationList) {
+            if (cal.prediction) {
+              const existing = calibrationMap.get(cal.songId) || [];
+              existing.push(cal);
+              calibrationMap.set(cal.songId, existing);
+            }
           }
-        }
 
-        // Asignar stats a cada canción
-        this.songList = songs.map(song => {
-          song.stats = calibrationMap.get(song.id!) || [];
-          return song;
-        });
+          // Asignar stats a cada canción
+          this.songList = songs.map(song => {
+            song.stats = calibrationMap.get(song.id!) || [];
+            return song;
+          });
+        }
       }
+    } catch (error) {
+      console.error('Error al cargar datos de estadísticas:', error);
     }
   }
 

@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { GlobalPlaylistService } from '../../_services/global-playlist.service';
 import { Song } from '../../_types/generals.models';
 import { ListComponent } from '../../list/list.component';
@@ -17,7 +17,11 @@ export class PredictionComponent implements OnInit, OnDestroy {
     list: Array<Song>,
     listFull: Array<Song>,
     playlistMode: 'multiple' | 'single'
-  }
+  };
+
+  currentFilter: 'all' | 'unrated' | 'rated' | 'no-finetune' = 'all';
+
+  @ViewChild(ListComponent) listComponent!: ListComponent;
 
   private socketSubs: Subscription[] = [];
 
@@ -52,14 +56,38 @@ export class PredictionComponent implements OnInit, OnDestroy {
   async reloadSongs(): Promise<void> {
     try {
       const songsForPrediction = await this.httpService.getSongsForPrediction();
-      this.listForTraining = {
-        listFull: songsForPrediction,
-        playlistMode: 'single',
-        list: songsForPrediction
-      };
+      this.listForTraining.listFull = songsForPrediction;
+      this.applyFilter();
       this.globalPlaylistService.setLockRate(true);
     } catch (error) {
       console.error('Error al cargar las canciones para predicción:', error);
+    }
+  }
+
+  setFilter(filter: 'all' | 'unrated' | 'rated' | 'no-finetune'): void {
+    this.currentFilter = filter;
+    this.applyFilter();
+  }
+
+  applyFilter(): void {
+    if (this.listComponent) {
+      this.listComponent.selectedRows.set(new Set());
+    }
+    switch (this.currentFilter) {
+      case 'unrated':
+        this.listForTraining.list = this.listForTraining.listFull.filter(s => s.userScore === null || s.userScore === undefined);
+        break;
+      case 'rated':
+        this.listForTraining.list = this.listForTraining.listFull.filter(s => s.userScore !== null && s.userScore !== undefined);
+        break;
+      case 'no-finetune':
+        // tsTrainLevelGlobal <= 1 (0 = not trained, 1 = clean training only)
+        this.listForTraining.list = this.listForTraining.listFull.filter(s => (s.tsTrainLevelGlobal || 0) <= 1);
+        break;
+      case 'all':
+      default:
+        this.listForTraining.list = [...this.listForTraining.listFull];
+        break;
     }
   }
 
@@ -86,10 +114,18 @@ export class PredictionComponent implements OnInit, OnDestroy {
 
   async startPrediction(songIds?: number[]): Promise<void> {
     try {
-      const ids = songIds ?? this.listForTraining.list.map(song => song.id as number);
+      const ids = (songIds && songIds.length > 0) ? songIds : this.listForTraining.list.map(song => song.id as number);
+      if (ids.length === 0) return;
       await this.httpService.predictSongsByIds(ids);
+      if (this.listComponent) {
+        this.listComponent.selectedRows.set(new Set());
+      }
     } catch (error) {
       console.error('Error al iniciar la predicción:', error);
     }
+  }
+
+  get isAnySelected(): boolean {
+    return this.listComponent ? this.listComponent.selectedRows().size > 0 : false;
   }
 }

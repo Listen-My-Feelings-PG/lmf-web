@@ -79,21 +79,15 @@
         @for (headerGroup of table.getHeaderGroups(); track headerGroup.id) {
         <tr>
           <!-- Checkbox column for selection -->
-          <th class="table-th w-10"
-            [class.sortable]="!predictMode"
-            [class.cursor-default]="predictMode"
-            (click)="!predictMode ? toggleSelectAll() : null">
+          <th class="table-th w-10 cursor-pointer hover:bg-gray-800"
+            (click)="toggleSelectAll()">
             <div class="flex items-center justify-center">
-              @if (!predictMode) {
               @if (selectAllState() === 'all') {
               <i class="fas fa-check-square text-primary text-xs"></i>
               } @else if (selectAllState() === 'some') {
               <i class="fas fa-minus-square text-primary/60 text-xs"></i>
               } @else {
-              <i class="far fa-square text-gray-500 text-xs"></i>
-              }
-              } @else {
-              <i class="far fa-square text-gray-700 text-xs"></i>
+              <i class="far fa-square text-gray-500 text-xs hover:text-gray-400"></i>
               }
             </div>
           </th>
