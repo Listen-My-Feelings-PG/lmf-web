@@ -24,6 +24,7 @@ export class TrainingComponent implements OnInit, OnDestroy {
 
   configPanelCollapsed = false;
   currentFilter: 'all' | 'unrated' | 'rated' | 'no-finetune' = 'all';
+  ratingFilterReference: 'user' | 'prediction' | 'both' = 'user';
   useAccuracyFilter: boolean = false;
   maxAccuracy: number = 100;
   selectedRatings: Set<number> = new Set();
@@ -33,7 +34,12 @@ export class TrainingComponent implements OnInit, OnDestroy {
   trainingMessageType: 'success' | 'error' | 'locked' = 'success';
   private socketSubscriptions: Subscription[] = [];
 
-  constructor(private httpService: HttpService, private globalPlaylistService: GlobalPlaylistService, private socketService: SocketService, private toastService: ToastService) {
+  constructor(
+    private httpService: HttpService,
+    private globalPlaylistService: GlobalPlaylistService,
+    private socketService: SocketService,
+    private toastService: ToastService
+  ) {
     this.currentFilter = 'all';
     this.listForTraining = {
       listFiltered: [],
@@ -48,9 +54,6 @@ export class TrainingComponent implements OnInit, OnDestroy {
 
   generateSocketSubscribers(): void {
     this.socketSubscriptions.push(
-      this.socketService.taskExec$.subscribe(() => {
-        // No recargamos la lista en el inicio porque ya usamos bloqueo optimista en el front
-      }),
       this.socketService.taskFinish$.subscribe(() => {
         this.reloadSongs();
       })
@@ -92,14 +95,26 @@ export class TrainingComponent implements OnInit, OnDestroy {
 
   private applyFiltersToList(): void {
     let filteredList: Array<Song> = JSON.parse(JSON.stringify(this.listForTraining.list));
-    
+
     // Filtro de Modalidad
     switch (this.currentFilter) {
       case 'unrated':
-        filteredList = filteredList.filter(s => s.userScore === null || s.userScore === undefined);
+        if (this.ratingFilterReference === 'user') {
+          filteredList = filteredList.filter(s => s.userScore == null);
+        } else if (this.ratingFilterReference === 'prediction') {
+          filteredList = filteredList.filter(s => s.tsPrediction == null);
+        } else {
+          filteredList = filteredList.filter(s => s.userScore == null && s.tsPrediction == null);
+        }
         break;
       case 'rated':
-        filteredList = filteredList.filter(s => s.userScore !== null && s.userScore !== undefined);
+        if (this.ratingFilterReference === 'user') {
+          filteredList = filteredList.filter(s => s.userScore != null);
+        } else if (this.ratingFilterReference === 'prediction') {
+          filteredList = filteredList.filter(s => s.tsPrediction != null);
+        } else {
+          filteredList = filteredList.filter(s => s.userScore != null && s.tsPrediction != null);
+        }
         break;
       case 'no-finetune':
         filteredList = filteredList.filter(s => (s.tsTrainLevelGlobal || 0) <= 1);
@@ -111,8 +126,18 @@ export class TrainingComponent implements OnInit, OnDestroy {
 
     // Filtro de Calificación
     const ratingsSelected = Array.from(this.selectedRatings);
-    if (ratingsSelected.length > 0)
-      filteredList = filteredList.filter(song => ratingsSelected.includes(song.userScore as number));
+    if (ratingsSelected.length > 0) {
+      if (this.ratingFilterReference === 'user') {
+        filteredList = filteredList.filter(song => song.userScore != null && ratingsSelected.includes(song.userScore as number));
+      } else if (this.ratingFilterReference === 'prediction') {
+        filteredList = filteredList.filter(song => song.tsPrediction != null && ratingsSelected.includes(song.tsPrediction as number));
+      } else {
+        filteredList = filteredList.filter(song =>
+          (song.userScore != null && ratingsSelected.includes(song.userScore as number)) ||
+          (song.tsPrediction != null && ratingsSelected.includes(song.tsPrediction as number))
+        );
+      }
+    }
 
     // Filtro de Precisión Máxima
     if (this.useAccuracyFilter) {
@@ -128,6 +153,11 @@ export class TrainingComponent implements OnInit, OnDestroy {
 
   setModality(mode: 'all' | 'unrated' | 'rated' | 'no-finetune'): void {
     this.currentFilter = mode;
+    this.applyFiltersToList();
+  }
+
+  setRatingReference(ref: 'user' | 'prediction' | 'both'): void {
+    this.ratingFilterReference = ref;
     this.applyFiltersToList();
   }
 

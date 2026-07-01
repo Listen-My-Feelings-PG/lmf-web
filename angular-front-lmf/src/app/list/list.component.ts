@@ -95,7 +95,10 @@ export class ListComponent implements OnDestroy, OnChanges {
     }, enableColumnResizing: true, columnResizeMode: 'onChange' as const, getCoreRowModel: getCoreRowModel(), getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(), getPaginationRowModel: getPaginationRowModel(),
     autoResetPageIndex: false,
-    initialState: { pagination: { pageSize: 10, }, },
+    initialState: {
+      pagination: { pageSize: 10 },
+      sorting: [{ id: 'id', desc: false }]
+    },
   }));
 
   constructor(

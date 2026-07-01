@@ -74,28 +74,67 @@
                 Sin Fine-Tuning
               </button>
             </div>
-            
+
+            <!-- Selector de Referencia de Calificación -->
+            <div class="mt-4 pt-4 border-t border-gray-700">
+              <label class="block text-sm font-semibold text-gray-300 mb-3">
+                <i class="fas fa-bullseye mr-2 text-secondary"></i>
+                Referencia de Calificación
+              </label>
+              <div class="flex items-center justify-center bg-gray-950 rounded-lg p-2 border border-gray-700"
+                [class.opacity-50]="currentFilter !== 'unrated' && currentFilter !== 'rated'"
+                [class.pointer-events-none]="currentFilter !== 'unrated' && currentFilter !== 'rated'">
+                <button (click)="setRatingReference('user')"
+                  [disabled]="currentFilter !== 'unrated' && currentFilter !== 'rated'"
+                  [class]="ratingFilterReference === 'user' ? 'flex-1 px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 bg-secondary text-white shadow-md' : 'flex-1 px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 text-gray-400 hover:text-gray-200 hover:bg-gray-800'">
+                  Usuario
+                </button>
+                <button (click)="setRatingReference('prediction')"
+                  [disabled]="currentFilter !== 'unrated' && currentFilter !== 'rated'"
+                  [class]="ratingFilterReference === 'prediction' ? 'flex-1 px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 bg-secondary text-white shadow-md' : 'flex-1 px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 text-gray-400 hover:text-gray-200 hover:bg-gray-800'">
+                  Predicción
+                </button>
+                <button (click)="setRatingReference('both')"
+                  [disabled]="currentFilter !== 'unrated' && currentFilter !== 'rated'"
+                  [class]="ratingFilterReference === 'both' ? 'flex-1 px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 bg-secondary text-white shadow-md' : 'flex-1 px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 text-gray-400 hover:text-gray-200 hover:bg-gray-800'">
+                  Ambas
+                </button>
+              </div>
+              <p class="text-xs text-gray-500 mt-2 italic">
+                Aplica a los filtros "Sin Calif.", "Calificadas" y al panel de "Filtrar por Calificación".
+              </p>
+            </div>
+
             <!-- Barra de precisión máxima -->
             <div class="mt-4 pt-4 border-t border-gray-700">
               <div class="flex justify-between items-center mb-2">
                 <label class="flex items-center cursor-pointer group">
-                  <input type="checkbox" [(ngModel)]="useAccuracyFilter" (change)="setModality(currentFilter)"
+                  <input type="checkbox"
+                    [(ngModel)]="useAccuracyFilter"
+                    (change)="setModality(currentFilter)"
                     class="w-4 h-4 rounded border-gray-600 text-primary focus:ring-primary focus:ring-offset-gray-900 mr-2">
                   <span class="text-sm font-semibold text-gray-300 group-hover:text-white transition-colors">
                     <i class="fas fa-bullseye mr-1 text-secondary"></i>
                     Filtrar por Precisión
                   </span>
                 </label>
-                
+
                 @if (useAccuracyFilter) {
                 <span class="text-sm font-mono text-primary bg-gray-950 px-2 py-1 rounded transition-opacity">
                   {{ maxAccuracy === 0 ? 'Sin Calcular (0%)' : 'Hasta ' + maxAccuracy + '%' }}
                 </span>
                 }
               </div>
-              
-              <div [class.opacity-50]="!useAccuracyFilter" [class.pointer-events-none]="!useAccuracyFilter" class="transition-opacity duration-200">
-                <input type="range" min="0" max="100" step="1" [(ngModel)]="maxAccuracy" (change)="setModality(currentFilter)"
+
+              <div [class.opacity-50]="!useAccuracyFilter"
+                [class.pointer-events-none]="!useAccuracyFilter"
+                class="transition-opacity duration-200">
+                <input type="range"
+                  min="0"
+                  max="100"
+                  step="1"
+                  [(ngModel)]="maxAccuracy"
+                  (change)="setModality(currentFilter)"
                   [disabled]="!useAccuracyFilter"
                   class="w-full accent-primary bg-gray-700 h-2 rounded-lg appearance-none cursor-pointer disabled:cursor-not-allowed">
                 <p class="text-xs text-gray-500 mt-2 italic">

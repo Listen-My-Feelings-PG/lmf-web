@@ -318,7 +318,7 @@
       </button>
 
       <!-- Page Numbers -->
-      @for (pageNum of getPageNumbers(); track pageNum) {
+      @for (pageNum of getPageNumbers(); track $index) {
       @if (pageNum === '...') {
       <span class="px-2 text-gray-500">...</span>
       } @else {
