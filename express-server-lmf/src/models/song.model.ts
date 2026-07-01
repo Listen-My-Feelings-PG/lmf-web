@@ -283,7 +283,13 @@ class SongModel {
           ca_ts_prediccion,
           ca_ts_features_filename,
           ca_ts_status,
-          latest_pred.pd_accuracy
+          latest_pred.pd_accuracy,
+          EXISTS (
+            SELECT 1 
+            FROM entrenamientos 
+            WHERE en_id_cancion = ca_id 
+              AND en_is_fine_tuning = B'1'
+          ) as "hasFineTuning"
       FROM rel_playlists_canciones
       left join canciones on ca_id=pr_ca_id
       LEFT JOIN LATERAL (
@@ -305,7 +311,8 @@ class SongModel {
         tsFeaturesFileName: song.ca_ts_features_filename ?? null,
         tsStatus: song.ca_ts_status ?? null,
         idPlaylist: idPlaylist,
-        accuracy: (song.ca_calif_usuario != null && song.ca_ts_prediccion != null && song.pd_accuracy != null) ? parseFloat(song.pd_accuracy) : null
+        accuracy: (song.ca_calif_usuario != null && song.ca_ts_prediccion != null && song.pd_accuracy != null) ? parseFloat(song.pd_accuracy) : null,
+        hasFineTuning: song.hasFineTuning
       }));
     } catch (error) {
       console.error('Error al obtener canciones por ID de playlist:', error);

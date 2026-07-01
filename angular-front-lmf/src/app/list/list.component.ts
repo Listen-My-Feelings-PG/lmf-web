@@ -97,7 +97,7 @@ export class ListComponent implements OnDestroy, OnChanges {
     autoResetPageIndex: false,
     initialState: {
       pagination: { pageSize: 10 },
-      sorting: [{ id: 'id', desc: false }]
+      sorting: [{ id: 'id', desc: true }]
     },
   }));
 

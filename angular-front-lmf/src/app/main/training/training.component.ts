@@ -117,7 +117,7 @@ export class TrainingComponent implements OnInit, OnDestroy {
         }
         break;
       case 'no-finetune':
-        filteredList = filteredList.filter(s => (s.tsTrainLevelGlobal || 0) <= 1);
+        filteredList = filteredList.filter(s => (s.tsTrainLevelGlobal || 0) <= 1 && !s.hasFineTuning);
         break;
       case 'all':
       default:
