@@ -1,25 +1,25 @@
 <div class="fixed top-24 right-6 z-50 flex flex-col space-y-3 pointer-events-none">
-  <div *ngFor="let toast of toasts" @toastAnimation
-       class="pointer-events-auto flex items-center justify-between px-5 py-3 rounded-lg shadow-xl min-w-[300px] border border-gray-700 backdrop-blur-md"
+  @for (toast of toasts; track toast) {
+    <div @toastAnimation
+      class="pointer-events-auto flex items-center justify-between px-5 py-3 rounded-lg shadow-xl min-w-[300px] border border-gray-700 backdrop-blur-md"
        [ngClass]="{
          'bg-green-600/90 text-white': toast.type === 'success',
          'bg-red-600/90 text-white': toast.type === 'error',
          'bg-blue-600/90 text-white': toast.type === 'info',
          'bg-yellow-500/90 text-gray-900': toast.type === 'warning'
        }">
-    
-    <div class="flex items-center space-x-3">
+      <div class="flex items-center space-x-3">
       <i class="fas" [ngClass]="{
         'fa-check-circle': toast.type === 'success',
         'fa-exclamation-circle': toast.type === 'error',
         'fa-info-circle': toast.type === 'info',
         'fa-exclamation-triangle': toast.type === 'warning'
       }"></i>
-      <span class="font-semibold">{{ toast.message }}</span>
+        <span class="font-semibold">{{ toast.message }}</span>
+      </div>
+      <button (click)="remove(toast.id)" class="ml-4 opacity-70 hover:opacity-100 transition-opacity">
+        <i class="fas fa-times"></i>
+      </button>
     </div>
-
-    <button (click)="remove(toast.id)" class="ml-4 opacity-70 hover:opacity-100 transition-opacity">
-      <i class="fas fa-times"></i>
-    </button>
-  </div>
+  }
 </div>

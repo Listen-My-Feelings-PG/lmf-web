@@ -1,5 +1,5 @@
 import { Component, effect, OnInit, OnDestroy, AfterViewInit, AfterContentInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { Song } from '../../_types/generals.models';
 import { HttpService } from '../../_services/http.service';
@@ -12,7 +12,7 @@ import { ToastService } from '../../_services/toast.service';
 
 @Component({
   selector: 'app-training',
-  imports: [ListComponent, CommonModule, FormsModule],
+  imports: [ListComponent, FormsModule],
   templateUrl: './training.component.html',
   styleUrl: './training.component.scss'
 })

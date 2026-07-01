@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpService } from '../../_services/http.service';
@@ -6,7 +6,7 @@ import { VocaDbYoutubeExtractionResult } from '../../_types/vocadb.interfaces';
 
 @Component({
   selector: 'app-vocadb',
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   templateUrl: './vocadb.component.html',
   styleUrl: './vocadb.component.scss'
 })

@@ -5,7 +5,7 @@ import {
 import { Playlist, Song } from '../_types/generals.models';
 import { GlobalPlaylistService } from '../_services/global-playlist.service';
 import { HttpService } from '../_services/http.service';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import {
   createAngularTable,
@@ -21,7 +21,7 @@ import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-list',
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   templateUrl: './list.component.html',
   styleUrl: './list.component.scss'
 })
