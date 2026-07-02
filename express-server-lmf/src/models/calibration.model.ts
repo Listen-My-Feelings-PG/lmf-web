@@ -23,7 +23,7 @@ export interface PredictionEntry {
   lastFitId: number | null;
 }
 
-// ─── Modelo para tabla entrenamientos ────────────────────────────────────────
+// ─── Modelo para tabla ts_interacciones ────────────────────────────────────────
 
 export class TrainingRecordModel {
 
@@ -33,7 +33,7 @@ export class TrainingRecordModel {
   static async create(data: TrainingEntry): Promise<number> {
     try {
       const [row] = await psql<{ id: number }[]>`
-        INSERT INTO public.entrenamientos (
+        INSERT INTO public.ts_interacciones (
           en_id_cancion, en_is_fine_tuning, en_id_modelo,
           en_calif_usuario, en_ts_epocas, en_ts_loss,
           en_ts_batch_size, en_ts_validation_split, en_ts_mae
@@ -65,7 +65,7 @@ export class TrainingRecordModel {
     try {
       for (const data of entries) {
         await psql`
-          INSERT INTO public.entrenamientos (
+          INSERT INTO public.ts_interacciones (
             en_id_cancion, en_is_fine_tuning, en_id_modelo,
             en_calif_usuario, en_ts_epocas, en_ts_loss,
             en_ts_batch_size, en_ts_validation_split, en_ts_mae
@@ -98,7 +98,7 @@ export class TrainingRecordModel {
         SELECT DISTINCT ON (en_id_cancion)
           en_id_cancion as "songId",
           en_id as "fitId"
-        FROM public.entrenamientos
+        FROM public.ts_interacciones
         WHERE en_id_cancion = ANY(${songIds})
         ORDER BY en_id_cancion, en_fecha DESC
       `;

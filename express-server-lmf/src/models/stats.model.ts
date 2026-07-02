@@ -18,7 +18,7 @@ class StatsModel {
           e.en_ts_batch_size AS "batchSize",
           e.en_ts_validation_split AS "validationSplit",
           e.en_ts_mae AS mae
-        FROM public.entrenamientos e
+        FROM public.ts_interacciones e
         INNER JOIN public.rel_playlists_canciones rpc
           ON e.en_id_cancion = rpc.pr_ca_id
         WHERE rpc.pr_pl_id = ${idPlaylist}

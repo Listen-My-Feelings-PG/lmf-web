@@ -286,7 +286,7 @@ class SongModel {
           latest_pred.pd_accuracy,
           EXISTS (
             SELECT 1 
-            FROM entrenamientos 
+            FROM ts_interacciones 
             WHERE en_id_cancion = ca_id 
               AND en_is_fine_tuning = B'1'
           ) as "hasFineTuning"
