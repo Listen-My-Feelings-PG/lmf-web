@@ -5,11 +5,14 @@ import path from "path";
 import fs from "fs";
 import { paths } from "../main";
 import { isExtractionActive } from "../services/feature-extraction.service";
-import { runTraining, runPrediction, tuneSingleSongById, createAndRegisterModel } from "../services/tensorflow.service";
+import {
+  runTraining,
+  runPrediction, tuneSingleSongById
+} from "../services/tensorflow.service";
 import { psql } from "../main";
 import { addTask, isTaskActive } from "../subprocess/task.pool";
-import TsModelModel from "../models/tensorflow-db.model";
 import { logger } from "../utils/env-validator";
+import { TrainingMode } from "../types/generals.types";
 
 
 
@@ -37,6 +40,11 @@ function resolveAudioFilePath(fileName: string): string {
   return filePath;
 }
 
+/**
+ * Controlador: Encola una tarea en segundo plano para realizar un "Fine-Tuning" rápido de una sola canción.
+ * Útil cuando el usuario cambia la calificación de una canción y se quiere ajustar el modelo de IA
+ * inmediatamente para reflejar ese cambio sin un entrenamiento masivo completo.
+ */
 export async function tuneSingleSong(req: Request, res: Response): Promise<void> {
   const idSong = parseInt(req.params.idSong, 10);
   if (isNaN(idSong)) {
@@ -51,7 +59,7 @@ export async function tuneSingleSong(req: Request, res: Response): Promise<void>
 
   try {
     await psql`UPDATE public.canciones SET ca_ts_status = 'fine-tuning' WHERE ca_id = ${idSong}`;
-    
+
     addTask({
       type: 'fine-tuning',
       scope: 'single',
@@ -71,6 +79,10 @@ export async function tuneSingleSong(req: Request, res: Response): Promise<void>
   }
 }
 
+/**
+ * Controlador: Sirve el archivo de audio físico (MP3, WAV, FLAC) almacenado en el servidor para que 
+ * pueda ser reproducido por el cliente (Angular) vía streaming HTTP.
+ */
 export async function serveSongById(req: Request, res: Response): Promise<void> {
   try {
     const idSong = parseInt(req.params.idSong, 10);
@@ -107,6 +119,11 @@ export async function serveSongById(req: Request, res: Response): Promise<void> 
   }
 }
 
+/**
+ * Controlador: Actualiza la puntuación manual (userScore) de una canción (0 a 3).
+ * Este endpoint es crítico porque la IA utiliza este valor como la etiqueta 'Y' 
+ * para aprender las preferencias del usuario (Aprendizaje Supervisado).
+ */
 export async function rateSongById(req: Request, res: Response): Promise<void> {
   try {
     const idSong = parseInt(req.params.idSong, 10);
@@ -140,33 +157,13 @@ export async function getSongsForPrediction(req: Request, res: Response): Promis
     return;
   }
 }
-
-export async function trainSongsByIdsRefactor(req: Request, res: Response): Promise<void> {
-  //NOTA: esta función no será fire-and-forget
-  //1. Obtención y validación de ids
-
-  let songIds: number[];
-  try {
-    songIds = JSON.parse(req.body.songIds);
-    //Verificar que sea un array de números
-    if (!Array.isArray(songIds) || !songIds.every(id => typeof id === 'number')) {
-      sendError(res, 'songIds debe ser un array de números', BadRequest, null);
-      return;
-    }
-  } catch {
-    sendError(res, 'Error al parsear songIds. Envíe un JSON válido.', BadRequest, null);
-    return;
-  }
-
-  let globalTsModel = await TsModelModel.getGlobalModel();
-  if (!globalTsModel) {
-    logger('warn', 'No hay modelo global Se procede a crear el modelo global ahora');
-    globalTsModel = await createAndRegisterModel(true, 'model_global');
-    //await PlaylistModel.updateModelId(defaultPlaylist.id!, globalModel.id!);
-  }
-  //2. Obtención de las canciones como Array<Song>
-}
-
+/**
+ * Controlador: Encola una tarea masiva en segundo plano para entrenar los modelos de TensorFlow (Global y Locales) 
+ * utilizando las canciones seleccionadas. 
+ * Revisa el estado de la aplicación para prevenir ejecuciones superpuestas.
+ * 
+ * @param req req.body incluye { songIds: Array<number>, mode: "clean"|"infer", includeLocalTraining: boolean }
+ */
 export async function trainSongsByIds(req: Request, res: Response): Promise<void> {
   // Verificar si hay un proceso de extracción de features activo
   if (isExtractionActive()) {
@@ -182,6 +179,7 @@ export async function trainSongsByIds(req: Request, res: Response): Promise<void
 
   try {
     let songIds: number[];
+
     try {
       songIds = JSON.parse(req.body.songIds);
     } catch {
@@ -189,22 +187,22 @@ export async function trainSongsByIds(req: Request, res: Response): Promise<void
       return;
     }
 
-    const mode = req.body.mode;
-    const includeLocalTraining = req.body.includeLocalTraining === 'true' || req.body.includeLocalTraining === true;
+    const mode: TrainingMode = req.body.mode;
+    const includeLocalTraining: boolean = req.body.includeLocalTraining === 'true' || req.body.includeLocalTraining === true;
 
     if (!songIds || !Array.isArray(songIds) || songIds.length === 0) {
       sendError(res, 'Lista de IDs de canciones vacía o inválida', BadRequest, null);
       return;
     }
 
-    if (!['clean', 'infer', 'none'].includes(mode)) {
+    if (!['clean', 'infer', 'none'].includes(mode)) { //Validación del mode
       sendError(res, 'Modo de entrenamiento inválido. Use "clean" o "infer".', BadRequest, null);
       return;
     }
 
     addTask({
       type: 'training',
-      scope: 'global',
+      scope: 'multiple',
       songIds,
       execute: async (ids) => {
         await runTraining(ids, mode, includeLocalTraining);
@@ -220,6 +218,11 @@ export async function trainSongsByIds(req: Request, res: Response): Promise<void
   }
 }
 
+/**
+ * Controlador: Encola una tarea en segundo plano para predecir las valoraciones de un grupo de canciones
+ * utilizando el modelo Global ya entrenado. 
+ * Muy útil para calcular la precisión (Accuracy) histórica y ver qué le gustaría escuchar al usuario hoy.
+ */
 export async function predictSongsByIds(req: Request, res: Response): Promise<void> {
   // Verificar si hay un proceso de extracción de features activo
   if (isExtractionActive()) {
@@ -255,7 +258,7 @@ export async function predictSongsByIds(req: Request, res: Response): Promise<vo
 
     addTask({
       type: 'prediction',
-      scope: 'global',
+      scope: 'multiple',
       songIds,
       execute: async (ids) => {
         await runPrediction(ids);
@@ -271,6 +274,11 @@ export async function predictSongsByIds(req: Request, res: Response): Promise<vo
   }
 }
 
+/**
+ * Controlador: Encola una tarea crítica en segundo plano que elimina los archivos físicos (audio) 
+ * y realiza un borrado lógico (soft delete) en la base de datos de manera masiva.
+ * Validaciones estrictas previenen que se borre música mientras la IA u otro subproceso está usándolos.
+ */
 export async function deleteSelectedSongsFromLibrary(req: Request, res: Response): Promise<void> {
   const ids = parseSongIds(req.body.songIds);
   if (!ids) {
@@ -305,7 +313,7 @@ export async function deleteSelectedSongsFromLibrary(req: Request, res: Response
 
   addTask({
     type: 'library-deletion',
-    scope: 'global',
+    scope: 'multiple',
     songIds: ids,
     execute: async (targetIds) => {
       const songs = await SongModel.getSongsByIds(targetIds);
@@ -339,6 +347,10 @@ export async function deleteSelectedSongsFromLibrary(req: Request, res: Response
   });
 }
 
+/**
+ * Controlador: Encola una tarea masiva en segundo plano para exportar una selección de canciones
+ * a una carpeta especial ("Onboard"), útil para transferir a otros dispositivos o pendrives (Exportación USB).
+ */
 export async function copySelectedSongsToOnboard(req: Request, res: Response): Promise<void> {
   let ids: number[];
   try {
@@ -375,7 +387,7 @@ export async function copySelectedSongsToOnboard(req: Request, res: Response): P
 
   addTask({
     type: 'onboard-copy',
-    scope: 'global',
+    scope: 'multiple',
     songIds: ids,
     execute: async (targetIds) => {
       try {

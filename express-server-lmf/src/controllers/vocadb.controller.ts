@@ -20,6 +20,13 @@ function parseInteger(value: unknown): number | null {
   return null;
 }
 
+/**
+ * Controlador: Delega la ejecución de un scraper/extractor hacia la API de VocaDB 
+ * para obtener y guardar links de YouTube de canciones publicadas en un año específico.
+ * Maneja un bloqueo (lock) para evitar extracciones concurrentes.
+ * 
+ * @param req req.body incluye { year: number, rangeDays: number }
+ */
 export async function createVocadbYoutubeLinksReport(req: Request, res: Response): Promise<void> {
   const year = parseInteger(req.body.year);
   const rangeDays = req.body.rangeDays === undefined || req.body.rangeDays === null || req.body.rangeDays === ''

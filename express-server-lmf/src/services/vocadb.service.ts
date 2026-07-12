@@ -247,6 +247,15 @@ function collectYoutubeOriginalUrls(items: VocaDbSong[], accumulator: Extraction
   }
 }
 
+/**
+ * Lógica recursiva: Procesa un rango de fechas contra la API de VocaDB.
+ * Si la API indica que hay más resultados de los permitidos por página (truncated = true),
+ * la función divide el rango de fechas actual exactamente a la mitad y se llama a sí misma
+ * dos veces (recursión) para asegurar la extracción del 100% de los datos sin perder ninguno.
+ * 
+ * @param range Rango de fechas a consultar
+ * @param accumulator Objeto mutado por referencia para ir acumulando resultados y estadísticas
+ */
 async function processRange(range: DateRange, accumulator: ExtractionAccumulator): Promise<void> {
   const afterDate = formatVocaDate(range.after);
   const beforeDate = formatVocaDate(range.before);
@@ -307,6 +316,16 @@ async function writeLinksReport(year: number, urls: string[]): Promise<VocaDbRep
   };
 }
 
+/**
+ * Servicio: Ejecuta la extracción iterando sobre rangos de fechas de un año completo.
+ * VocaDB tiene un límite estricto de resultados, por lo que este método divide el año 
+ * en bloques de `rangeDays` y realiza peticiones usando la función recursiva `processRange`.
+ * Al finalizar, guarda el resultado en un archivo `.txt` en disco.
+ * 
+ * @param year Año de publicación de las canciones a buscar (ej: 2023)
+ * @param rangeDays Salto de días inicial para las particiones (ej: 3)
+ * @returns Un objeto estructurado con las URLs, estadísticas del proceso y metadatos del reporte generado.
+ */
 export async function extractVocadbYoutubeLinks(year: number, rangeDays: number): Promise<VocaDbYoutubeExtractionResult> {
   const accumulator: ExtractionAccumulator = {
     stats: {

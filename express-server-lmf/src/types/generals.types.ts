@@ -45,5 +45,12 @@ export interface FileInfo {
  * Log level types
  */
 export type LogLevel = 'info' | 'error' | 'warn' | 'debug';
-
 export type UserScore = 0 | 1 | 2 | 3 | null;
+/**
+ * Otros
+ */
+export type TrainingMode = 'clean' | 'infer' | 'none';
+export type ModelScope = 'local' | 'global';
+export type TaskType = 'training' | 'prediction' | 'fine-tuning' | 'onboard-copy' | 'library-deletion' | 'vocadb-youtube-report';
+export type TaskScope = 'single' | 'multiple';
+export type TaskStatus = 'queued' | 'processing';

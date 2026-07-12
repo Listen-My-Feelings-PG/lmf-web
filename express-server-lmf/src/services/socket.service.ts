@@ -5,6 +5,14 @@ import { checkTokenSocket } from './jwt.service';
 let io: SocketIOServer;
 const listConnected: { id: string, user: any }[] = [];
 
+/**
+ * Servicio: Inicializa el servidor de WebSockets (Socket.IO) y maneja las conexiones.
+ * Se encarga de la validación del JWT en cada conexión entrante para asegurar
+ * que solo usuarios autenticados puedan suscribirse a la sala principal y recibir
+ * los eventos en tiempo real (ej: progreso de entrenamiento, extracción).
+ * 
+ * @param server Instancia del servidor HTTP nativo de Node.js donde se monta Express
+ */
 export const initSocket = (server: HttpServer): void => {
   io = new SocketIOServer(server, {
     cors: {

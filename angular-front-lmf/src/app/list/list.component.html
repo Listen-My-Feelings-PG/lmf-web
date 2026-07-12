@@ -148,7 +148,7 @@
           class="table-row group"
           [class.playing]="isPlaying(row.original)">
 
-          <!-- Checkbox column (visible on hover) -->
+          <!-- Checkbox column (visible ON hover) -->
           <td class="px-2 py-2 text-center">
             <div class="flex items-center justify-center">
               <button (click)="toggleRowSelection(row.original.id!); $event.stopPropagation()"

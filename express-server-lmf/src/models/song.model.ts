@@ -284,14 +284,14 @@ class SongModel {
           ca_ts_features_filename,
           ca_ts_status,
           latest_pred.pd_accuracy,
-          EXISTS (
+          EXISTS ( --En el milisegundo en el que encuentra un solo registro que cumpla la condición, devuelve true y detiene la búsqueda para esa canción inmediatamente
             SELECT 1 
             FROM ts_interacciones 
             WHERE en_id_cancion = ca_id 
               AND en_is_fine_tuning = B'1'
           ) as "hasFineTuning"
       FROM rel_playlists_canciones
-      left join canciones on ca_id=pr_ca_id
+      LEFT JOIN canciones ON ca_id=pr_ca_id
       LEFT JOIN LATERAL (
         SELECT pd_accuracy
         FROM predicciones
@@ -379,8 +379,8 @@ class SongModel {
           pr_pl_id as "idPlaylist",
           latest_pred.pd_accuracy as "predAccuracy"
         FROM rel_playlists_canciones
-        left join canciones on ca_id=pr_ca_id
-        left join playlists on pr_pl_id=pl_id
+        LEFT JOIN canciones ON ca_id=pr_ca_id
+        LEFT JOIN playlists ON pr_pl_id=pl_id
         LEFT JOIN LATERAL (
           SELECT pd_accuracy
           FROM predicciones
@@ -422,8 +422,8 @@ class SongModel {
           ca_ts_status,
           pr_pl_id as "idPlaylist"
       FROM rel_playlists_canciones
-      left join canciones on ca_id=pr_ca_id
-      left join playlists on pr_pl_id=pl_id
+      LEFT JOIN canciones ON ca_id=pr_ca_id
+      LEFT JOIN playlists ON pr_pl_id=pl_id
       where ca_calif_usuario is not null AND pl_is_default = B'1' AND ca_activo = B'1'`;
       return songs.map(song => new Song({
         id: song.ca_id,

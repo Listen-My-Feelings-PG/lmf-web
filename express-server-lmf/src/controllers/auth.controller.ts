@@ -3,6 +3,11 @@ import bcrypt from 'bcryptjs';
 import { psql } from '../main';
 import { encode } from '../services/jwt.service';
 
+/**
+ * Controlador: Autenticación (Login) de usuarios.
+ * Recibe credenciales, busca al usuario activo en la BD, verifica la contraseña 
+ * con bcrypt y genera un token JWT (válido por 1 día) para autorizar accesos futuros.
+ */
 export const login = async (req: Request, res: Response): Promise<void> => {
   try {
     const { username, password } = req.body;

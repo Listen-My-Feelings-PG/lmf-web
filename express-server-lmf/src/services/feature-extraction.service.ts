@@ -65,10 +65,12 @@ function logSkip(msg: string): void {
 }
 
 /**
- * Inicializa la extracción de features al arrancar el servidor.
+ * Inicializa la extracción automática de características (features) al arrancar el servidor.
  * Consulta todas las canciones activas en BD y verifica cuáles NO tienen
- * features extraídas (campo tsFeaturesFileName nulo O archivo .npy inexistente).
- * Solo procesa las canciones faltantes.
+ * features extraídas (campo `tsFeaturesFileName` nulo O archivo físico `.npy` inexistente).
+ * Solo manda a procesar el delta (las canciones faltantes), ahorrando horas de cómputo en cada reinicio.
+ * 
+ * @returns Promesa que se resuelve cuando se lanza el subproceso (no espera a que termine).
  */
 export async function initializeFeatureExtraction(): Promise<void> {
   logInfo('═'.repeat(60));
@@ -80,7 +82,8 @@ export async function initializeFeatureExtraction(): Promise<void> {
 
     const audioDir = path.resolve(paths.audio);
 
-    // Filtrar canciones que realmente tienen archivo de audio en disco
+    // Variable clave `songsWithAudio`: Arreglo de canciones filtrado.
+    // Solo incluye canciones cuyo archivo mp3/wav/flac físico existe realmente en el disco duro.
     const songsWithAudio = allSongs.filter(song => {
       const audioPath = path.join(audioDir, song.fileName);
       return fs.existsSync(audioPath);
@@ -91,9 +94,12 @@ export async function initializeFeatureExtraction(): Promise<void> {
       logInfo(`⚠ ${songsWithoutAudio} canción(es) sin archivo de audio en disco (se omiten)`);
     }
 
+    // Variable clave `songsMissing`: Arreglo de canciones que pasaron el primer filtro pero NO tienen archivo .npy
     const songsMissing = songsWithAudio.filter(song => {
+      // 1. Si no hay registro en la base de datos de un nombre de archivo, definitivamente falta.
       if (!song.tsFeaturesFileName) return true;
       const featurePath = path.join(featuresDir, song.tsFeaturesFileName);
+      // 2. Si hay registro, pero el archivo físico no se encuentra, también lo marcamos como faltante.
       return !fs.existsSync(featurePath);
     });
 
@@ -117,11 +123,12 @@ export async function initializeFeatureExtraction(): Promise<void> {
 }
 
 /**
- * Inicia la extracción de features en background (fire-and-forget).
- * Adquiere el lock global, spawns Python, loguea todo en consola,
- * actualiza la BD al completar cada canción, y libera el lock al finalizar.
+ * Lanza el subproceso de Python (script `feature_extractor.py`) encargado de procesar el audio masivo (fire-and-forget).
+ * Establece un cerrojo (lock global `extractionInProgress`) para evitar paralelismo destructivo.
+ * Lee la salida (stdout) de Python línea por línea a través de eventos JSON y actualiza la BD en tiempo real.
+ * Libera el lock al finalizar exitosamente o fallar.
  *
- * @param songs Lista de canciones obtenidas de la BD
+ * @param songs Lista de objetos Song obtenidos de la BD que requieren extracción.
  */
 function startFeatureExtraction(songs: Song[]): void {
   if (extractionInProgress) {
@@ -153,6 +160,8 @@ function startFeatureExtraction(songs: Song[]): void {
   const tempFile = path.join(os.tmpdir(), `lmf_songs_${Date.now()}.json`);
   fs.writeFileSync(tempFile, JSON.stringify(songsForExtraction), 'utf-8');
 
+  // Variable clave `pythonProcess`: Representa el proceso hijo (Subprocess) del sistema operativo.
+  // Permite ejecutar el script pesado de Python (VGGish/Librosa) sin bloquear el Event Loop de NodeJS (Express).
   const pythonProcess = spawn('python', [
     scriptPath,
     '--audio-dir', audioDir,
@@ -160,22 +169,29 @@ function startFeatureExtraction(songs: Song[]): void {
     '--songs-file', tempFile
   ], {
     env: { ...process.env, PYTHONIOENCODING: 'utf-8' },
-    stdio: ['pipe', 'pipe', 'pipe']
+    stdio: ['pipe', 'pipe', 'pipe'] // Captura stdIn, stdOut y stdErr a través de flujos (Streams)
   });
 
+  // `buffer` actúa como un acumulador. Puesto que los flujos (streams) pueden cortar un string JSON a la mitad,
+  // el buffer espera hasta encontrar un salto de línea (\n) para intentar parsear la respuesta completa.
   let buffer = '';
 
+  // Escuchar el evento 'data' del StdOut del proceso hijo.
   pythonProcess.stdout.on('data', (data: Buffer) => {
     buffer += data.toString('utf-8');
     const lines = buffer.split('\n');
+    // pop() saca el último elemento (que podría estar incompleto si no termina en \n) y lo guarda en el buffer para el próximo chunk.
     buffer = lines.pop() || '';
 
+    // Bucle for-of: Itera sobre todas las líneas completas recibidas desde Python.
     for (const line of lines) {
       if (line.trim()) {
         try {
+          // El script de Python escupe objetos JSON por línea (Logs estructurados).
           const event: FeatureExtractionEvent = JSON.parse(line);
           handleEvent(event);
         } catch {
+          // Si no es un JSON, simplemente lo tratamos como texto informativo (print normal).
           logInfo(`[Python] ${line.trim()}`);
         }
       }

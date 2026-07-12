@@ -10,6 +10,7 @@ import PlaylistModel from '../models/playlist.model';
 import { Song, TensorFlowModel } from '../types/generals.models';
 import { getCachedFeature, invalidateFeatureCache } from '../subprocess/feature-cache.process';
 import { nodeSaveHandler, nodeLoadHandler } from './filesystem.service';
+import { ModelScope, TrainingMode } from '../types/generals.types';
 
 // ─── Configuración por defecto ───────────────────────────────────────────────
 const DEFAULT_CONFIG = {
@@ -48,38 +49,38 @@ const yieldEventLoop = () => new Promise(resolve => setImmediate(resolve));
  * Crea la arquitectura del modelo de clasificación.
  *
  * ── Visión general ──────────────────────────────────────────────────────────
- * Red neuronal feedforward (MLP) de regresión diseñada para predecir una
- * calificación continua (0-3) a partir de embeddings de audio VGGish.
+ * Red neuronal feedforward (MLP) de clasificación multiclase diseñada para
+ * predecir probabilidades (0, 1, 2, 3) a partir de embeddings de audio.
  *
  * ── Flujo de datos ──────────────────────────────────────────────────────────
  *
- *   Input (128)          Vector mean-pooled de embeddings VGGish.
+ *   Input (304)          Vector de embeddings (VGGish + Librosa).
  *       ▼
- *   Dense (128 → 64)     ReLU + He Normal.
+ *   Dense (304 → 256)    ReLU + He Normal.
  *       ▼
- *   Dropout (30%)
+ *   Dropout (20%)
  *       ▼
- *   Dense (64 → 32)      ReLU + He Normal.
+ *   Dense (256 → 128)    ReLU + He Normal.
  *       ▼
- *   Dropout (30%)
+ *   Dropout (20%)
  *       ▼
- *   Dense (32 → 1)       Sigmoid → salida en [0,1], escalada × 3 → [0,3].
+ *   Dense (128 → 4)      Softmax → Distribución de probabilidad sobre 4 clases.
  *       ▼
- *   Output (1)           Calificación nominal continua en rango [0, 3].
+ *   Output (4)           Probabilidades de pertenencia a calificaciones [0, 1, 2, 3].
  *
- * ── Resumen de parámetros ───────────────────────────────────────────────────
- *   Capa 1 (Dense):  128×64 + 64 bias  =  8.256 parámetros
- *   Capa 2 (Dense):   64×32 + 32 bias  =  2.080 parámetros
- *   Capa 3 (Dense):    32×1 +  1 bias  =     33 parámetros
+ * ── Resumen de parámetros (asumiendo input=304) ─────────────────────────────
+ *   Capa 1 (Dense):  304×256 + 256 bias  =  78.080 parámetros
+ *   Capa 2 (Dense):  256×128 + 128 bias  =  32.896 parámetros
+ *   Capa 3 (Dense):    128×4 +   4 bias  =     516 parámetros
  *   ─────────────────────────────────────────────────
- *   Total:                                 10.369 parámetros entrenables
+ *   Total:                                 111.492 parámetros entrenables
  */
 function createModelArchitecture(
   inputDim: number = DEFAULT_CONFIG.inputDim
 ): tf.Sequential {
   const model = tf.sequential();
 
-  // Capa 1: Proyección del espacio de embeddings (128-dim) a representación interna (64-dim)
+  // Capa 1: Proyección del espacio de embeddings a representación interna
   model.add(tf.layers.dense({
     inputShape: [inputDim],
     units: 256,
@@ -109,21 +110,32 @@ function createModelArchitecture(
 }
 
 /**
- * Compila un modelo con el optimizador y métricas estándar
+ * Compila un modelo de TensorFlow preparándolo para el entrenamiento.
+ * Define la función de pérdida (loss function) y el optimizador (Adam) que actualizará los pesos de la red.
+ * 
+ * @param model Modelo secuencial de TensorFlowJS (capas ya definidas).
+ * @param learningRate Tasa de aprendizaje (qué tan grandes son los pasos que da el optimizador al ajustar pesos).
  */
 function compileModel(model: tf.LayersModel, learningRate: number = DEFAULT_CONFIG.learningRate): void {
   model.compile({
     optimizer: tf.train.adam(learningRate),
-    loss: 'categoricalCrossentropy',
+    loss: 'categoricalCrossentropy', // Usado para clasificación multi-clase con activación Softmax
     metrics: ['accuracy']
   });
 }
 
 /**
  * Crea un dataset balanceado a partir de listas de features y labels.
- * Aplica sobremuestreo a las clases minoritarias y énfasis a las calificaciones >= 2.
+ * Utiliza una técnica de sobremuestreo (oversampling) copiando datos de las clases minoritarias
+ * para que el modelo no se sesgue hacia la calificación más común.
+ * Además aplica un peso especial a las calificaciones positivas (>= 2).
+ * 
+ * @param features Array de vectores de audio (datos X).
+ * @param labels Array con las calificaciones correspondientes (0, 1, 2, 3) (etiquetas Y).
+ * @returns Un objeto con los arrays balanceados listos para tensorización.
  */
 function buildBalancedDataset(features: Float32Array[], labels: number[]): { balancedFeatures: Float32Array[], balancedLabels: number[] } {
+  // Array de conteo: índice = calificación, valor = cantidad de veces que aparece
   const classCountArray = [0, 0, 0, 0];
   labels.forEach(l => classCountArray[l]++);
   const maxCount = Math.max(...classCountArray);
@@ -131,15 +143,19 @@ function buildBalancedDataset(features: Float32Array[], labels: number[]): { bal
   const balancedFeatures: Float32Array[] = [];
   const balancedLabels: number[] = [];
 
+  // Bucle principal: Recorre todas las etiquetas originales para calcular su peso
   labels.forEach((label, index) => {
     const count = classCountArray[label];
+    // Peso (weight) base: ¿cuántas veces debo clonar esta fila para igualar a la clase mayoritaria?
     let weight = count > 0 ? Math.round(maxCount / count) : 1;
 
-    // Énfasis extra para calificaciones altas
+    // Énfasis extra para calificaciones altas (2 y 3). 
+    // Ayuda a que el modelo priorice no equivocarse con las canciones que al usuario le gustan.
     if (label >= 2) {
       weight = Math.round(weight * 2);
     }
 
+    // Bucle interno: Clona/duplica los datos en memoria según el 'weight' calculado
     for (let i = 0; i < weight; i++) {
       balancedFeatures.push(features[index]);
       balancedLabels.push(label);
@@ -151,34 +167,44 @@ function buildBalancedDataset(features: Float32Array[], labels: number[]): { bal
 
 // ─── Preparación de datos ────────────────────────────────────────────────────
 /**
- * Carga y prepara features para el entrenamiento.
- * Filtra canciones: deben tener userScore + features + (en clean: no entrenadas previamente).
+ * Extrae y valida los datos crudos (features y userScore) de una lista de canciones 
+ * para construir un conjunto de entrenamiento (Dataset).
+ * Filtra las canciones que no cumplan con los requisitos básicos para ser entrenadas.
+ * 
+ * @param songs Array de objetos Song.
+ * @param mode Modo de entrenamiento (clean/infer). En 'clean' ignora canciones ya entrenadas.
+ * @param modelScope El alcance del modelo (global o local) para verificar el nivel de entrenamiento previo.
+ * @returns Tres arrays paralelos alineados: features (datos de audio X), labels (calificaciones Y) y songIds (IDs).
  */
 function prepareSongsForTraining(
   songs: Song[],
-  mode: string,
-  modelType: 'global' | 'local'
+  mode: TrainingMode,
+  modelScope: ModelScope
 ): { features: Float32Array[]; labels: number[]; songIds: number[] } {
   const featuresDir = path.resolve(paths.features);
   const features: Float32Array[] = [];
   const labels: number[] = [];
   const songIds: number[] = [];
 
+  // Bucle for-of: Itera secuencialmente sobre todas las canciones proporcionadas para filtrarlas y extraer sus arrays de audio.
   for (const song of songs) {
-    // Debe tener calificación del usuario
+    // Regla 1: Debe tener calificación del usuario (no podemos entrenar aprendizaje supervisado sin una etiqueta 'Y')
     if (song.userScore === undefined || song.userScore === null) continue;
-    // Debe tener archivo de features
+    
+    // Regla 2: Debe existir una referencia en BD al archivo `.npy` con las features VGGish extraídas
     if (!song.tsFeaturesFileName) continue;
-
-    // En modo 'clean', solo canciones nunca entrenadas
+    
+    // Regla 3: Si el modo es 'clean' (Entrenamiento desde cero para datos nuevos), omitimos las que ya tengan 'trainLevel'
     if (mode === 'clean') {
-      const trainLevel = modelType === 'global' ? song.tsTrainLevelGlobal : song.tsTrainLevelLocal;
+      const trainLevel = modelScope === 'global' ? song.tsTrainLevelGlobal : song.tsTrainLevelLocal;
       if (trainLevel && trainLevel > 0) continue;
     }
 
+    // Regla 4: Obtener de caché en memoria el Array de floats (X). Si falla o no existe el archivo físico, se ignora la canción.
     const normalized = getCachedFeature(song.id!, song.tsFeaturesFileName, featuresDir);
     if (!normalized) continue;
 
+    // Si pasó todas las reglas, agregamos a nuestros arreglos paralelos
     features.push(normalized);
     labels.push(song.userScore);
     songIds.push(song.id!);
@@ -188,9 +214,21 @@ function prepareSongsForTraining(
 }
 
 // ─── Flujo principal de entrenamiento ────────────────────────────────────────
+/**
+ * Orquestador principal del proceso de entrenamiento.
+ * Se encarga de:
+ * 1. Obtener las canciones de la base de datos.
+ * 2. Manejar la caché de características (Feature Cache).
+ * 3. Crear o recuperar el modelo "Global" (entrenado con todas las canciones de la playlist default).
+ * 4. Iterar sobre listas de reproducción (playlists) secundarias para entrenar Modelos "Locales" si se solicita.
+ * 
+ * @param songIds Array con los IDs de las canciones que se quieren entrenar.
+ * @param mode Modo de entrenamiento ('clean' para nuevas, 'infer' para todo).
+ * @param includeLocalTraining Si es `true`, también buscará a qué playlists pertenecen las canciones y entrenará sub-modelos especializados.
+ */
 export async function runTraining(
   songIds: number[],
-  mode: string,
+  mode: TrainingMode,
   includeLocalTraining: boolean
 ): Promise<void> {
   logInfo('═'.repeat(60));
@@ -234,8 +272,11 @@ export async function runTraining(
 
     const playlistSongMap = await getPlaylistSongMap(songIds);
 
+    // Bucle for-of: Itera sobre cada Playlist que contenga alguna de las canciones objetivo.
+    // Esto crea un modelo de IA "Local" especializado en el gusto de esa playlist específica,
+    // aislando el sesgo (bias) de otras playlists.
     for (const [idPlaylist, plSongIds] of playlistSongMap.entries()) {
-      // La playlist default ya se entrenó como modelo global
+      // La playlist por defecto abarca todas las canciones, y ya se usó para entrenar el modelo Global arriba.
       if (idPlaylist === defaultPlaylist.id) continue;
 
       const playlist = await PlaylistModel.getById(idPlaylist);
@@ -302,17 +343,27 @@ export async function createAndRegisterModel(isGlobal: boolean, dirName: string)
 }
 
 // ─── Entrenar un solo modelo ─────────────────────────────────────────────────
+/**
+ * Lógica core de entrenamiento para una instancia específica de un modelo de TensorFlow.
+ * Carga el modelo físico, formatea y balancea los tensores (X, Y), ejecuta el ciclo `.fit()` 
+ * con validación cruzada y guarda los nuevos pesos generados.
+ * 
+ * @param tsModel Registro del modelo extraído de la base de datos (contiene la arquitectura y rutas).
+ * @param songs Lista de canciones ya validadas y obtenidas de BD.
+ * @param mode Modo de entrenamiento (clean/infer).
+ * @param modelScope Indica si estamos entrenando el modelo 'global' o un 'local'.
+ */
 async function trainSingleModel(
   tsModel: TensorFlowModel,
   songs: Song[],
-  mode: string,
-  modelType: 'global' | 'local'
+  mode: TrainingMode,
+  modelScope: ModelScope
 ): Promise<void> {
   logInfo('─'.repeat(40));
-  logInfo(`Entrenando modelo ${modelType.toUpperCase()} (ID: ${tsModel.id}, v${tsModel.version})`);
+  logInfo(`Entrenando modelo ${modelScope.toUpperCase()} (ID: ${tsModel.id}, v${tsModel.version})`);
 
   // Preparar datos
-  const { features, labels, songIds: trainSongIds } = prepareSongsForTraining(songs, mode, modelType);
+  const { features, labels, songIds: trainSongIds } = prepareSongsForTraining(songs, mode, modelScope);
 
   if (features.length === 0) {
     logInfo('No hay canciones nuevas para entrenar en este modelo. Omitiendo.');
@@ -354,32 +405,38 @@ async function trainSingleModel(
   logInfo(`  Sobremuestreo aplicado: Dataset creció de ${features.length} a ${balancedFeatures.length} muestras.`);
 
   // Convertir a tensores
+  // Se crea un gran arreglo 1D que albergará todos los arreglos 1D de las canciones concatenados
   const xData = new Float32Array(balancedFeatures.length * DEFAULT_CONFIG.inputDim);
+  // Bucle forEach: Copia los valores de cada vector al arreglo gigante `xData` calculando el desplazamiento (offset) en memoria.
   balancedFeatures.forEach((feat, i) => xData.set(feat, i * DEFAULT_CONFIG.inputDim));
 
+  // Variable clave `xs`: Tensor 2D de forma (Número_de_Canciones, Dimensiones_de_Entrada). Representa la matriz de características X.
   const xs = tf.tensor2d(xData, [balancedFeatures.length, DEFAULT_CONFIG.inputDim]);
+  // Variable clave `ys`: Tensor 2D de Etiquetas. Usa "oneHot" encoding para transformar las clases [0,1,2,3] en vectores [1,0,0,0], [0,1,0,0], etc.
   const ys = tf.oneHot(tf.tensor1d(balancedLabels, 'int32'), 4);
 
-  // Entrenar
-  const epochs = DEFAULT_CONFIG.epochs;
-  const batchSize = Math.min(DEFAULT_CONFIG.batchSize, balancedFeatures.length);
-  const useValidation = balancedFeatures.length >= 10;
+  // Parámetros de entrenamiento
+  const epochs = DEFAULT_CONFIG.epochs; // Cantidad máxima de veces que la red verá los datos
+  const batchSize = Math.min(DEFAULT_CONFIG.batchSize, balancedFeatures.length); // Tamaño de lote para propagación
+  const useValidation = balancedFeatures.length >= 10; // Solo validamos si hay suficientes datos
 
   logInfo(`Fit: ${balancedFeatures.length} muestras balanceadas, ${epochs} épocas, batch=${batchSize}, validación=${useValidation}`);
 
-  // Early stopping: detener si val_loss no mejora en 'patience' épocas
+  // Early stopping: variables para detener el entrenamiento prematuramente si el modelo deja de aprender
   let bestValLoss = Infinity;
   let patienceCounter = 0;
-  const patience = 40; // Mayor paciencia para dejar que la red memorice outliers
+  const patience = 40; // Número máximo de épocas consecutivas sin mejora permitidas
   let stoppedEarly = false;
 
+  // Variable clave `history`: Objeto que guarda el registro matemático (Loss, Accuracy) devuelto por TensorFlow tras cada época.
   const history = await (model as tf.LayersModel).fit(xs, ys, {
     epochs,
     batchSize,
     validationSplit: useValidation ? DEFAULT_CONFIG.validationSplit : 0,
-    shuffle: true,
+    shuffle: true, // Baraja los datos para evitar que la red aprenda el orden de las canciones
     callbacks: {
       onBatchEnd: async () => {
+        // yieldEventLoop libera la CPU para que NodeJS atienda llamadas HTTP u otros subprocesos mientras TensorFlow entrena en el hilo principal (evita bloquear el servidor).
         await yieldEventLoop();
       },
       onEpochEnd: async (epoch, logs) => {
@@ -404,7 +461,7 @@ async function trainSingleModel(
             }
           }
         }
-        
+
         // Liberar event loop al final de la época también
         await yieldEventLoop();
       }
@@ -463,7 +520,7 @@ async function trainSingleModel(
     // Actualizar resultados en la canción
     const songUpdate: Parameters<typeof SongModel.updateTrainingResults>[1] = {};
 
-    if (modelType === 'global') {
+    if (modelScope === 'global') {
       const currentSong = songs.find(s => s.id === trainSongIds[i]);
       songUpdate.trainLevelGlobal = (currentSong?.tsTrainLevelGlobal || 0) + 1;
     } else {
@@ -503,20 +560,25 @@ async function getPlaylistSongMap(songIds: number[]): Promise<Map<number, number
 }
 
 /**
- * Flujo principal de predicción.
- * Carga el modelo global, ejecuta predict sobre cada canción y
- * publica los resultados en las tablas `canciones` y `predicciones`.
+ * Orquestador del flujo masivo de predicción (Inferencia).
+ * 1. Carga el modelo "Global" actual de TensorFlowJS desde el disco.
+ * 2. Lee los datos de características acústicas (features) de las canciones desde la caché/disco.
+ * 3. Ejecuta la red neuronal (Feedforward) en modo inferencia (`predict`) para cada canción.
+ * 4. Calcula la precisión si el usuario ya había calificado la canción.
+ * 5. Guarda un histórico estadístico en masa (Batch Insert) en la base de datos.
+ * 
+ * @param songIds Lista de IDs de las canciones a predecir.
  */
-export async function runPrediction(songIds: number[]): Promise < void> {
+export async function runPrediction(songIds: number[]): Promise<void> {
   logInfo('═'.repeat(60));
   logInfo('Iniciando predicción de canciones');
   logInfo(`Canciones solicitadas: ${songIds.length
-}`);
+    }`);
   logInfo('═'.repeat(60));
 
   // 1. Obtener canciones de la BD
   const songs = await SongModel.getSongsByIds(songIds);
-  logInfo(`Canciones encontradas en BD: ${ songs.length } `);
+  logInfo(`Canciones encontradas en BD: ${songs.length} `);
 
   if (songs.length === 0) {
     logInfo('No se encontraron canciones. Abortando predicción.');
@@ -528,7 +590,7 @@ export async function runPrediction(songIds: number[]): Promise < void> {
   if (!globalModel) {
     throw new Error('No existe modelo global entrenado. Entrene un modelo primero.');
   }
-  logInfo(`Modelo global: ID = ${ globalModel.id }, v${ globalModel.version }, ${ globalModel.trainedSongs } canciones entrenadas`);
+  logInfo(`Modelo global: ID = ${globalModel.id}, v${globalModel.version}, ${globalModel.trainedSongs} canciones entrenadas`);
 
   // 3. Cargar modelo desde disco
   const modelsDir = path.resolve(paths.models);
@@ -536,7 +598,7 @@ export async function runPrediction(songIds: number[]): Promise < void> {
   const modelJsonPath = path.join(modelPath, 'model.json');
 
   if (!fs.existsSync(modelJsonPath)) {
-    throw new Error(`Archivo de modelo no encontrado en disco: ${ modelJsonPath } `);
+    throw new Error(`Archivo de modelo no encontrado en disco: ${modelJsonPath} `);
   }
 
   const model = await tf.loadLayersModel(nodeLoadHandler(modelPath));
@@ -553,23 +615,25 @@ export async function runPrediction(songIds: number[]): Promise < void> {
   let predicted = 0;
   let skipped = 0;
 
+  // Bucle for-of: Itera secuencialmente sobre cada canción para evaluarla individualmente contra la red neuronal.
+  // Podría hacerse en lotes (batch), pero iterar permite manejar errores por canción de forma segura sin abortar todo el proceso masivo.
   for (const song of songs) {
     if (!song.tsFeaturesFileName) {
-      logInfo(`  Canción ${ song.id }: sin archivo de features.Omitiendo.`);
+      logInfo(`  Canción ${song.id}: sin archivo de features.Omitiendo.`);
       skipped++;
       continue;
     }
 
     const normalized = getCachedFeature(song.id!, song.tsFeaturesFileName, featuresDir);
     if (!normalized) {
-      logInfo(`  Canción ${ song.id }: archivo de features no encontrado o inválido.Omitiendo.`);
+      logInfo(`  Canción ${song.id}: archivo de features no encontrado o inválido.Omitiendo.`);
       skipped++;
       continue;
     }
 
     const lastFitId = lastFitMap.get(song.id!);
     if (!lastFitId) {
-      logInfo(`  Canción ${ song.id }: sin registro de entrenamiento previo.Omitiendo registro de predicción.`);
+      logInfo(`  Canción ${song.id}: sin registro de entrenamiento previo.Omitiendo registro de predicción.`);
     }
 
     try {
@@ -579,7 +643,7 @@ export async function runPrediction(songIds: number[]): Promise < void> {
       const rawOutput = await prediction.data();
 
       // Clasificación: Valor Esperado
-      const globalScore = rawOutput[0]*0 + rawOutput[1]*1 + rawOutput[2]*2 + rawOutput[3]*3;
+      const globalScore = rawOutput[0] * 0 + rawOutput[1] * 1 + rawOutput[2] * 2 + rawOutput[3] * 3;
 
       // Calcular precisión: 100 - (|predicción - userScore| / 3) * 100
       const hasUserScore = song.userScore !== undefined && song.userScore !== null;
@@ -588,7 +652,7 @@ export async function runPrediction(songIds: number[]): Promise < void> {
         ? Math.min(99.9999, Math.max(0, 100 - (Math.abs(globalScore - userScore) / 3) * 100))
         : null;
 
-      logInfo(`  Canción ${ song.id }: predicción = ${ globalScore.toFixed(4) } | usuario=${ hasUserScore ? userScore : 'N/A' } | precisión=${ predictionAccuracy !== null ? predictionAccuracy.toFixed(1) + '%' : 'N/A' } `);
+      logInfo(`  Canción ${song.id}: predicción = ${globalScore.toFixed(4)} | usuario=${hasUserScore ? userScore : 'N/A'} | precisión=${predictionAccuracy !== null ? predictionAccuracy.toFixed(1) + '%' : 'N/A'} `);
 
       // Actualizar tabla canciones
       await SongModel.updateTrainingResults(song.id!, {
@@ -611,7 +675,7 @@ export async function runPrediction(songIds: number[]): Promise < void> {
       input.dispose();
       prediction.dispose();
     } catch (err) {
-      logError(`  Error prediciendo canción ${ song.id }: ${ err } `);
+      logError(`  Error prediciendo canción ${song.id}: ${err} `);
       skipped++;
     }
   }
@@ -619,40 +683,44 @@ export async function runPrediction(songIds: number[]): Promise < void> {
   // 6. Insertar registros de predicción en batch
   if (predictionEntries.length > 0) {
     await PredictionRecordModel.createBatch(predictionEntries);
-    logSuccess(`${ predictionEntries.length } registros de predicción guardados`);
+    logSuccess(`${predictionEntries.length} registros de predicción guardados`);
   }
 
   // 7. Limpiar modelo
   model.dispose();
 
   logInfo('─'.repeat(40));
-  logSuccess(`Predicción completada: ${ predicted } predichas, ${ skipped } omitidas`);
+  logSuccess(`Predicción completada: ${predicted} predichas, ${skipped} omitidas`);
   logInfo('═'.repeat(60));
 }
 
 // ─── Fine-tuning de canción individual ──────────────────────────────────────
 /**
- * Fine-tune del modelo global sobre una sola canción y predicción inmediata.
- * Usa learning rate reducido y pocas épocas para ajustar sin olvido catastrófico.
- * Retorna la canción actualizada con nueva predicción y precisión.
+ * Fine-tuning (Ajuste Fino) del modelo global basado en la retroalimentación inmediata del usuario sobre una sola canción.
+ * Concepto clave: Cuando el usuario modifica una calificación, queremos que la IA aprenda de este error inmediatamente.
+ * Para evitar el "Olvido Catastrófico" (que la red olvide todo lo aprendido por concentrarse solo en esta nueva canción),
+ * se carga una muestra representativa de todas las canciones previas y se inyecta la nueva canción multiplicada artificialmente.
+ * 
+ * @param songId El ID de la canción que acaba de ser recalificada.
+ * @returns La entidad de la canción actualizada con la nueva precisión tras el reentrenamiento exprés.
  */
 export async function tuneSingleSongById(songId: number): Promise<Song> {
   logInfo('─'.repeat(40));
-  logInfo(`Fine - tuning canción ${ songId } `);
+  logInfo(`Fine - tuning canción ${songId} `);
 
   // 1. Obtener canción
   const song = await SongModel.getSongById(songId);
-  if (!song) throw new Error(`Canción ${ songId } no encontrada`);
+  if (!song) throw new Error(`Canción ${songId} no encontrada`);
   if (song.userScore === undefined || song.userScore === null)
-    throw new Error(`Canción ${ songId } no tiene calificación del usuario`);
+    throw new Error(`Canción ${songId} no tiene calificación del usuario`);
   if (!song.tsFeaturesFileName)
-    throw new Error(`Canción ${ songId } no tiene archivo de features`);
+    throw new Error(`Canción ${songId} no tiene archivo de features`);
 
   // 2. Cargar features (con caché)
   const featuresDir = path.resolve(paths.features);
   const normalized = getCachedFeature(songId, song.tsFeaturesFileName, featuresDir);
   if (!normalized)
-    throw new Error(`Archivo de features no encontrado o inválido: ${ song.tsFeaturesFileName } `);
+    throw new Error(`Archivo de features no encontrado o inválido: ${song.tsFeaturesFileName} `);
 
   // 3. Obtener modelo global
   const globalModel = await TsModelModel.getGlobalModel();
@@ -662,7 +730,7 @@ export async function tuneSingleSongById(songId: number): Promise<Song> {
   const modelPath = path.join(modelsDir, globalModel.filename);
   const modelJsonPath = path.join(modelPath, 'model.json');
   if (!fs.existsSync(modelJsonPath))
-    throw new Error(`Archivo de modelo no encontrado: ${ modelJsonPath } `);
+    throw new Error(`Archivo de modelo no encontrado: ${modelJsonPath} `);
 
   const model = await tf.loadLayersModel(nodeLoadHandler(modelPath));
 
@@ -676,12 +744,14 @@ export async function tuneSingleSongById(songId: number): Promise<Song> {
   // duplicada TARGET_WEIGHT veces para sesgar el gradiente hacia ella.
   // TARGET_WEIGHT escala con el dataset para mantener ~10% de presencia.
   const allScoredSongs = await SongModel.getAllSongsScoredByUserInDefaultPlaylist();
-  
+
   const baseFeatures: Float32Array[] = [];
   const baseLabels: number[] = [];
 
-  // Recolectar TODAS las demás canciones
+  // Bucle for-of: Recolecta TODAS las demás canciones calificadas históricamente para mantener el "conocimiento previo" de la red.
+  // Este es el mecanismo clave de defensa contra el Olvido Catastrófico (Catastrophic Forgetting) durante el Fine-Tuning.
   for (const s of allScoredSongs) {
+    // Excluir la canción objetivo original porque la inyectaremos con peso extra (Oversampling) más abajo.
     if (s.id === songId) continue;
     if (!s.tsFeaturesFileName || s.userScore === undefined || s.userScore === null) continue;
     const sNormalized = getCachedFeature(s.id!, s.tsFeaturesFileName, featuresDir);
@@ -698,12 +768,15 @@ export async function tuneSingleSongById(songId: number): Promise<Song> {
 
   // Inyectar la canción objetivo
   const targetFeatureArray = Array.from(normalized);
+  // Bucle for: Inyecta múltiples copias (clones) de la canción objetivo en el dataset equilibrado.
+  // El número de copias (TARGET_WEIGHT) representa aprox. el 10% del dataset total.
+  // Esto fuerza a la función de pérdida (Loss) del optimizador a prestarle especial atención a corregir el error en esta canción específica.
   for (let i = 0; i < TARGET_WEIGHT; i++) {
     allFeatures.push(normalized);
     allLabels.push(song.userScore);
   }
 
-  logInfo(`  Mini - retrain: ${ allFeatures.length } muestras(target x${ TARGET_WEIGHT } + ${ allFeatures.length - TARGET_WEIGHT } canciones)`);
+  logInfo(`  Mini - retrain: ${allFeatures.length} muestras(target x${TARGET_WEIGHT} + ${allFeatures.length - TARGET_WEIGHT} canciones)`);
 
   // Construir tensores
   const xData = new Float32Array(allFeatures.length * DEFAULT_CONFIG.inputDim);
@@ -729,7 +802,7 @@ export async function tuneSingleSongById(songId: number): Promise<Song> {
 
   const lossArr = history.history['loss'] as number[];
   const finalLoss = lossArr[lossArr.length - 1];
-  logInfo(`  Fine - tune completado — loss: ${ finalLoss.toFixed(6) } (${ tuneEpochs } épocas, lr = ${ tuneLr })`);
+  logInfo(`  Fine - tune completado — loss: ${finalLoss.toFixed(6)} (${tuneEpochs} épocas, lr = ${tuneLr})`);
 
   // 5. Guardar modelo
   await model.save(nodeSaveHandler(modelPath));
@@ -754,10 +827,10 @@ export async function tuneSingleSongById(songId: number): Promise<Song> {
   const input = tf.tensor2d([targetFeatureArray], [1, DEFAULT_CONFIG.inputDim]);
   const prediction = model.predict(input) as tf.Tensor;
   const rawOutput = await prediction.data();
-  const globalScore = rawOutput[0]*0 + rawOutput[1]*1 + rawOutput[2]*2 + rawOutput[3]*3;
+  const globalScore = rawOutput[0] * 0 + rawOutput[1] * 1 + rawOutput[2] * 2 + rawOutput[3] * 3;
   const predictionAccuracy = Math.min(99.9999, Math.max(0, 100 - (Math.abs(globalScore - song.userScore) / 3) * 100));
 
-  logSuccess(`  Canción ${ songId }: predicción = ${ globalScore.toFixed(4) } | usuario=${ song.userScore } | precisión=${ predictionAccuracy.toFixed(1) }% `);
+  logSuccess(`  Canción ${songId}: predicción = ${globalScore.toFixed(4)} | usuario=${song.userScore} | precisión=${predictionAccuracy.toFixed(1)}% `);
 
   // 8. Actualizar canción: globalScore + incrementar trainLevelGlobal
   await SongModel.updateTrainingResults(songId, {
@@ -791,11 +864,11 @@ export async function tuneSingleSongById(songId: number): Promise<Song> {
   prediction.dispose();
   model.dispose();
 
-  logSuccess(`Fine - tuning y predicción completados para canción ${ songId } `);
+  logSuccess(`Fine - tuning y predicción completados para canción ${songId} `);
 
   // Retornar canción actualizada
   const updatedSong = await SongModel.getSongById(songId);
-  if (!updatedSong) throw new Error(`No se pudo obtener canción actualizada ${ songId } `);
+  if (!updatedSong) throw new Error(`No se pudo obtener canción actualizada ${songId} `);
   updatedSong.accuracy = predictionAccuracy;
   return updatedSong;
 }
