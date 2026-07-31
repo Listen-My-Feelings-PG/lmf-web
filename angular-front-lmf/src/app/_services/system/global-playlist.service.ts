@@ -1,6 +1,6 @@
 import { computed, Injectable, signal, WritableSignal } from '@angular/core';
-import { Song } from '../_types/generals.models';
-import { Playlist, GlobalPlaylistSetup, UserScore } from '../_types/generals.interfaces';
+import { Song } from '../../_models/generals.models';
+import { Playlist, GlobalPlaylistSetup, UserScore } from '../../_models/generals.interfaces';
 type Result<T> = { ok: true, value?: T } | { ok: false, error: string };
 
 @Injectable({ providedIn: 'root' })

@@ -1,9 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { Router, RouterOutlet } from '@angular/router';
 import { PlayerComponent } from '../player/player.component';
-import { HttpService } from '../_services/http.service';
-import { GlobalPlaylistService } from '../_services/global-playlist.service';
-import { SocketService } from '../_services/socket.service';
+import { firstValueFrom } from 'rxjs';
+import { PlaylistsService } from '../_services/http/playlists.service';
+import { GlobalPlaylistService } from '../_services/system/global-playlist.service';
+import { SocketService } from '../_services/system/socket.service';
 
 @Component({
   selector: 'app-main',
@@ -13,7 +14,7 @@ import { SocketService } from '../_services/socket.service';
 })
 export class MainComponent implements OnInit {
   constructor(
-    private httpService: HttpService,
+    private playlistsService: PlaylistsService,
     private globalPlaylistService: GlobalPlaylistService,
     private router: Router,
     private socketService: SocketService
@@ -22,13 +23,13 @@ export class MainComponent implements OnInit {
   async ngOnInit(): Promise<void> {
     this.socketService.connect();
     try {
-      const playlists = await this.httpService.getAllPlaylists();
+      const playlists = await firstValueFrom(this.playlistsService.getAllPlaylists());
       if (playlists) {
         const playlistSelectedResult = this.globalPlaylistService.getSelectedPlaylist();
         const playlistSelected = playlistSelectedResult.ok ? playlistSelectedResult.value : null;
         const defaultPlaylist = playlists.find(pl => pl.isDefault);
         if (!playlistSelected && defaultPlaylist) {
-          const songList = await this.httpService.getPlaylistContentByIdPlaylist(defaultPlaylist.id as number);
+          const songList = await firstValueFrom(this.playlistsService.getPlaylistContentByIdPlaylist(defaultPlaylist.id as number));
           if (songList) {
             this.globalPlaylistService.initialize({
               playlists: playlists,

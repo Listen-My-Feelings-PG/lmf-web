@@ -1,9 +1,9 @@
 import { Component, effect, EventEmitter, Input, Output, signal, SimpleChanges, AfterViewChecked } from '@angular/core';
-import { Calibration, Playlist } from '../_types/generals.interfaces';
-import { Song } from '../_types/generals.models';
+import { Calibration, Playlist } from '../_models/generals.interfaces';
+import { Song } from '../_models/generals.models';
 import { environment } from '../../environments/environment';
 import { ColumnDef, createAngularTable, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel } from '@tanstack/angular-table';
-import { GlobalPlaylistService } from '../_services/global-playlist.service';
+import { GlobalPlaylistService } from '../_services/system/global-playlist.service';
 import { Chart, registerables } from 'chart.js';
 
 Chart.register(...registerables);

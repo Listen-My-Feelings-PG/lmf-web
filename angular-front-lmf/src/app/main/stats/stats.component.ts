@@ -1,8 +1,10 @@
 import { Component, OnInit } from '@angular/core';
-import { Song } from '../../_types/generals.models';
-import { Calibration } from '../../_types/generals.interfaces';
-import { GlobalPlaylistService } from '../../_services/global-playlist.service';
-import { HttpService } from '../../_services/http.service';
+import { Song } from '../../_models/generals.models';
+import { Calibration } from '../../_models/generals.interfaces';
+import { GlobalPlaylistService } from '../../_services/system/global-playlist.service';
+import { firstValueFrom } from 'rxjs';
+import { PlaylistsService } from '../../_services/http/playlists.service';
+import { StatsService } from '../../_services/http/stats.service';
 import { StatsListComponent } from '../../stats-list/stats-list.component';
 
 @Component({
@@ -14,7 +16,11 @@ import { StatsListComponent } from '../../stats-list/stats-list.component';
 export class StatsComponent implements OnInit {
   songList: Array<Song>;
 
-  constructor(private globalPlaylistService: GlobalPlaylistService, private httpService: HttpService) {
+  constructor(
+    private globalPlaylistService: GlobalPlaylistService,
+    private playlistsService: PlaylistsService,
+    private statsService: StatsService
+  ) {
     this.songList = [];
   }
 
@@ -24,12 +30,12 @@ export class StatsComponent implements OnInit {
 
   async loadData(): Promise<void> {
     try {
-      const playlists = await this.httpService.getAllPlaylists();
+      const playlists = await firstValueFrom(this.playlistsService.getAllPlaylists());
       if (playlists && playlists.length) {
         const defaultPlaylist = playlists.find(pl => pl.isDefault);
         if (defaultPlaylist?.id) {
-          const songs = await this.httpService.getAllSongsByPlaylistId(defaultPlaylist.id);
-          const calibrationList = await this.httpService.getAllSongsCalibrationByIdPlaylist(defaultPlaylist.id);
+          const songs = await firstValueFrom(this.playlistsService.getAllSongsByPlaylistId(defaultPlaylist.id));
+          const calibrationList = await firstValueFrom(this.statsService.getAllSongsCalibrationByIdPlaylist(defaultPlaylist.id));
 
           // Agrupar calibraciones de predicción por songId
           const calibrationMap = new Map<number, Calibration[]>();

@@ -1,8 +1,9 @@
 import { Component, OnDestroy, effect } from '@angular/core';
-import { Song } from '../_types/generals.models';
-import { GlobalPlaylistService } from '../_services/global-playlist.service';
-import { HttpService } from '../_services/http.service';
-import { UserScore } from '../_types/generals.interfaces';
+import { Song } from '../_models/generals.models';
+import { GlobalPlaylistService } from '../_services/system/global-playlist.service';
+import { firstValueFrom } from 'rxjs';
+import { SongsService } from '../_services/http/songs.service';
+import { UserScore } from '../_models/generals.interfaces';
 
 @Component({
   selector: 'app-player',
@@ -28,7 +29,7 @@ export class PlayerComponent implements OnDestroy {
 
   constructor(
     private globalPlaylistService: GlobalPlaylistService,
-    private httpService: HttpService
+    private songsService: SongsService
   ) {
     this.setup = {
       playingIndex: null,
@@ -142,7 +143,7 @@ export class PlayerComponent implements OnDestroy {
             throw new Error('La canción no tiene ID');
           }
 
-          const blob = await this.httpService.downloadSongByIdSong(song.id);
+          const blob = await firstValueFrom(this.songsService.downloadSongByIdSong(song.id));
           this.currentBlobUrl = URL.createObjectURL(blob);
 
           // Configurar y reproducir
@@ -280,7 +281,7 @@ export class PlayerComponent implements OnDestroy {
     }
 
     try {
-      const songRated = await this.httpService.rateSongByIdSong(currentSong.id, score as UserScore);
+      const songRated = await firstValueFrom(this.songsService.rateSongByIdSong(currentSong.id, score as UserScore));
       this.globalPlaylistService.rateSongPlaying(songRated.userScore as UserScore);
     } catch (error) {
       console.error('Error al calificar la canción:', error);

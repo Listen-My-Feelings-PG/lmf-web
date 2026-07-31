@@ -2,9 +2,10 @@ import {
   Component, OnDestroy, OnChanges, SimpleChanges,
   Input, signal, Output, EventEmitter, effect
 } from '@angular/core';
-import { Playlist, Song } from '../_types/generals.models';
-import { GlobalPlaylistService } from '../_services/global-playlist.service';
-import { HttpService } from '../_services/http.service';
+import { Playlist, Song } from '../_models/generals.models';
+import { GlobalPlaylistService } from '../_services/system/global-playlist.service';
+import { firstValueFrom } from 'rxjs';
+import { SongsService } from '../_services/http/songs.service';
 
 import { FormsModule } from '@angular/forms';
 import {
@@ -15,8 +16,8 @@ import {
   getSortedRowModel,
   ColumnDef,
 } from '@tanstack/angular-table';
-import { UserScore } from '../_types/generals.interfaces';
-import { ToastService } from '../_services/toast.service';
+import { UserScore } from '../_models/generals.interfaces';
+import { ToastService } from '../_services/system/toast.service';
 import { environment } from '../../environments/environment';
 
 @Component({
@@ -103,7 +104,7 @@ export class ListComponent implements OnDestroy, OnChanges {
 
   constructor(
     private globalPlaylist: GlobalPlaylistService,
-    private httpService: HttpService,
+    private songsService: SongsService,
     private toastService: ToastService
   ) {
     this.list = [];
@@ -297,7 +298,7 @@ export class ListComponent implements OnDestroy, OnChanges {
     if (ids.length === 0) return;
     this.isCopyingOnboard.set(true);
     try {
-      await this.httpService.copySelectedSongsToOnboard(ids);
+      await firstValueFrom(this.songsService.copySelectedSongsToOnboard(ids));
       // Notificaremos de forma pasiva que la tarea fue encolada
       this.toastService.show(`Copia de ${ids.length} canciones al onboard encolada.`, 'info');
       this.selectedRows.set(new Set());
@@ -318,7 +319,7 @@ export class ListComponent implements OnDestroy, OnChanges {
 
     this.isDeletingFromLibrary.set(true);
     try {
-      await this.httpService.deleteSelectedSongsFromLibrary(ids);
+      await firstValueFrom(this.songsService.deleteSelectedSongsFromLibrary(ids));
       this.toastService.show(`Borrado de ${ids.length} canciones de la biblioteca encolado.`, 'warning');
       this.selectedRows.set(new Set());
     } catch (error) {

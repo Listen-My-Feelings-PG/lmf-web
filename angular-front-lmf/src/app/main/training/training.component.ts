@@ -1,14 +1,16 @@
 import { Component, effect, OnInit, OnDestroy, AfterViewInit, AfterContentInit } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
-import { Song } from '../../_types/generals.models';
-import { HttpService } from '../../_services/http.service';
+import { Song } from '../../_models/generals.models';
+import { firstValueFrom } from 'rxjs';
+import { PlaylistsService } from '../../_services/http/playlists.service';
+import { SongsService } from '../../_services/http/songs.service';
 import { ListComponent } from "../../list/list.component";
-import { GlobalPlaylistService } from '../../_services/global-playlist.service';
-import { TrainingModality, UserScore } from '../../_types/generals.interfaces';
-import { SocketService } from '../../_services/socket.service';
+import { GlobalPlaylistService } from '../../_services/system/global-playlist.service';
+import { TrainingModality, UserScore } from '../../_models/generals.interfaces';
+import { SocketService } from '../../_services/system/socket.service';
 import { Subscription } from 'rxjs';
-import { ToastService } from '../../_services/toast.service';
+import { ToastService } from '../../_services/system/toast.service';
 
 @Component({
   selector: 'app-training',
@@ -35,7 +37,8 @@ export class TrainingComponent implements OnInit, OnDestroy {
   private socketSubscriptions: Subscription[] = [];
 
   constructor(
-    private httpService: HttpService,
+    private playlistsService: PlaylistsService,
+    private songsService: SongsService,
     private globalPlaylistService: GlobalPlaylistService,
     private socketService: SocketService,
     private toastService: ToastService
@@ -65,11 +68,11 @@ export class TrainingComponent implements OnInit, OnDestroy {
   }
 
   async reloadSongs(): Promise<void> {
-    const playlists = await this.httpService.getAllPlaylists();
+    const playlists = await firstValueFrom(this.playlistsService.getAllPlaylists());
     if (playlists && playlists.length) {
       const defaultPlaylist = playlists.find(pl => pl.isDefault);
       if (defaultPlaylist?.id) {
-        const songs = await this.httpService.getAllSongsByPlaylistId(defaultPlaylist.id);
+        const songs = await firstValueFrom(this.playlistsService.getAllSongsByPlaylistId(defaultPlaylist.id));
         this.listForTraining.list = songs;
         this.applyFiltersToList();
       }
@@ -78,7 +81,7 @@ export class TrainingComponent implements OnInit, OnDestroy {
 
   async tuneSong(idSong: number): Promise<void> {
     try {
-      const response = await this.httpService.tuneSongByIdSong(idSong);
+      const response = await firstValueFrom(this.songsService.tuneSongByIdSong(idSong));
       this.toastService.show(response.message, 'info');
     } catch (error: any) {
       console.warn('Fine-tuning no procesado:', error?.error?.error?.message || error);
@@ -176,7 +179,7 @@ export class TrainingComponent implements OnInit, OnDestroy {
 
   async rateSongByUser(event: { song: Song, score: UserScore }): Promise<void> {
     try {
-      const ratedSong = await this.httpService.rateSongByIdSong(event.song.id as number, event.score as UserScore);
+      const ratedSong = await firstValueFrom(this.songsService.rateSongByIdSong(event.song.id as number, event.score as UserScore));
       let indexInList = this.listForTraining.listFiltered.findIndex(song => song.id === event.song.id);
       if (indexInList !== -1) {
         this.listForTraining.listFiltered[indexInList] = ratedSong;
@@ -221,7 +224,7 @@ export class TrainingComponent implements OnInit, OnDestroy {
 
     try {
       // Enviamos 'infer' para que el backend acepte entrenar exactamente la lista que hemos filtrado
-      const result = await this.httpService.trainSongsByIds(songIds, 'infer', false);
+      const result = await firstValueFrom(this.songsService.trainSongsByIds(songIds, 'infer', false));
       this.trainingMessage = result.message;
       this.trainingMessageType = 'success';
     } catch (error: any) {

@@ -1,9 +1,10 @@
 import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
-import { GlobalPlaylistService } from '../../_services/global-playlist.service';
-import { Song } from '../../_types/generals.models';
+import { GlobalPlaylistService } from '../../_services/system/global-playlist.service';
+import { Song } from '../../_models/generals.models';
 import { ListComponent } from '../../list/list.component';
-import { HttpService } from '../../_services/http.service';
-import { SocketService } from '../../_services/socket.service';
+import { firstValueFrom } from 'rxjs';
+import { SongsService } from '../../_services/http/songs.service';
+import { SocketService } from '../../_services/system/socket.service';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -27,7 +28,7 @@ export class PredictionComponent implements OnInit, OnDestroy {
 
   constructor(
     private globalPlaylistService: GlobalPlaylistService,
-    private httpService: HttpService,
+    private songsService: SongsService,
     private socketService: SocketService
   ) {
     this.listForTraining = {
@@ -55,7 +56,7 @@ export class PredictionComponent implements OnInit, OnDestroy {
 
   async reloadSongs(): Promise<void> {
     try {
-      const songsForPrediction = await this.httpService.getSongsForPrediction();
+      const songsForPrediction = await firstValueFrom(this.songsService.getSongsForPrediction());
       this.listForTraining.listFull = songsForPrediction;
       this.applyFilter();
       this.globalPlaylistService.setLockRate(true);
@@ -116,7 +117,7 @@ export class PredictionComponent implements OnInit, OnDestroy {
     try {
       const ids = (songIds && songIds.length > 0) ? songIds : this.listForTraining.list.map(song => song.id as number);
       if (ids.length === 0) return;
-      await this.httpService.predictSongsByIds(ids);
+      await firstValueFrom(this.songsService.predictSongsByIds(ids));
       if (this.listComponent) {
         this.listComponent.selectedRows.set(new Set());
       }

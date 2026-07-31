@@ -1,8 +1,9 @@
 
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { HttpService } from '../../_services/http.service';
-import { VocaDbYoutubeExtractionResult } from '../../_types/vocadb.interfaces';
+import { firstValueFrom } from 'rxjs';
+import { VocadbService } from '../../_services/http/vocadb.service';
+import { VocaDbYoutubeExtractionResult } from '../../_models/vocadb.interfaces';
 
 @Component({
   selector: 'app-vocadb',
@@ -23,7 +24,7 @@ export class VocadbComponent {
   copyMessage = '';
   extraction: VocaDbYoutubeExtractionResult | null = null;
 
-  constructor(private httpService: HttpService) { }
+  constructor(private vocadbService: VocadbService) { }
 
   get urlsText(): string {
     return this.extraction?.urls.join('\n') || '';
@@ -49,7 +50,7 @@ export class VocadbComponent {
     this.extraction = null;
 
     try {
-      this.extraction = await this.httpService.createVocadbYoutubeLinksReport(year, rangeDays);
+      this.extraction = await firstValueFrom(this.vocadbService.createVocadbYoutubeLinksReport(year, rangeDays));
     } catch (error) {
       this.errorMessage = this.resolveErrorMessage(error);
     } finally {
