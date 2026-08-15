@@ -31,8 +31,8 @@
         @for (headerGroup of table.getHeaderGroups(); track headerGroup.id) {
         <tr>
           @for (header of headerGroup.headers; track header.id) {
-          <th
-            class="table-th" [class.sortable]="header.column.getCanSort()"
+          <th class="table-th"
+            [class.sortable]="header.column.getCanSort()"
             (click)="header.column.getCanSort() ? header.column.getToggleSortingHandler()?.($event) : null"
             [style.width]="header.column.id === 'fileName' ? 'auto' : header.getSize() + 'px'"
             [style.minWidth.px]="header.column.columnDef.minSize">
@@ -83,7 +83,8 @@
         <tr (click)="selectSong(row.original)"
           (mouseenter)="hoveredRow.set(row.original.id!)"
           (mouseleave)="hoveredRow.set(null)"
-          class="table-row group" [class.playing]="isPlaying(row.original)"
+          class="table-row group"
+          [class.playing]="isPlaying(row.original)"
           style="height: 30px;">
 
           @for (cell of row.getVisibleCells(); track cell.id) {
@@ -204,8 +205,8 @@
       a
       {{ Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, table.getFilteredRowModel().rows.length) }}
       de {{ table.getFilteredRowModel().rows.length }} canciones
-      @if (table.getFilteredRowModel().rows.length !== data().length) {
-      <span>(filtrado de {{ data().length }} canciones totales)</span>
+      @if (table.getFilteredRowModel().rows.length !== songsData().length) {
+      <span>(filtrado de {{ songsData().length }} canciones totales)</span>
       }
     </div>
 
@@ -229,7 +230,8 @@
       <span class="px-2 text-gray-500">...</span>
       } @else {
       <button (click)="table.setPageIndex(pageNum)"
-        class="btn-page" [class.active]="table.getState().pagination.pageIndex === pageNum">
+        class="btn-page"
+        [class.active]="table.getState().pagination.pageIndex === pageNum">
         {{ pageNum + 1 }}
       </button>
       }

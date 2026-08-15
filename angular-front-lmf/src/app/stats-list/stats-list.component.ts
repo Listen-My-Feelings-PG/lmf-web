@@ -1,4 +1,4 @@
-import { Component, effect, EventEmitter, Input, Output, signal, SimpleChanges, AfterViewChecked } from '@angular/core';
+import { Component, effect, EventEmitter, Input, Output, signal, AfterViewChecked } from '@angular/core';
 import { Playlist } from '../_models/generals.interfaces';
 import { Song } from '../_models/generals.models';
 import { StatsListColumnsDefinition } from '../_models/tanstack.columns.definitions';
@@ -95,7 +95,7 @@ export class StatsListComponent implements AfterViewChecked {
     });
   }
 
-  ngOnChanges(changes: SimpleChanges): void {
+  ngOnChanges(): void {
     if (this.list.length) {
       this.destroyAllCharts();
       this.songsData.set(this.list);
