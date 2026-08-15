@@ -3,6 +3,7 @@ import {
   Input, signal, Output, EventEmitter, effect
 } from '@angular/core';
 import { Playlist, Song } from '../_models/generals.models';
+import { ListColumnsDefinition } from '../_models/tanstack.columns.definitions';
 import { GlobalPlaylistService } from '../_services/system/global-playlist.service';
 import { firstValueFrom } from 'rxjs';
 import { SongsService } from '../_services/http/songs.service';
@@ -61,18 +62,7 @@ export class ListComponent implements OnDestroy, OnChanges {
   maxPageButtons = 7; // Número de botones de página a mostrar
 
   // Define columns for TanStack Table
-  allColumns: ColumnDef<Song>[] = [
-    { accessorKey: 'id', id: 'id', header: '#', cell: info => info.getValue(), size: 60, minSize: 60, maxSize: 80, },
-    { accessorFn: row => row.metadata?.title, id: 'title', header: 'Título', cell: info => info.getValue() || '-', size: 200, minSize: 150, },
-    { accessorFn: row => row.metadata?.artist, id: 'artist', header: 'Artista', cell: info => info.getValue() || '-', size: 150, minSize: 120, },
-    { accessorFn: row => row.metadata?.album, id: 'album', header: 'Álbum', cell: info => info.getValue() || '-', size: 150, minSize: 120, },
-    { accessorKey: 'userScore', id: 'userScore', header: 'Rating', cell: info => info.getValue(), size: 130, minSize: 130, maxSize: 130, },
-    { accessorFn: row => row.tsPrediction != null ? +row.tsPrediction : null, id: 'modelPrediction', header: 'Predicción', cell: info => info.getValue(), size: 180, minSize: 180, maxSize: 180, },
-    { accessorKey: 'tsTrainLevelGlobal', id: 'tsTrainLevelGlobal', header: 'Nivel Entren. Global', cell: info => info.getValue(), size: 120, minSize: 100, maxSize: 150, },
-    { accessorKey: 'accuracy', id: 'accuracy', header: 'Precisión', cell: info => info.getValue(), size: 100, minSize: 80, maxSize: 130, },
-    { id: 'tune', header: '', cell: () => null, enableSorting: false, enableResizing: false, size: 50, minSize: 50, maxSize: 50, },
-    { accessorKey: 'fileName', id: 'fileName', header: 'Nombre de archivo', cell: info => info.getValue(), minSize: 200, },
-  ];
+  allColumns: ColumnDef<Song>[] = ListColumnsDefinition;
   columns = signal<ColumnDef<Song>[]>(this.allColumns.filter(c => c.id !== 'tune'));
 
   // Create TanStack Table instance

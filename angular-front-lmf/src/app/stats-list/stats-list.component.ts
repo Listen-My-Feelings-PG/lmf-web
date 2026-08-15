@@ -1,6 +1,7 @@
 import { Component, effect, EventEmitter, Input, Output, signal, SimpleChanges, AfterViewChecked } from '@angular/core';
-import { Calibration, Playlist } from '../_models/generals.interfaces';
+import { Playlist } from '../_models/generals.interfaces';
 import { Song } from '../_models/generals.models';
+import { StatsListColumnsDefinition } from '../_models/tanstack.columns.definitions';
 import { environment } from '../../environments/environment';
 import { ColumnDef, createAngularTable, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel } from '@tanstack/angular-table';
 import { GlobalPlaylistService } from '../_services/system/global-playlist.service';
@@ -27,7 +28,7 @@ export class StatsListComponent implements AfterViewChecked {
   private renderedChartIds = new Set<number>();
 
   // TanStack Table signals
-  data = signal<Song[]>([]);
+  songsData = signal<Song[]>([]);
   globalFilter = signal('');
   columnOrder = signal<string[]>([
     'id', 'fileName', 'userScore', 'modelPrediction', 'tsTrainLevelGlobal', 'chart'
@@ -45,18 +46,11 @@ export class StatsListComponent implements AfterViewChecked {
   maxPageButtons = 7;
 
   // Define columns for TanStack Table
-  columns: ColumnDef<Song>[] = [
-    { accessorKey: 'id', id: 'id', header: '#', cell: info => info.getValue(), size: 60, minSize: 60, maxSize: 80 },
-    { accessorKey: 'fileName', id: 'fileName', header: 'Nombre de archivo', cell: info => info.getValue(), minSize: 200 },
-    { accessorKey: 'userScore', id: 'userScore', header: 'Rating', cell: info => info.getValue(), enableSorting: false, size: 130, minSize: 130, maxSize: 130 },
-    { accessorFn: row => row, id: 'modelPrediction', header: 'Predicción', cell: info => info.getValue(), enableSorting: false, size: 180, minSize: 180, maxSize: 180 },
-    { accessorKey: 'tsTrainLevelGlobal', id: 'tsTrainLevelGlobal', header: 'Nivel Entren. Global', cell: info => info.getValue(), size: 120, minSize: 100, maxSize: 150 },
-    { id: 'chart', header: 'Gráfica', cell: () => null, enableSorting: false, enableResizing: false, size: 500, minSize: 500 },
-  ];
+  columns: ColumnDef<Song>[] = StatsListColumnsDefinition;
 
   // Create TanStack Table instance
   table = createAngularTable(() => ({
-    data: this.data(), columns: this.columns, columnOrder: this.columnOrder(),
+    data: this.songsData(), columns: this.columns, columnOrder: this.columnOrder(),
     state: {
       globalFilter: this.globalFilter(),
       columnOrder: this.columnOrder(),
@@ -93,7 +87,7 @@ export class StatsListComponent implements AfterViewChecked {
 
           if (isNewSong || isScoreChanged) {
             this.list[indexInList] = songPlaying;
-            this.data.set([...this.list]);
+            this.songsData.set([...this.list]);
           }
         }
         this.songPlaying = songPlaying;
@@ -104,7 +98,7 @@ export class StatsListComponent implements AfterViewChecked {
   ngOnChanges(changes: SimpleChanges): void {
     if (this.list.length) {
       this.destroyAllCharts();
-      this.data.set(this.list);
+      this.songsData.set(this.list);
     }
   }
 
